@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ARA QR Tag Generator</title>
+  <style>
+    :root { --radius: 12px; --dark:#111; --light:#f2f2f2; }
+    .card, .card * { box-sizing: border-box; }
+
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+    .card { max-width: 720px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: var(--radius); }
+    h1 { margin: 0 0 10px; font-size: 1.6rem; }
+    .sub { margin: 0 0 16px; color: #555; }
+
+    .note { background:#f7f7f7; padding: 10px 12px; border: 1px solid #e7e7e7; border-radius: var(--radius); margin-bottom: 16px; }
+
+    label { display:block; margin: 12px 0 6px; font-weight:600; }
+    input[type="text"], input[type="number"], select {
+      width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem;
+      background: #fff;
+    }
+    input.error { border-color:#e11900; box-shadow:0 0 0 3px rgba(225,25,0,.15); outline: none; }
+
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .row3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+    .mode { display:flex; gap:8px; margin: 0 0 8px; }
+    .toggle-btn {
+      padding:8px 12px; border:1px solid #ccc; border-radius:8px; background: var(--light);
+      cursor:pointer; user-select:none;
+    }
+    .toggle-btn.active { background: var(--dark); color:#fff; border-color: var(--dark); }
+    .toggle-btn:focus-visible { outline:2px solid var(--dark); outline-offset:2px; }
+
+    .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top: 14px; }
+    button { padding:10px 14px; border:0; border-radius:8px; cursor:pointer; }
+    .btn-primary { background: var(--dark); color:#fff; }
+    .btn-secondary { background:#e9e9e9; color:#111; }
+    button[disabled]{ opacity:.6; cursor:not-allowed; }
+
+    .preview {
+      margin-top: 18px; display: grid; grid-template-columns: 220px 1fr; gap: 16px; align-items: start;
+    }
+    .qrcard {
+      border:1px solid #ddd; border-radius: 12px; padding: 12px; display:flex; align-items:center; justify-content:center; background:#fff;
+      min-height: 220px;
+    }
+    .meta { color:#444; font-size: .95rem; word-break: break-all; }
+
+    .foot { margin-top:18px; font-size:.9rem; color:#666; line-height:1.35; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>ARA QR Tag Generator</h1>
+    <p class="sub">Ancient Roots Alberta</p>
+
+    <div class="note">
+      Generate a QR code for a tree page or nomination link. For rugged field tags, use <strong>Error correction = H</strong> and add a white margin.
+    </div>
+
+    <!-- Mode -->
+    <div class="mode" role="group" aria-label="QR content mode">
+      <button type="button" id="mode-url" class="toggle-btn active" aria-pressed="true">Full URL</button>
+      <button type="button" id="mode-id"  class="toggle-btn" aria-pressed="false">Tree ID + Base URL</button>
+    </div>
+
+    <form id="qr-form" action="#">
+      <!-- URL mode -->
+      <div id="url-fields">
+        <label for="fullUrl">URL to encode</label>
+        <input id="fullUrl" type="text" placeholder="e.g. https://ancientrootsab.ca/tree/12345" />
+      </div>
+
+      <!-- ID mode -->
+      <div id="id-fields" style="display:none;">
+        <label for="baseUrl">Base URL (prefix)</label>
+        <input id="baseUrl" type="text" placeholder="e.g. https://ancientrootsab.ca/t/" />
+        <label for="treeId">Tree ID (suffix)</label>
+        <input id="treeId" type="text" placeholder="e.g. ARA-000123" />
+      </div>
+
+      <div class="row3">
+        <div>
+          <label for="size">Size (px)</label>
+          <input id="size" type="number" min="128" max="1024" step="16" value="256" />
+        </div>
+        <div>
+          <label for="margin">White margin (px)</label>
+          <input id="margin" type="number" min="0" max="64" step="4" value="16" />
+        </div>
+        <div>
+          <label for="ecl">Error correction</label>
+          <select id="ecl">
+            <option value="L">L (smallest, ~7% recovery)</option>
+            <option value="M" selected>M (~15%)</option>
+            <option value="Q">Q (~25%)</option>
+            <option value="H">H (highest, ~30%)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn-primary">Generate</button>
+        <button type="button" id="download" class="btn-secondary" disabled>Download PNG</button>
+        <button type="reset"  id="reset" class="btn-secondary">Reset</button>
+      </div>
+    </form>
+
+    <div class="preview">
+      <div class="qrcard" id="qr-box"><span style="color:#999">Preview</span></div>
+      <div class="meta">
+        <p><strong>Encoded text:</strong> <span id="encoded">—</span></p>
+        <p><strong>Tip:</strong> Print on matte waterproof labels. For small tags (&lt;30&nbsp;mm), prefer size ≥ 256 px and ECL = H.</p>
+      </div>
+    </div>
+
+    <div class="foot">
+      Scanning opens the encoded URL or ID-based page. If you want short links (easier to print), consider using your own short domain and 301 redirects later — we can add that when you’re ready.
+    </div>
+  </div>
+
+  <!-- Lightweight QR library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-M0H9Q7Z4c7p/3SBIoV6Fq6QkTz9xF0G5kXb4Pnw/9uKZz2VXLu3wrZx1z1Qq3h6kWmH9p0uFh0Q2tO3QGv7U7w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    const $ = s => document.querySelector(s);
+
+    const form = $('#qr-form');
+    const modeUrl = $('#mode-url');
+    const modeId  = $('#mode-id');
+    const urlFields = $('#url-fields');
+    const idFields  = $('#id-fields');
+
+    const fullUrl = $('#fullUrl');
+    const baseUrl = $('#baseUrl');
+    const treeId  = $('#treeId');
+
+    const sizeInp = $('#size');
+    const marginInp = $('#margin');
+    const eclSel = $('#ecl');
+
+    const qrBox = $('#qr-box');
+    const encodedEl = $('#encoded');
+    const downloadBtn = $('#download');
+
+    let currentCanvas = null;
+    let mode = 'url'; // 'url' or 'id'
+
+    function setMode(next){
+      if (mode === next) return;
+      mode = next;
+      const isUrl = mode === 'url';
+      modeUrl.classList.toggle('active', isUrl);
+      modeId.classList.toggle('active', !isUrl);
+      modeUrl.setAttribute('aria-pressed', String(isUrl));
+      modeId.setAttribute('aria-pressed', String(!isUrl));
+      urlFields.style.display = isUrl ? '' : 'none';
+      idFields.style.display  = isUrl ? 'none' : '';
+      clearErrors();
+      encodedEl.textContent = '—';
+      qrBox.innerHTML = '<span style="color:#999">Preview</span>';
+      downloadBtn.disabled = true;
+      currentCanvas = null;
+    }
+
+    modeUrl.addEventListener('click', () => setMode('url'));
+    modeId .addEventListener('click', () => setMode('id'));
+
+    function sanitizeUrl(u){
+      if (!u) return '';
+      let v = u.trim();
+      if (!/^https?:\/\//i.test(v)) v = 'https://' + v; // ensure protocol
+      return v;
+    }
+
+    function buildText(){
+      if (mode === 'url') {
+        const u = sanitizeUrl(fullUrl.value);
+        return u;
+      } else {
+        const base = sanitizeUrl(baseUrl.value);
+        const id = (treeId.value || '').trim();
+        if (!base) return '';
+        if (!id) return '';
+        // combine with single slash and encode the ID safely
+        const joiner = base.endsWith('/') ? '' : '/';
+        return base + joiner + encodeURIComponent(id);
+      }
+    }
+
+    function clearErrors(){
+      [fullUrl, baseUrl, treeId].forEach(el => el && el.classList.remove('error'));
+    }
+
+    function markError(el){
+      el.classList.add('error');
+      el.focus();
+    }
+
+    function correctLevel(letter){
+      const map = { L: QRCode.CorrectLevel.L, M: QRCode.CorrectLevel.M, Q: QRCode.CorrectLevel.Q, H: QRCode.CorrectLevel.H };
+      return map[letter] || QRCode.CorrectLevel.M;
+    }
+
+    function generate(e){
+      e.preventDefault();
+      clearErrors();
+
+      const txt = buildText();
+      if (!txt) {
+        if (mode === 'url') markError(fullUrl);
+        else {
+          if (!baseUrl.value.trim()) markError(baseUrl);
+          else markError(treeId);
+        }
+        return;
+      }
+
+      const size = Math.max(128, Math.min(1024, parseInt(sizeInp.value || '256', 10)));
+      const margin = Math.max(0, Math.min(64, parseInt(marginInp.value || '16', 10)));
+      const level = correctLevel(eclSel.value);
+
+      // Build a fresh QR in a temp div
+      const tmp = document.createElement('div');
+      tmp.style.position = 'absolute';
+      tmp.style.left = '-99999px';
+      document.body.appendChild(tmp);
+
+      tmp.innerHTML = ''; // safety
+      new QRCode(tmp, {
+        text: txt,
+        width: size,
+        height: size,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: level
+      });
+
+      // Get canvas (library usually renders to canvas; fallback to <img>)
+      let qrCanvas = tmp.querySelector('canvas');
+      if (!qrCanvas) {
+        const img = tmp.querySelector('img');
+        // draw image onto canvas to control margins / download
+        const c = document.createElement('canvas');
+        c.width = size; c.height = size;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size);
+        if (img.complete) ctx.drawImage(img, 0, 0, size, size);
+        else img.onload = () => ctx.drawImage(img, 0, 0, size, size);
+        qrCanvas = c;
+      }
+
+      // Add white margin by drawing onto a larger canvas
+      const outCanvas = document.createElement('canvas');
+      outCanvas.width = size + margin * 2;
+      outCanvas.height = size + margin * 2;
+      const ctx2 = outCanvas.getContext('2d');
+      ctx2.fillStyle = '#fff';
+      ctx2.fillRect(0,0,outCanvas.width,outCanvas.height);
+      ctx2.drawImage(qrCanvas, margin, margin);
+
+      // Update preview
+      qrBox.innerHTML = '';
+      const preview = document.createElement('img');
+      preview.alt = 'QR preview';
+      preview.src = outCanvas.toDataURL('image/png');
+      qrBox.appendChild(preview);
+
+      // Cleanup temp
+      tmp.remove();
+
+      currentCanvas = outCanvas;
+      encodedEl.textContent = txt;
+      downloadBtn.disabled = false;
+    }
+
+    function downloadPng(){
+      if (!currentCanvas) return;
+      const link = document.createElement('a');
+      link.download = 'ara-qr.png';
+      link.href = currentCanvas.toDataURL('image/png');
+      link.click();
+    }
+
+    form.addEventListener('submit', generate);
+    downloadBtn.addEventListener('click', downloadPng);
+
+    form.addEventListener('reset', () => {
+      setTimeout(() => {
+        clearErrors();
+        encodedEl.textContent = '—';
+        qrBox.innerHTML = '<span style="color:#999">Preview</span>';
+        downloadBtn.disabled = true;
+        currentCanvas = null;
+      }, 0);
+    });
+  </script>
+</body>
+</html>
