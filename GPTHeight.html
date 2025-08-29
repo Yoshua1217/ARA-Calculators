@@ -6,7 +6,6 @@
   <title>ARA Tree Height Calculator</title>
   <style>
     :root { --radius: 12px; }
-    /* Make widths include padding/borders so inputs match the info box exactly */
     .card, .card * { box-sizing: border-box; }
 
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
@@ -24,11 +23,17 @@
       border-radius: 8px;
       font-size: 1rem;
     }
+    /* Red outline when invalid (after a submit attempt) */
+    input.error {
+      border-color: #e11900;
+      box-shadow: 0 0 0 3px rgba(225, 25, 0, 0.15);
+      outline: none;
+    }
 
     button { margin-top:14px; padding:10px 14px; border:0; border-radius:8px; cursor:pointer; }
     .btn { background:#111; color:#fff; }
     .result { margin-top:16px; font-size:1.2rem; font-weight:700; }
-    .foot { margin-top:18px; font-size: .9rem; color:#666; }
+    .foot { margin-top:18px; font-size:.9rem; color:#666; line-height:1.35; }
     form { margin: 0; }
   </style>
 </head>
@@ -37,7 +42,7 @@
     <h1>ARA Tree Height Calculator</h1>
     <p class="sub">Ancient Roots Alberta</p>
 
-    <div class="note"><strong>Manual formula:</strong> height = tan(angle°) × distance + eye height.  
+    <div class="note"><strong>Manual formula:</strong> height = tan(angle°) × distance + eye height.
     You don’t need to do this by hand—this calculator applies it automatically.</div>
 
     <form id="calc-form" action="#">
@@ -54,27 +59,58 @@
     </form>
 
     <div class="result" id="out" aria-live="polite">—</div>
-    <div class="foot">Outputs in meters and feet. Angle must be in degrees.</div>
+
+    <div class="foot">
+      Outputs in meters and feet. Angle must be in degrees.<br>
+      <strong>ARA nomination form note:</strong> ARA accepts values in <strong>meters only</strong>.
+      Enter <strong>pure numbers</strong> (no units or letters) — e.g., <code>4.34</code>, not <code>4.34 m</code>.
+    </div>
   </div>
 
   <script>
     function tanDeg(d){ return Math.tan(d * Math.PI / 180); }
 
     function calculate(e){
-      if (e) e.preventDefault();
+      e.preventDefault(); // stop page refresh
+      const form = document.getElementById('calc-form');
+      if (!form.checkValidity()) {
+        // Let the browser show its native popup, and mark invalid inputs red
+        markInvalids();
+        return;
+      }
+      clearErrors();
+
       const a  = parseFloat(document.getElementById('angle').value);
       const d  = parseFloat(document.getElementById('distance').value);
       const eH = parseFloat(document.getElementById('eye').value);
-      const out = document.getElementById('out');
 
-      if ([a,d,eH].some(v => Number.isNaN(v))) {
-        out.textContent = 'Please enter all three numbers.';
-        return;
-      }
       const h = tanDeg(a) * d + eH;
       const feet = h * 3.28084;
-      out.textContent = `Height ≈ ${h.toFixed(2)} m (${feet.toFixed(1)} ft)`;
+      document.getElementById('out').textContent =
+        `Height ≈ ${h.toFixed(2)} m (${feet.toFixed(1)} ft)`;
     }
+
+    // Add red outline when the browser flags a field as invalid
+    function markInvalids(){
+      document.querySelectorAll('#calc-form input').forEach(inp => {
+        if (!inp.validity.valid) inp.classList.add('error');
+      });
+    }
+    // Remove red outline for fields that become valid
+    function clearErrors(){
+      document.querySelectorAll('#calc-form input.error').forEach(inp => {
+        if (inp.validity.valid) inp.classList.remove('error');
+      });
+    }
+
+    // Live cleanup as the user types
+    document.querySelectorAll('#calc-form input').forEach(inp => {
+      inp.addEventListener('input', () => {
+        if (inp.validity.valid) inp.classList.remove('error');
+      });
+      // Also catch the moment a field fails validation on submit
+      inp.addEventListener('invalid', () => inp.classList.add('error'));
+    });
 
     document.getElementById('calc-form').addEventListener('submit', calculate);
   </script>
