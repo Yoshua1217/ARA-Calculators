@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ARA Tree Height Calculator</title>
   <style>
-    :root { --radius: 12px; }
+    :root { --radius: 12px; --dark:#111; --light:#f2f2f2; }
     .card, .card * { box-sizing: border-box; }
 
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
@@ -14,24 +14,35 @@
     .sub { margin: 0 0 16px; color: #555; }
     .note { width: 100%; background: #f7f7f7; padding: 10px 12px; border-radius: var(--radius); border: 1px solid #e7e7e7; margin-bottom: 16px; }
 
+    /* Unit toggle */
+    .unit-toggle { display:flex; gap:8px; margin: 0 0 10px; }
+    .toggle-btn {
+      padding:8px 12px; border:1px solid #ccc; border-radius:8px; background: var(--light);
+      cursor:pointer; user-select:none;
+    }
+    .toggle-btn.active {
+      background: var(--dark); color:#fff; border-color: var(--dark);
+    }
+    .toggle-btn:focus-visible { outline:2px solid var(--dark); outline-offset:2px; }
+
     label { display:block; margin: 12px 0 6px; font-weight:600; }
     input[type="number"] {
-      width: 100%;
-      display: block;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1rem;
+      width: 100%; display: block; padding: 10px;
+      border: 1px solid #ccc; border-radius: 8px; font-size: 1rem;
     }
-    /* Red outline when invalid (after a submit attempt) */
+    /* Red outline when invalid */
     input.error {
       border-color: #e11900;
       box-shadow: 0 0 0 3px rgba(225, 25, 0, 0.15);
       outline: none;
     }
 
-    button { margin-top:14px; padding:10px 14px; border:0; border-radius:8px; cursor:pointer; }
-    .btn { background:#111; color:#fff; }
+    .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
+    button { padding:10px 14px; border:0; border-radius:8px; cursor:pointer; }
+    .btn-primary { background: var(--dark); color:#fff; }
+    .btn-secondary { background:#e9e9e9; color:#111; }
+    button[disabled]{ opacity:.6; cursor:not-allowed; }
+
     .result { margin-top:16px; font-size:1.2rem; font-weight:700; }
     .foot { margin-top:18px; font-size:.9rem; color:#666; line-height:1.35; }
     form { margin: 0; }
@@ -40,22 +51,32 @@
 <body>
   <div class="card">
     <h1>ARA Tree Height Calculator</h1>
-    <p class="sub">Made by: Ancient Roots Alberta</p>
+    <p class="sub">Ancient Roots Alberta</p>
 
     <div class="note"><strong>Manual formula:</strong> height = tan(angle°) × distance + eye height.
-    You don’t need to do this by hand—this calculator applies it automatically.</div>
+      You don’t need to do this by hand—this calculator applies it automatically.</div>
+
+    <!-- Input unit toggle -->
+    <div class="unit-toggle" role="group" aria-label="Input units">
+      <button type="button" id="unit-m"  class="toggle-btn active" aria-pressed="true">Meters (m)</button>
+      <button type="button" id="unit-ft" class="toggle-btn" aria-pressed="false">Feet (ft)</button>
+    </div>
 
     <form id="calc-form" action="#">
       <label for="angle">Angle to top (degrees)</label>
       <input id="angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5" required />
 
-      <label for="distance">Distance to trunk (meters)</label>
+      <label for="distance">Distance to trunk (<span id="unit-label-1">m</span>)</label>
       <input id="distance" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 23.4" required />
 
-      <label for="eye">Eye height (meters)</label>
+      <label for="eye">Eye height (<span id="unit-label-2">m</span>)</label>
       <input id="eye" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 1.62" required />
 
-      <button type="submit" class="btn">Calculate height</button>
+      <div class="btn-row" style="margin-top:14px;">
+        <button type="submit"  class="btn-primary">Calculate height</button>
+        <button type="button" id="copy"  class="btn-secondary" disabled title="Copies meters value only">Copy result (m)</button>
+        <button type="button" id="reset" class="btn-secondary">Reset</button>
+      </div>
     </form>
 
     <div class="result" id="out" aria-live="polite">—</div>
@@ -68,51 +89,136 @@
   </div>
 
   <script>
+    // --- Utilities ---
+    const FT_PER_M = 3.28084, M_PER_FT = 0.3048;
+    const $ = (s) => document.querySelector(s);
+
+    const form = $('#calc-form');
+    const angle = $('#angle');
+    const distance = $('#distance');
+    const eye = $('#eye');
+    const out = $('#out');
+    const copyBtn = $('#copy');
+    const resetBtn = $('#reset');
+    const unitM = $('#unit-m');
+    const unitFt = $('#unit-ft');
+    const unitLabel1 = $('#unit-label-1');
+    const unitLabel2 = $('#unit-label-2');
+
+    let inputUnit = 'm';            // 'm' or 'ft'
+    let lastMetersStr = '';         // last calculated meters string (2 decimals)
+
     function tanDeg(d){ return Math.tan(d * Math.PI / 180); }
 
+    function setActiveUnit(newUnit){
+      if (newUnit === inputUnit) return;
+
+      // convert existing values to the new unit so they stay numerically consistent
+      const fields = [distance, eye];
+      fields.forEach(inp => {
+        const v = parseFloat(inp.value);
+        if (!Number.isNaN(v)) {
+          inp.value = (newUnit === 'ft')
+            ? (v * FT_PER_M).toFixed(2)     // m -> ft
+            : (v * M_PER_FT).toFixed(2);    // ft -> m
+        }
+      });
+
+      inputUnit = newUnit;
+      // toggle button styles + aria
+      const isM = inputUnit === 'm';
+      unitM.classList.toggle('active', isM);
+      unitFt.classList.toggle('active', !isM);
+      unitM.setAttribute('aria-pressed', String(isM));
+      unitFt.setAttribute('aria-pressed', String(!isM));
+
+      // update unit labels + placeholders
+      unitLabel1.textContent = isM ? 'm' : 'ft';
+      unitLabel2.textContent = isM ? 'm' : 'ft';
+      distance.placeholder = isM ? 'e.g. 23.4' : 'e.g. 76.8';
+      eye.placeholder = isM ? 'e.g. 1.62' : 'e.g. 5.31';
+    }
+
+    function markInvalids(){
+      [angle, distance, eye].forEach(inp => {
+        if (!inp.validity.valid) inp.classList.add('error');
+      });
+    }
+    function clearErrors(){
+      [angle, distance, eye].forEach(inp => inp.classList.remove('error'));
+    }
+
     function calculate(e){
-      e.preventDefault(); // stop page refresh
-      const form = document.getElementById('calc-form');
+      e.preventDefault();
       if (!form.checkValidity()) {
-        // Let the browser show its native popup, and mark invalid inputs red
-        markInvalids();
+        markInvalids(); // keep native popup and add red outline
         return;
       }
       clearErrors();
 
-      const a  = parseFloat(document.getElementById('angle').value);
-      const d  = parseFloat(document.getElementById('distance').value);
-      const eH = parseFloat(document.getElementById('eye').value);
+      const a = parseFloat(angle.value);
+      const d = parseFloat(distance.value);
+      const eH = parseFloat(eye.value);
 
-      const h = tanDeg(a) * d + eH;
-      const feet = h * 3.28084;
-      document.getElementById('out').textContent =
-        `Height ≈ ${h.toFixed(2)} m (${feet.toFixed(1)} ft)`;
+      // interpret inputs in selected unit
+      const dMeters = inputUnit === 'm' ? d : d * M_PER_FT;
+      const eMeters = inputUnit === 'm' ? eH : eH * M_PER_FT;
+
+      const h = tanDeg(a) * dMeters + eMeters;     // meters
+      const feet = h * FT_PER_M;
+
+      const metersStr = h.toFixed(2);
+      const feetStr   = feet.toFixed(2);
+
+      lastMetersStr = metersStr;
+      out.textContent = `Height ≈ ${metersStr} m (${feetStr} ft)`;
+
+      copyBtn.disabled = false;
+      copyBtn.textContent = 'Copy result (m)';
     }
 
-    // Add red outline when the browser flags a field as invalid
-    function markInvalids(){
-      document.querySelectorAll('#calc-form input').forEach(inp => {
-        if (!inp.validity.valid) inp.classList.add('error');
-      });
-    }
-    // Remove red outline for fields that become valid
-    function clearErrors(){
-      document.querySelectorAll('#calc-form input.error').forEach(inp => {
-        if (inp.validity.valid) inp.classList.remove('error');
-      });
+    async function copyMeters(){
+      if (!lastMetersStr) return;
+      try {
+        await navigator.clipboard.writeText(lastMetersStr);
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyBtn.textContent = 'Copy result (m)'; }, 1200);
+      } catch {
+        // fallback: create temp input
+        const temp = document.createElement('input');
+        temp.value = lastMetersStr;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyBtn.textContent = 'Copy result (m)'; }, 1200);
+      }
     }
 
-    // Live cleanup as the user types
-    document.querySelectorAll('#calc-form input').forEach(inp => {
-      inp.addEventListener('input', () => {
-        if (inp.validity.valid) inp.classList.remove('error');
-      });
-      // Also catch the moment a field fails validation on submit
+    function resetAll(){
+      form.reset();
+      clearErrors();
+      out.textContent = '—';
+      lastMetersStr = '';
+      copyBtn.disabled = true;
+      copyBtn.textContent = 'Copy result (m)';
+      // preserve current unit selection; placeholders may need resetting:
+      const isM = inputUnit === 'm';
+      distance.placeholder = isM ? 'e.g. 23.4' : 'e.g. 76.8';
+      eye.placeholder = isM ? 'e.g. 1.62' : 'e.g. 5.31';
+    }
+
+    // Events
+    form.addEventListener('submit', calculate);
+    copyBtn.addEventListener('click', copyMeters);
+    resetBtn.addEventListener('click', resetAll);
+    [angle, distance, eye].forEach(inp => {
+      inp.addEventListener('input', () => { if (inp.validity.valid) inp.classList.remove('error'); });
       inp.addEventListener('invalid', () => inp.classList.add('error'));
     });
-
-    document.getElementById('calc-form').addEventListener('submit', calculate);
+    unitM.addEventListener('click', () => setActiveUnit('m'));
+    unitFt.addEventListener('click', () => setActiveUnit('ft'));
   </script>
 </body>
 </html>
