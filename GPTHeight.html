@@ -6,17 +6,30 @@
   <title>ARA Tree Height Calculator</title>
   <style>
     :root { --radius: 12px; }
+    /* Make widths include padding/borders so inputs match the info box exactly */
+    .card, .card * { box-sizing: border-box; }
+
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
     .card { max-width: 640px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: var(--radius); }
     h1 { margin: 0 0 10px; font-size: 1.6rem; }
     .sub { margin: 0 0 16px; color: #555; }
-    .note { background: #f7f7f7; padding: 10px 12px; border-radius: var(--radius); border: 1px solid #e7e7e7; margin-bottom: 16px; }
+    .note { width: 100%; background: #f7f7f7; padding: 10px 12px; border-radius: var(--radius); border: 1px solid #e7e7e7; margin-bottom: 16px; }
+
     label { display:block; margin: 12px 0 6px; font-weight:600; }
-    input { width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; font-size: 1rem; }
+    input[type="number"] {
+      width: 100%;
+      display: block;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
     button { margin-top:14px; padding:10px 14px; border:0; border-radius:8px; cursor:pointer; }
     .btn { background:#111; color:#fff; }
     .result { margin-top:16px; font-size:1.2rem; font-weight:700; }
     .foot { margin-top:18px; font-size: .9rem; color:#666; }
+    form { margin: 0; }
   </style>
 </head>
 <body>
@@ -27,7 +40,6 @@
     <div class="note"><strong>Manual formula:</strong> height = tan(angle°) × distance + eye height.  
     You don’t need to do this by hand—this calculator applies it automatically.</div>
 
-    <!-- Wrap inputs in a form so Enter submits -->
     <form id="calc-form" action="#">
       <label for="angle">Angle to top (degrees)</label>
       <input id="angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5" required />
@@ -42,7 +54,6 @@
     </form>
 
     <div class="result" id="out" aria-live="polite">—</div>
-
     <div class="foot">Outputs in meters and feet. Angle must be in degrees.</div>
   </div>
 
@@ -50,11 +61,9 @@
     function tanDeg(d){ return Math.tan(d * Math.PI / 180); }
 
     function calculate(e){
-      // prevent page reload on form submit
       if (e) e.preventDefault();
-
-      const a = parseFloat(document.getElementById('angle').value);
-      const d = parseFloat(document.getElementById('distance').value);
+      const a  = parseFloat(document.getElementById('angle').value);
+      const d  = parseFloat(document.getElementById('distance').value);
       const eH = parseFloat(document.getElementById('eye').value);
       const out = document.getElementById('out');
 
@@ -67,7 +76,6 @@
       out.textContent = `Height ≈ ${h.toFixed(2)} m (${feet.toFixed(1)} ft)`;
     }
 
-    // Enter anywhere in the form triggers submit -> calculate()
     document.getElementById('calc-form').addEventListener('submit', calculate);
   </script>
 </body>
