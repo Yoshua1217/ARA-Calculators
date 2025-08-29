@@ -20,12 +20,7 @@
     }
     input.error { border-color:#e11900; box-shadow:0 0 0 3px rgba(225,25,0,.15); outline: none; }
 
-    .mode { display:flex; gap:8px; margin: 0 0 8px; }
-    .toggle-btn { padding:8px 12px; border:1px solid #ccc; border-radius:8px; background: var(--light); cursor:pointer; user-select:none; }
-    .toggle-btn.active { background: var(--dark); color:#fff; border-color: var(--dark); }
-    .toggle-btn:focus-visible { outline:2px solid var(--dark); outline-offset:2px; }
-
-    .row3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
     .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top: 14px; }
     button, a.button { padding:10px 14px; border:0; border-radius:8px; cursor:pointer; display:inline-block; text-decoration:none; text-align:center; }
@@ -45,29 +40,12 @@
     <p class="sub">Ancient Roots Alberta</p>
 
     <div class="note">
-      Paste a URL (or Base URL + Tree ID), choose size/error-correction, then Generate. We use image-only endpoints so it works inside Notion embeds.
-    </div>
-
-    <!-- Mode -->
-    <div class="mode" role="group" aria-label="QR content mode">
-      <button type="button" id="mode-url" class="toggle-btn active" aria-pressed="true">Full URL</button>
-      <button type="button" id="mode-id"  class="toggle-btn" aria-pressed="false">Tree ID + Base URL</button>
+      Paste a full URL, choose size/error-correction, then Generate. Image-only endpoints are used so it works inside Notion embeds.
     </div>
 
     <form id="qr-form" action="#">
-      <!-- URL mode -->
-      <div id="url-fields">
-        <label for="fullUrl">URL to encode</label>
-        <input id="fullUrl" type="text" placeholder="e.g. https://ancientrootsab.ca/tree/12345" />
-      </div>
-
-      <!-- ID mode -->
-      <div id="id-fields" style="display:none;">
-        <label for="baseUrl">Base URL (prefix)</label>
-        <input id="baseUrl" type="text" placeholder="e.g. https://ancientrootsab.ca/t/" />
-        <label for="treeId">Tree ID (suffix)</label>
-        <input id="treeId" type="text" placeholder="e.g. ARA-000123" />
-      </div>
+      <label for="fullUrl">URL to encode</label>
+      <input id="fullUrl" type="text" placeholder="e.g. https://ancientrootsab.ca/tree/12345" />
 
       <div class="row3">
         <div>
@@ -105,7 +83,7 @@
     </div>
 
     <div class="foot">
-      If your network blocks one QR host, this tool automatically falls back to another. You can right-click the preview to save, or use **Open PNG**.
+      If one QR host is blocked by the network, this tool automatically falls back to another. You can right-click the preview to save, or use <strong>Open PNG</strong>.
     </div>
   </div>
 
@@ -113,45 +91,16 @@
     const $ = s => document.querySelector(s);
 
     const form = $('#qr-form');
-    const modeUrl = $('#mode-url');
-    const modeId  = $('#mode-id');
-    const urlFields = $('#url-fields');
-    const idFields  = $('#id-fields');
-
     const fullUrl = $('#fullUrl');
-    const baseUrl = $('#baseUrl');
-    const treeId  = $('#treeId');
-
-    const sizeInp   = $('#size');
+    const sizeInp = $('#size');
     const marginInp = $('#margin');
-    const eclSel    = $('#ecl');
+    const eclSel = $('#ecl');
 
     const qrBox = $('#qr-box');
     const encodedEl = $('#encoded');
     const openPng = $('#openpng');
 
-    let mode = 'url'; // 'url' or 'id'
     let triedFallback = false;
-
-    function setMode(next){
-      if (mode === next) return;
-      mode = next;
-      const isUrl = mode === 'url';
-      modeUrl.classList.toggle('active', isUrl);
-      modeId.classList.toggle('active', !isUrl);
-      modeUrl.setAttribute('aria-pressed', String(isUrl));
-      modeId.setAttribute('aria-pressed', String(!isUrl));
-      urlFields.style.display = isUrl ? '' : 'none';
-      idFields.style.display  = isUrl ? 'none' : '';
-      clearErrors();
-      setPreview(null, 'Preview');
-      openPng.classList.add('disabled');
-      openPng.href = '#';
-      triedFallback = false;
-    }
-
-    modeUrl.addEventListener('click', () => setMode('url'));
-    modeId .addEventListener('click', () => setMode('id'));
 
     function sanitizeUrl(u){
       if (!u) return '';
@@ -159,27 +108,8 @@
       if (!/^https?:\/\//i.test(v)) v = 'https://' + v; // ensure protocol
       return v;
     }
-
-    function buildText(){
-      if (mode === 'url') {
-        const u = sanitizeUrl(fullUrl.value);
-        return u;
-      } else {
-        const base = sanitizeUrl(baseUrl.value);
-        const id = (treeId.value || '').trim();
-        if (!base || !id) return '';
-        const joiner = base.endsWith('/') ? '' : '/';
-        return base + joiner + encodeURIComponent(id);
-      }
-    }
-
-    function clearErrors(){
-      [fullUrl, baseUrl, treeId].forEach(el => el && el.classList.remove('error'));
-    }
-    function markError(el){
-      el.classList.add('error');
-      el.focus();
-    }
+    function clearErrors(){ fullUrl.classList.remove('error'); }
+    function markError(el){ el.classList.add('error'); el.focus(); }
 
     function setPreview(src, fallbackText){
       qrBox.innerHTML = '';
@@ -189,8 +119,6 @@
         img.decoding = 'async';
         img.loading = 'lazy';
         img.src = src;
-
-        // If primary host fails, try fallback automatically once
         img.onerror = () => {
           if (triedFallback) {
             setPreview(null, 'Could not load QR (network blocked?)');
@@ -198,16 +126,30 @@
             openPng.href = '#';
           } else {
             triedFallback = true;
-            const fb = buildFallbackUrl();
+            const fb = buildFallbackUrl(encodedEl.textContent, getSize(), getMargin(), getEcl());
             img.src = fb;
             openPng.href = fb;
           }
         };
-
         qrBox.appendChild(img);
       } else {
         qrBox.innerHTML = `<span style="color:#999">${fallbackText}</span>`;
       }
+    }
+
+    function getSize(){
+      const n = parseInt(sizeInp.value, 10);
+      if (Number.isNaN(n)) return 256;
+      return Math.max(128, Math.min(1024, n));
+    }
+    function getMargin(){
+      const n = parseInt(marginInp.value, 10);
+      if (Number.isNaN(n)) return 8;
+      return Math.max(0, Math.min(32, n));
+    }
+    function getEcl(){
+      const v = (eclSel.value || 'M').toUpperCase();
+      return ['L','M','Q','H'].includes(v) ? v : 'M';
     }
 
     function buildPrimaryUrl(txt, size, ecl, margin){
@@ -220,26 +162,15 @@
       return u.toString();
     }
 
-    function buildFallbackUrl(){
-      // Uses last known inputs
-      const txt = encodedEl.textContent === '—' ? '' : encodedEl.textContent;
-      const size = clampInt(sizeInp.value, 128, 1024, 256);
-      const margin = clampInt(marginInp.value, 0, 32, 8);
-      const ecc = (eclSel.value || 'M').toUpperCase();
+    function buildFallbackUrl(txt, size, margin, ecl){
       // goqr: https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=...&margin=8&ecc=M
       const u = new URL('https://api.qrserver.com/v1/create-qr-code/');
       u.searchParams.set('size', `${size}x${size}`);
       u.searchParams.set('data', txt);
       u.searchParams.set('margin', String(margin));
-      u.searchParams.set('ecc', ecc);
+      u.searchParams.set('ecc', ecl);
       u.searchParams.set('format', 'png');
       return u.toString();
-    }
-
-    function clampInt(v, min, max, def){
-      const n = parseInt(v, 10);
-      if (Number.isNaN(n)) return def;
-      return Math.max(min, Math.min(max, n));
     }
 
     function generate(e){
@@ -247,18 +178,14 @@
       clearErrors();
       triedFallback = false;
 
-      const txt = buildText();
-      if (!txt) {
-        if (mode === 'url') markError(fullUrl);
-        else { if (!baseUrl.value.trim()) markError(baseUrl); else markError(treeId); }
-        return;
-      }
+      const txt = sanitizeUrl(fullUrl.value);
+      if (!txt) { markError(fullUrl); return; }
 
-      const size = clampInt(sizeInp.value, 128, 1024, 256);
-      const margin = clampInt(marginInp.value, 0, 32, 8);
-      const ecl = (eclSel.value || 'M').toUpperCase();
+      const size = getSize();
+      const margin = getMargin();
+      const ecl = getEcl();
 
-      const imgUrl = buildPrimaryUrl(txt, size, ecl, margin);
+      const imgUrl = buildPrimaryUrl(encodeURI(txt), size, ecl, margin);
 
       encodedEl.textContent = txt;
       openPng.classList.remove('disabled');
