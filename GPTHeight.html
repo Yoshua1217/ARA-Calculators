@@ -27,41 +27,48 @@
     <div class="note"><strong>Manual formula:</strong> height = tan(angle°) × distance + eye height.  
     You don’t need to do this by hand—this calculator applies it automatically.</div>
 
-    <label for="angle">Angle to top (degrees)</label>
-    <input id="angle" type="number" step="0.1" placeholder="e.g. 37.5" />
+    <!-- Wrap inputs in a form so Enter submits -->
+    <form id="calc-form" action="#">
+      <label for="angle">Angle to top (degrees)</label>
+      <input id="angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5" required />
 
-    <label for="distance">Distance to trunk (meters)</label>
-    <input id="distance" type="number" step="0.01" placeholder="e.g. 23.4" />
+      <label for="distance">Distance to trunk (meters)</label>
+      <input id="distance" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 23.4" required />
 
-    <label for="eye">Eye height (meters)</label>
-    <input id="eye" type="number" step="0.01" placeholder="e.g. 1.62" />
+      <label for="eye">Eye height (meters)</label>
+      <input id="eye" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 1.62" required />
 
-    <button id="calc" class="btn">Calculate height</button>
-    <div class="result" id="out">—</div>
+      <button type="submit" class="btn">Calculate height</button>
+    </form>
+
+    <div class="result" id="out" aria-live="polite">—</div>
 
     <div class="foot">Outputs in meters and feet. Angle must be in degrees.</div>
   </div>
 
   <script>
     function tanDeg(d){ return Math.tan(d * Math.PI / 180); }
-    function calculate(){
+
+    function calculate(e){
+      // prevent page reload on form submit
+      if (e) e.preventDefault();
+
       const a = parseFloat(document.getElementById('angle').value);
       const d = parseFloat(document.getElementById('distance').value);
-      const e = parseFloat(document.getElementById('eye').value);
+      const eH = parseFloat(document.getElementById('eye').value);
       const out = document.getElementById('out');
-      if ([a,d,e].some(v => Number.isNaN(v))) {
+
+      if ([a,d,eH].some(v => Number.isNaN(v))) {
         out.textContent = 'Please enter all three numbers.';
         return;
       }
-      const h = tanDeg(a) * d + e;
+      const h = tanDeg(a) * d + eH;
       const feet = h * 3.28084;
       out.textContent = `Height ≈ ${h.toFixed(2)} m (${feet.toFixed(1)} ft)`;
     }
-    document.getElementById('calc').addEventListener('click', calculate);
-    // Optional: press Enter in any field to calculate
-    document.querySelectorAll('input').forEach(i => {
-      i.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
-    });
+
+    // Enter anywhere in the form triggers submit -> calculate()
+    document.getElementById('calc-form').addEventListener('submit', calculate);
   </script>
 </body>
 </html>
