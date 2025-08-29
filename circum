@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ARA DBH ↔ Circumference + Basal Area</title>
+  <style>
+    :root { --radius:12px; --dark:#111; --light:#f2f2f2; }
+    .card, .card * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:24px; }
+    .card { max-width: 640px; margin:0 auto; padding:20px; border:1px solid #ddd; border-radius:var(--radius); }
+    h1 { margin:0 0 10px; font-size:1.6rem; }
+    .sub { margin:0 0 16px; color:#555; }
+    .note { width:100%; background:#f7f7f7; padding:10px 12px; border-radius:var(--radius); border:1px solid #e7e7e7; margin-bottom:16px; }
+    label { display:block; margin:12px 0 6px; font-weight:600; }
+    input[type="number"] { width:100%; display:block; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:1rem; }
+    input.error{ border-color:#e11900; box-shadow:0 0 0 3px rgba(225,25,0,.15); outline:none; }
+    .help { margin:8px 0 6px; color:#444; font-size:.95rem; }
+    .unit-toggle { display:flex; gap:8px; margin:0 0 10px; }
+    .toggle-btn { padding:8px 12px; border:1px solid #ccc; border-radius:8px; background:var(--light); cursor:pointer; user-select:none; }
+    .toggle-btn.active { background:var(--dark); color:#fff; border-color:var(--dark); }
+    .toggle-btn:focus-visible { outline:2px solid var(--dark); outline-offset:2px; }
+    .row { display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end; }
+    .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    button { padding:10px 14px; border:0; border-radius:8px; cursor:pointer; }
+    .btn-primary { background:var(--dark); color:#fff; }
+    .btn-secondary { background:#e9e9e9; color:#111; }
+    button[disabled]{ opacity:.6; cursor:not-allowed; }
+    .result { margin-top:16px; font-size:1.05rem; }
+    .result p { margin:6px 0; }
+    .foot { margin-top:18px; font-size:.9rem; color:#666; line-height:1.35; }
+    form { margin:0; }
+    code { background:#f2f2f2; padding:2px 6px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>ARA DBH ↔ Circumference + Basal Area</h1>
+    <p class="sub">Ancient Roots Alberta</p>
+
+    <div class="note">
+      Enter either <strong>Circumference</strong> or <strong>DBH</strong>. The other fields update automatically.
+      <br>Formulas: <code>C = π·D</code>, <code>D = C / π</code>, <code>Basal area = π·(D/2)²</code>.
+    </div>
+
+    <p class="help"><strong>Input units:</strong> applies to both circumference and DBH.</p>
+    <div class="unit-toggle" role="group" aria-label="Input units">
+      <button type="button" id="unit-m" class="toggle-btn active" aria-pressed="true">Meters (m)</button>
+      <button type="button" id="unit-ft" class="toggle-btn" aria-pressed="false">Feet (ft)</button>
+    </div>
+
+    <form id="form" action="#">
+      <label for="c">Circumference (<span id="u1">m</span>)</label>
+      <div class="row">
+        <input id="c" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 1.75" />
+        <button type="button" id="copy-c" class="btn-secondary" disabled title="Copy circumference (m)">Copy (m)</button>
+      </div>
+
+      <label for="d">DBH — diameter at breast height (<span id="u2">m</span>)</label>
+      <div class="row">
+        <input id="d" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 0.56" />
+        <button type="button" id="copy-d" class="btn-secondary" disabled title="Copy DBH (m)">Copy (m)</button>
+      </div>
+
+      <div class="btn-row">
+        <button type="reset" id="reset" class="btn-secondary">Reset</button>
+        <button type="submit" class="btn-primary" title="Format numbers to 2 decimals">Apply formatting (Enter)</button>
+      </div>
+
+      <div class="result" id="out">
+        <p><strong>Basal area:</strong> <span id="ba">—</span> <span id="ba-unit">m²</span></p>
+      </div>
+    </form>
+
+    <div class="foot">
+      <strong>ARA nomination form note:</strong> ARA accepts values in <strong>meters only</strong>.
+      Enter <strong>pure numbers</strong> (no units or letters) — e.g., <code>4.34</code>, not <code>4.34 m</code>.
+    </div>
+  </div>
+
+  <script>
+    const PI = Math.PI, FT_PER_M = 3.28084, M_PER_FT = 0.3048;
+    const $ = s => document.querySelector(s);
+
+    const form = $('#form');
+    const cInp = $('#c');      // circumference
+    const dInp = $('#d');      // dbh
+    const outBA = $('#ba');
+    const copyC = $('#copy-c');
+    const copyD = $('#copy-d');
+    const unitM = $('#unit-m');
+    const unitFt = $('#unit-ft');
+    const u1 = $('#u1'); const u2 = $('#u2');
+
+    let inputUnit = 'm';
+    let updating = false;
+
+    function toMeters(v) { return inputUnit === 'm' ? v : v * M_PER_FT; }
+    function fromMeters(v){ return inputUnit === 'm' ? v : v * FT_PER_M; }
+
+    function fmt2(x){ return Number.isFinite(x) ? x.toFixed(2) : ''; }
+    function fmt2orDash(x){ return Number.isFinite(x) ? x.toFixed(2) : '—'; }
+
+    function recalc(from){ // from = 'c' or 'd'
+      if (updating) return;
+      updating = true;
+
+      const cVal = parseFloat(cInp.value);
+      const dVal = parseFloat(dInp.value);
+
+      let cM = Number.isFinite(cVal) ? toMeters(cVal) : NaN;
+      let dM = Number.isFinite(dVal) ? toMeters(dVal) : NaN;
+
+      if (from === 'c') {
+        if (Number.isFinite(cM)) dM = cM / PI;
+        else dM = NaN;
+        dInp.value = Number.isFinite(dM) ? fmt2(fromMeters(dM)) : '';
+      } else if (from === 'd') {
+        if (Number.isFinite(dM)) cM = dM * PI;
+        else cM = NaN;
+        cInp.value = Number.isFinite(cM) ? fmt2(fromMeters(cM)) : '';
+      }
+
+      // Basal area (always in m²)
+      const ba = Number.isFinite(dM) ? (PI * Math.pow(dM/2, 2)) : NaN;
+      outBA.textContent = fmt2orDash(ba);
+
+      // Copy button enablement
+      copyC.disabled = !Number.isFinite(cM);
+      copyD.disabled = !Number.isFinite(dM);
+
+      updating = false;
+    }
+
+    function applyFormatting(e){
+      if (e) e.preventDefault();
+      if (cInp.value.trim() !== '') cInp.value = fmt2(parseFloat(cInp.value));
+      if (dInp.value.trim() !== '') dInp.value = fmt2(parseFloat(dInp.value));
+    }
+
+    function resetAll(){
+      setTimeout(() => {
+        cInp.value = ''; dInp.value = '';
+        outBA.textContent = '—';
+        copyC.disabled = true; copyD.disabled = true;
+        [cInp,dInp].forEach(i => i.classList.remove('error'));
+      }, 0);
+    }
+
+    function setActiveUnit(newUnit){
+      if (newUnit === inputUnit) return;
+      // Convert current numbers to the new unit so values stay consistent
+      [cInp, dInp].forEach(inp => {
+        const v = parseFloat(inp.value);
+        if (!Number.isNaN(v)) {
+          const m = toMeters(v);           // current -> meters
+          inputUnit = newUnit;             // switch
+          inp.value = fmt2(fromMeters(m)); // meters -> new unit
+        } else {
+          inputUnit = newUnit;             // still switch
+        }
+      });
+      const isM = inputUnit === 'm';
+      unitM.classList.toggle('active', isM);
+      unitFt.classList.toggle('active', !isM);
+      unitM.setAttribute('aria-pressed', String(isM));
+      unitFt.setAttribute('aria-pressed', String(!isM));
+      u1.textContent = isM ? 'm' : 'ft';
+      u2.textContent = isM ? 'm' : 'ft';
+      // Recompute BA from the current DBH (now in new unit)
+      recalc('d');
+    }
+
+    async function copyValue(inp, btn, label){
+      const v = inp.value.trim();
+      if (!v) { inp.classList.add('error'); inp.focus(); return; }
+      // Always copy meters value
+      const num = parseFloat(v);
+      const meters = toMeters(num);
+      const text = fmt2(meters);
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = 'Copied ✓';
+        setTimeout(() => btn.textContent = label, 1200);
+      } catch {
+        const tmp = document.createElement('input');
+        tmp.value = text; document.body.appendChild(tmp);
+        tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
+        btn.textContent = 'Copied ✓';
+        setTimeout(() => btn.textContent = label, 1200);
+      }
+    }
+
+    // Events
+    cInp.addEventListener('input', () => { cInp.classList.remove('error'); recalc('c'); });
+    dInp.addEventListener('input', () => { dInp.classList.remove('error'); recalc('d'); });
+    cInp.addEventListener('blur',  () => { if (cInp.value) cInp.value = fmt2(parseFloat(cInp.value)); });
+    dInp.addEventListener('blur',  () => { if (dInp.value) dInp.value = fmt2(parseFloat(dInp.value)); });
+    cInp.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); applyFormatting(); }});
+    dInp.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); applyFormatting(); }});
+    form.addEventListener('submit', applyFormatting);
+    form.addEventListener('reset', resetAll);
+    $('#copy-c').addEventListener('click', () => copyValue(cInp, copyC, 'Copy (m)'));
+    $('#copy-d').addEventListener('click', () => copyValue(dInp, copyD, 'Copy (m)'));
+    unitM.addEventListener('click', () => setActiveUnit('m'));
+    unitFt.addEventListener('click', () => setActiveUnit('ft'));
+
+    // Init
+    copyC.disabled = true; copyD.disabled = true;
+  </script>
+</body>
+</html>
