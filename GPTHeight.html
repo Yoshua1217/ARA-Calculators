@@ -15,6 +15,7 @@
     .note { width: 100%; background: #f7f7f7; padding: 10px 12px; border-radius: var(--radius); border: 1px solid #e7e7e7; margin-bottom: 16px; }
 
     /* Unit toggle */
+    .help { margin: 8px 0 6px; color:#444; font-size:.95rem; }
     .unit-toggle { display:flex; gap:8px; margin: 0 0 10px; }
     .toggle-btn {
       padding:8px 12px; border:1px solid #ccc; border-radius:8px; background: var(--light);
@@ -57,13 +58,14 @@
       You don’t need to do this by hand—this calculator applies it automatically.</div>
 
     <!-- Input unit toggle -->
+    <p class="help"><strong>Input units:</strong> applies to <em>distance</em> and <em>eye height</em>.</p>
     <div class="unit-toggle" role="group" aria-label="Input units">
       <button type="button" id="unit-m"  class="toggle-btn active" aria-pressed="true">Meters (m)</button>
       <button type="button" id="unit-ft" class="toggle-btn" aria-pressed="false">Feet (ft)</button>
     </div>
 
     <form id="calc-form" action="#">
-      <label for="angle">Angle to top (degrees)</label>
+      <label for="angle">Angle to top of the tree (degrees)</label>
       <input id="angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5" required />
 
       <label for="distance">Distance to trunk (<span id="unit-label-1">m</span>)</label>
@@ -75,7 +77,8 @@
       <div class="btn-row" style="margin-top:14px;">
         <button type="submit"  class="btn-primary">Calculate height</button>
         <button type="button" id="copy"  class="btn-secondary" disabled title="Copies meters value only">Copy result (m)</button>
-        <button type="button" id="reset" class="btn-secondary">Reset</button>
+        <!-- use native reset so it always works -->
+        <button type="reset"  id="reset" class="btn-secondary">Reset</button>
       </div>
     </form>
 
@@ -99,7 +102,6 @@
     const eye = $('#eye');
     const out = $('#out');
     const copyBtn = $('#copy');
-    const resetBtn = $('#reset');
     const unitM = $('#unit-m');
     const unitFt = $('#unit-ft');
     const unitLabel1 = $('#unit-label-1');
@@ -110,12 +112,17 @@
 
     function tanDeg(d){ return Math.tan(d * Math.PI / 180); }
 
+    function updatePlaceholders(){
+      const isM = inputUnit === 'm';
+      distance.placeholder = isM ? 'e.g. 23.4' : 'e.g. 76.8';
+      eye.placeholder = isM ? 'e.g. 1.62' : 'e.g. 5.31';
+    }
+
     function setActiveUnit(newUnit){
       if (newUnit === inputUnit) return;
 
       // convert existing values to the new unit so they stay numerically consistent
-      const fields = [distance, eye];
-      fields.forEach(inp => {
+      [distance, eye].forEach(inp => {
         const v = parseFloat(inp.value);
         if (!Number.isNaN(v)) {
           inp.value = (newUnit === 'ft')
@@ -125,18 +132,15 @@
       });
 
       inputUnit = newUnit;
-      // toggle button styles + aria
+
       const isM = inputUnit === 'm';
       unitM.classList.toggle('active', isM);
       unitFt.classList.toggle('active', !isM);
       unitM.setAttribute('aria-pressed', String(isM));
       unitFt.setAttribute('aria-pressed', String(!isM));
-
-      // update unit labels + placeholders
       unitLabel1.textContent = isM ? 'm' : 'ft';
       unitLabel2.textContent = isM ? 'm' : 'ft';
-      distance.placeholder = isM ? 'e.g. 23.4' : 'e.g. 76.8';
-      eye.placeholder = isM ? 'e.g. 1.62' : 'e.g. 5.31';
+      updatePlaceholders();
     }
 
     function markInvalids(){
@@ -184,7 +188,7 @@
         copyBtn.textContent = 'Copied ✓';
         setTimeout(() => { copyBtn.textContent = 'Copy result (m)'; }, 1200);
       } catch {
-        // fallback: create temp input
+        // fallback for older browsers
         const temp = document.createElement('input');
         temp.value = lastMetersStr;
         document.body.appendChild(temp);
@@ -196,23 +200,21 @@
       }
     }
 
-    function resetAll(){
-      form.reset();
-      clearErrors();
-      out.textContent = '—';
-      lastMetersStr = '';
-      copyBtn.disabled = true;
-      copyBtn.textContent = 'Copy result (m)';
-      // preserve current unit selection; placeholders may need resetting:
-      const isM = inputUnit === 'm';
-      distance.placeholder = isM ? 'e.g. 23.4' : 'e.g. 76.8';
-      eye.placeholder = isM ? 'e.g. 1.62' : 'e.g. 5.31';
-    }
+    // Native reset handler: runs AFTER the browser clears the fields
+    form.addEventListener('reset', () => {
+      setTimeout(() => {
+        clearErrors();
+        out.textContent = '—';
+        lastMetersStr = '';
+        copyBtn.disabled = true;
+        copyBtn.textContent = 'Copy result (m)';
+        updatePlaceholders(); // keep placeholders consistent with current unit
+      }, 0);
+    });
 
     // Events
     form.addEventListener('submit', calculate);
     copyBtn.addEventListener('click', copyMeters);
-    resetBtn.addEventListener('click', resetAll);
     [angle, distance, eye].forEach(inp => {
       inp.addEventListener('input', () => { if (inp.validity.valid) inp.classList.remove('error'); });
       inp.addEventListener('invalid', () => inp.classList.add('error'));
