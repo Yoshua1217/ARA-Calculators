@@ -45,7 +45,7 @@
     <p class="sub">Ancient Roots Alberta</p>
 
     <div class="note">
-      No external libraries. Paste a URL (or Base URL + Tree ID), choose size/error-correction, then Generate. Use <strong>H</strong> and a white margin for rugged field tags.
+      Paste a URL (or Base URL + Tree ID), choose size/error-correction, then Generate. We use image-only endpoints so it works inside Notion embeds.
     </div>
 
     <!-- Mode -->
@@ -75,8 +75,8 @@
           <input id="size" type="number" min="128" max="1024" step="16" value="256" />
         </div>
         <div>
-          <label for="margin">White margin (modules)</label>
-          <input id="margin" type="number" min="0" max="16" step="1" value="4" />
+          <label for="margin">White margin (px)</label>
+          <input id="margin" type="number" min="0" max="32" step="1" value="8" />
         </div>
         <div>
           <label for="ecl">Error correction</label>
@@ -91,7 +91,7 @@
 
       <div class="btn-row">
         <button type="submit" class="btn-primary">Generate</button>
-        <a id="download" class="button btn-secondary disabled" href="#" target="_blank" rel="noopener">Open PNG</a>
+        <a id="openpng" class="button btn-secondary disabled" href="#" target="_blank" rel="noopener">Open PNG</a>
         <button type="reset"  id="reset" class="btn-secondary">Reset</button>
       </div>
     </form>
@@ -100,12 +100,12 @@
       <div class="qrcard" id="qr-box"><span style="color:#999">Preview</span></div>
       <div class="meta">
         <p><strong>Encoded text:</strong> <span id="encoded">—</span></p>
-        <p><strong>Tip:</strong> For small tags (&lt;30&nbsp;mm), prefer size ≥ 256 px, ECL = H, and margin ≥ 4.</p>
+        <p><strong>Tip:</strong> For rugged field tags, use <strong>H</strong> and margin ≥ 8 px.</p>
       </div>
     </div>
 
     <div class="foot">
-      Scanning opens the encoded page. Using a Notion link is fine — we encode the text only. If the PNG doesn’t download directly, the button opens it in a new tab; save from there.
+      If your network blocks one QR host, this tool automatically falls back to another. You can right-click the preview to save, or use **Open PNG**.
     </div>
   </div>
 
@@ -128,10 +128,10 @@
 
     const qrBox = $('#qr-box');
     const encodedEl = $('#encoded');
-    const downloadBtn = $('#download');
+    const openPng = $('#openpng');
 
     let mode = 'url'; // 'url' or 'id'
-    let lastImgUrl = '';
+    let triedFallback = false;
 
     function setMode(next){
       if (mode === next) return;
@@ -145,6 +145,9 @@
       idFields.style.display  = isUrl ? 'none' : '';
       clearErrors();
       setPreview(null, 'Preview');
+      openPng.classList.add('disabled');
+      openPng.href = '#';
+      triedFallback = false;
     }
 
     modeUrl.addEventListener('click', () => setMode('url'));
@@ -183,30 +186,66 @@
       if (src) {
         const img = document.createElement('img');
         img.alt = 'QR preview';
-        img.src = src;
         img.decoding = 'async';
         img.loading = 'lazy';
+        img.src = src;
+
+        // If primary host fails, try fallback automatically once
+        img.onerror = () => {
+          if (triedFallback) {
+            setPreview(null, 'Could not load QR (network blocked?)');
+            openPng.classList.add('disabled');
+            openPng.href = '#';
+          } else {
+            triedFallback = true;
+            const fb = buildFallbackUrl();
+            img.src = fb;
+            openPng.href = fb;
+          }
+        };
+
         qrBox.appendChild(img);
       } else {
         qrBox.innerHTML = `<span style="color:#999">${fallbackText}</span>`;
       }
     }
 
-    function buildQrUrl(txt, size, ecl, margin){
-      // Google Chart QR: cht=qr&chs=SIZE&chl=TEXT&chld=ECL|MARGIN
-      const base = 'https://chart.googleapis.com/chart';
-      const params = new URLSearchParams({
-        cht: 'qr',
-        chs: `${size}x${size}`,
-        chl: txt,
-        chld: `${ecl}|${margin}`
-      });
-      return `${base}?${params.toString()}`;
+    function buildPrimaryUrl(txt, size, ecl, margin){
+      // QuickChart: https://quickchart.io/qr?text=...&size=256&margin=8&ecLevel=M
+      const u = new URL('https://quickchart.io/qr');
+      u.searchParams.set('text', txt);
+      u.searchParams.set('size', String(size));
+      u.searchParams.set('margin', String(margin));
+      u.searchParams.set('ecLevel', ecl);
+      return u.toString();
+    }
+
+    function buildFallbackUrl(){
+      // Uses last known inputs
+      const txt = encodedEl.textContent === '—' ? '' : encodedEl.textContent;
+      const size = clampInt(sizeInp.value, 128, 1024, 256);
+      const margin = clampInt(marginInp.value, 0, 32, 8);
+      const ecc = (eclSel.value || 'M').toUpperCase();
+      // goqr: https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=...&margin=8&ecc=M
+      const u = new URL('https://api.qrserver.com/v1/create-qr-code/');
+      u.searchParams.set('size', `${size}x${size}`);
+      u.searchParams.set('data', txt);
+      u.searchParams.set('margin', String(margin));
+      u.searchParams.set('ecc', ecc);
+      u.searchParams.set('format', 'png');
+      return u.toString();
+    }
+
+    function clampInt(v, min, max, def){
+      const n = parseInt(v, 10);
+      if (Number.isNaN(n)) return def;
+      return Math.max(min, Math.min(max, n));
     }
 
     function generate(e){
       e.preventDefault();
       clearErrors();
+      triedFallback = false;
 
       const txt = buildText();
       if (!txt) {
@@ -216,26 +255,18 @@
       }
 
       const size = clampInt(sizeInp.value, 128, 1024, 256);
-      const margin = clampInt(marginInp.value, 0, 16, 4);
+      const margin = clampInt(marginInp.value, 0, 32, 8);
       const ecl = (eclSel.value || 'M').toUpperCase();
 
-      const imgUrl = buildQrUrl(txt, size, ecl, margin);
-      lastImgUrl = imgUrl;
+      const imgUrl = buildPrimaryUrl(txt, size, ecl, margin);
+
+      encodedEl.textContent = txt;
+      openPng.classList.remove('disabled');
+      openPng.href = imgUrl;
+      openPng.target = '_blank';
+      openPng.rel = 'noopener';
 
       setPreview(imgUrl, 'Generating…');
-      encodedEl.textContent = txt;
-
-      // Enable "Open PNG"
-      downloadBtn.classList.remove('disabled');
-      downloadBtn.href = imgUrl;
-      downloadBtn.target = '_blank';
-      downloadBtn.rel = 'noopener';
-    }
-
-    function clampInt(v, min, max, def){
-      const n = parseInt(v, 10);
-      if (Number.isNaN(n)) return def;
-      return Math.max(min, Math.min(max, n));
     }
 
     form.addEventListener('submit', generate);
@@ -244,9 +275,9 @@
         clearErrors();
         encodedEl.textContent = '—';
         setPreview(null, 'Preview');
-        lastImgUrl = '';
-        downloadBtn.classList.add('disabled');
-        downloadBtn.href = '#';
+        openPng.classList.add('disabled');
+        openPng.href = '#';
+        triedFallback = false;
       }, 0);
     });
   </script>
