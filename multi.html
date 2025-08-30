@@ -91,11 +91,12 @@
 
         <!-- RIGHT: bulk paste -->
         <div>
-          <label for="bulk">Bulk paste (numbers only, any separators)</label>
-          <textarea id="bulk" placeholder="e.g. 1.72, 0.98 1.10
-2.05
-0.77"></textarea>
-          <div class="tiny">Uses current unit (<span id="unit-tag">m</span>). Ignores text; keeps positive numbers only.</div>
+          <label for="bulk">Bulk paste (numbers + repeaters)</label>
+          <textarea id="bulk" placeholder="Examples:
+1.72, 0.98 1.10
+12x0.78   (12 repeats of 0.78)
+3×1.50    (× also works)"></textarea>
+          <div class="tiny">Uses current unit (<span id="unit-tag">m</span>). Ignores text; keeps positive numbers only. Supports <strong>NxVALUE</strong> like <strong>12x0.78</strong> or <strong>3×1.5</strong>.</div>
           <div class="tiny"><em>Make sure your measurements match the unit selected at the top (Meters/Feet).</em></div>
           <div class="btn-row" style="margin-top:10px;">
             <button type="button" id="fill" class="btn-ghost">Fill trunks from bulk</button>
@@ -279,15 +280,38 @@
       markDescDirty();
     }
 
-    function parseBulk(text){
-      const nums = (text.match(/[-+]?\d*\.?\d+/g) || [])
-        .map(s => parseFloat(s))
-        .filter(v => Number.isFinite(v) && v > 0);
-      return nums;
+    // ---------- Bulk parsing with NxVALUE repeaters ----------
+    function parseBulk(text, limit = Infinity){
+      const vals = [];
+      if (!text) return vals;
+
+      // Normalize ×/X to x, and work on a copy so we can strip matched repeaters
+      let s = String(text).replace(/[×X]/g, 'x');
+
+      // First, consume repeater patterns like "12x0.78" or "5 x 2.1"
+      const repRE = /(\d+)\s*x\s*([-+]?\d*\.?\d+)/g;
+      s = s.replace(repRE, (_, countStr, valueStr) => {
+        const n = parseInt(countStr, 10);
+        const v = parseFloat(valueStr);
+        if (Number.isFinite(n) && n > 0 && Number.isFinite(v) && v > 0) {
+          for (let i = 0; i < n && vals.length < limit; i++) vals.push(v);
+        }
+        return ' '; // remove from string so the numbers aren't double-counted
+      });
+
+      // Then, any remaining standalone numbers
+      const singles = s.match(/[-+]?\d*\.?\d+/g) || [];
+      for (const m of singles) {
+        if (vals.length >= limit) break;
+        const v = parseFloat(m);
+        if (Number.isFinite(v) && v > 0) vals.push(v);
+      }
+
+      return vals;
     }
 
     function fillFromBulk(){
-      const vals = parseBulk(bulk.value);
+      const vals = parseBulk(bulk.value, MAX_TRUNKS);
       if (vals.length === 0) return;
       // rebuild rows sized to vals
       list.innerHTML = '';
@@ -300,6 +324,7 @@
       markDescDirty();
       renumberLabels();
     }
+    // --------------------------------------------------------
 
     function sortByDiameter(){
       // Split rows into valid (with diameter in meters) and the rest
@@ -485,7 +510,7 @@
       genDescBtn.classList.add('active'); // dark style after generating
     }
 
-    // *** RICH-HTML COPY FIX ***
+    // Rich-HTML copy for description (preserves bullets + bold)
     async function copyDescription(){
       const html = descBox.innerHTML.trim();
       // Plain-text fallback: bullets
@@ -508,7 +533,7 @@
         }
       }
 
-      // Fallback: contentEditable trick to preserve formatting in most browsers
+      // Fallback: contentEditable trick to preserve formatting
       const temp = document.createElement('div');
       temp.contentEditable = 'true';
       temp.style.position = 'fixed';
