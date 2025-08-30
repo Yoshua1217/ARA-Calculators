@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ARA Multi-Trunk Circumference Calculator</title>
+  <style>
+    :root { --radius:12px; --dark:#111; --light:#f2f2f2; }
+    .card, .card * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:24px; }
+    .card { max-width: 720px; margin:0 auto; padding:20px; border:1px solid #ddd; border-radius:var(--radius); }
+    h1 { margin:0 0 10px; font-size:1.6rem; }
+    .sub { margin:0 0 16px; color:#555; }
+    .note { width:100%; background:#f7f7f7; padding:10px 12px; border-radius:var(--radius); border:1px solid #e7e7e7; margin-bottom:16px; }
+
+    .help { margin:8px 0 6px; color:#444; font-size:.95rem; }
+    .unit-toggle { display:flex; gap:8px; margin:0 0 12px; }
+    .toggle-btn { padding:8px 12px; border:1px solid #ccc; border-radius:8px; background:var(--light); cursor:pointer; user-select:none; }
+    .toggle-btn.active { background:var(--dark); color:#fff; border-color:var(--dark); }
+    .toggle-btn:focus-visible { outline:2px solid var(--dark); outline-offset:2px; }
+
+    label { display:block; margin:10px 0 6px; font-weight:600; }
+    input[type="number"] {
+      width:100%; display:block; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:1rem;
+    }
+    input.error { border-color:#e11900; box-shadow:0 0 0 3px rgba(225,25,0,.15); outline:none; }
+
+    .row { display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end; }
+    .trunks { display:flex; flex-direction:column; gap:8px; }
+    .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    button { padding:10px 14px; border:0; border-radius:8px; cursor:pointer; }
+    .btn-primary { background:var(--dark); color:#fff; }
+    .btn-secondary { background:#e9e9e9; color:#111; }
+    button[disabled]{ opacity:.6; cursor:not-allowed; }
+
+    .result { margin-top:16px; font-size:1.05rem; }
+    .result p { margin:6px 0; }
+    .foot { margin-top:18px; font-size:.9rem; color:#666; line-height:1.35; }
+    form { margin:0; }
+    code { background:#f2f2f2; padding:2px 6px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>ARA Multi-Trunk Circumference Calculator</h1>
+    <p class="sub">Ancient Roots Alberta</p>
+
+    <div class="note">
+      <strong>Method:</strong> Convert each trunk’s <em>circumference → diameter</em> (<code>D = C / π</code>).
+      Let the largest diameter be <code>Dmax</code>. Combined diameter =
+      <code>Dmax + 0.5 × sum(other D)</code>. Equivalent circumference =
+      <code>π × combined diameter</code>.
+    </div>
+
+    <p class="help"><strong>Input units:</strong> applies to each trunk’s <em>circumference</em>.</p>
+    <div class="unit-toggle" role="group" aria-label="Input units">
+      <button type="button" id="unit-m"  class="toggle-btn active" aria-pressed="true">Meters (m)</button>
+      <button type="button" id="unit-ft" class="toggle-btn" aria-pressed="false">Feet (ft)</button>
+    </div>
+
+    <form id="form" action="#">
+      <div class="trunks" id="trunk-list">
+        <!-- trunk rows injected here -->
+      </div>
+
+      <div class="btn-row" style="margin-top:10px;">
+        <button type="button" id="add"    class="btn-secondary">Add trunk</button>
+        <button type="button" id="remove" class="btn-secondary">Remove last</button>
+      </div>
+
+      <div class="btn-row" style="margin-top:14px;">
+        <button type="submit"  class="btn-primary">Calculate</button>
+        <button type="button" id="copy"   class="btn-secondary" disabled title="Copies equivalent circumference in meters only">Copy result (m)</button>
+        <button type="reset"  id="reset"  class="btn-secondary">Reset</button>
+      </div>
+    </form>
+
+    <div class="result" id="out">
+      <p><strong>Equivalent circumference:</strong> <span id="ceq">—</span></p>
+      <p><strong>Equivalent diameter:</strong> <span id="deq">—</span></p>
+      <p id="used">—</p>
+    </div>
+
+    <div class="foot">
+      Outputs show both meters and feet, rounded to 2 decimals. For ARA nominations, paste <strong>pure numbers in meters</strong> (no units) — use the Copy button above.
+    </div>
+  </div>
+
+  <script>
+    const PI = Math.PI, FT_PER_M = 3.28084, M_PER_FT = 0.3048;
+    const $ = s => document.querySelector(s);
+    const form = $('#form');
+    const list = $('#trunk-list');
+    const addBtn = $('#add');
+    const remBtn = $('#remove');
+    const copyBtn = $('#copy');
+    const outC = $('#ceq');
+    const outD = $('#deq');
+    const outUsed = $('#used');
+    const unitM = $('#unit-m');
+    const unitFt = $('#unit-ft');
+
+    let inputUnit = 'm';     // 'm' or 'ft'
+    let lastMetersCirc = ''; // for Copy (m)
+    let trunkCount = 0;
+    const MAX_TRUNKS = 30;
+    const MIN_TRUNKS = 2;
+
+    function fmt2(x){ return Number.isFinite(x) ? x.toFixed(2) : '—'; }
+
+    function addTrunk(value=''){
+      if (trunkCount >= MAX_TRUNKS) return;
+      trunkCount++;
+      const wrap = document.createElement('div');
+      wrap.className = 'row';
+      wrap.dataset.index = String(trunkCount);
+
+      const label = document.createElement('label');
+      label.htmlFor = `c-${trunkCount}`;
+      label.textContent = `Trunk ${trunkCount} circumference (${inputUnit})`;
+
+      const inp = document.createElement('input');
+      inp.id = `c-${trunkCount}`;
+      inp.type = 'number';
+      inp.step = '0.01';
+      inp.inputMode = 'decimal';
+      inp.placeholder = inputUnit === 'm' ? 'e.g. 1.75' : 'e.g. 5.74';
+      if (value !== '') inp.value = value;
+
+      // layout: label spans full width above, input spans row
+      const container = document.createElement('div');
+      container.style.gridColumn = '1 / -1';
+
+      container.appendChild(label);
+      wrap.appendChild(container);
+      wrap.appendChild(inp);
+
+      list.appendChild(wrap);
+
+      inp.addEventListener('input', () => inp.classList.remove('error'));
+    }
+
+    function removeTrunk(){
+      if (trunkCount <= 1) return;
+      list.lastElementChild?.remove();
+      trunkCount--;
+    }
+
+    function setUnit(newUnit){
+      if (newUnit === inputUnit) return;
+
+      // Convert existing values numerically to the new unit (circumference)
+      const inputs = Array.from(list.querySelectorAll('input[type="number"]'));
+      inputs.forEach(inp => {
+        const v = parseFloat(inp.value);
+        if (!Number.isNaN(v)) {
+          const m = (inputUnit === 'm') ? v : v * M_PER_FT; // old -> meters
+          const out = (newUnit === 'm') ? m : m * FT_PER_M; // meters -> new
+          inp.value = out.toFixed(2);
+        }
+        // Update placeholder and label units
+        const label = inp.previousElementSibling?.querySelector('label') || inp.parentElement.previousElementSibling;
+      });
+      inputUnit = newUnit;
+      // Update label text for each row
+      Array.from(list.querySelectorAll('label')).forEach((lab, i) => {
+        lab.textContent = `Trunk ${i+1} circumference (${inputUnit})`;
+      });
+
+      const isM = inputUnit === 'm';
+      unitM.classList.toggle('active', isM);
+      unitFt.classList.toggle('active', !isM);
+      unitM.setAttribute('aria-pressed', String(isM));
+      unitFt.setAttribute('aria-pressed', String(!isM));
+      // Update placeholders
+      Array.from(list.querySelectorAll('input[type="number"]')).forEach(inp => {
+        inp.placeholder = isM ? 'e.g. 1.75' : 'e.g. 5.74';
+      });
+    }
+
+    function calculate(e){
+      e.preventDefault();
+      const inputs = Array.from(list.querySelectorAll('input[type="number"]'));
+      const circVals = inputs
+        .map(inp => ({ inp, val: parseFloat(inp.value) }))
+        .filter(x => Number.isFinite(x.val) && x.val > 0);
+
+      // Validation: need at least one trunk with a value
+      if (circVals.length === 0) {
+        // mark first input
+        const first = inputs[0];
+        first.classList.add('error');
+        first.focus();
+        outC.textContent = '—';
+        outD.textContent = '—';
+        outUsed.textContent = 'Please enter at least one circumference.';
+        copyBtn.disabled = true;
+        lastMetersCirc = '';
+        return;
+      }
+
+      // Convert circumference to meters (linear conversion), then to diameters
+      const diametersM = circVals.map(({ val }) => {
+        const cMeters = (inputUnit === 'm') ? val : val * M_PER_FT;
+        return cMeters / PI;
+      });
+
+      // Find largest diameter and sum of others
+      let dmax = Math.max(...diametersM);
+      // If multiple equal max, one counts as max, others go to "others" half
+      let sumOthers = diametersM.reduce((acc, d) => acc + (d === dmax ? 0 : d), 0);
+      // Handle case where there are multiple equal maxima:
+      const maxCount = diametersM.filter(d => d === dmax).length;
+      if (maxCount > 1) {
+        // One counts as max; the rest go to others
+        sumOthers = diametersM.reduce((acc, d) => acc + d, 0) - dmax;
+      }
+
+      const dEqM = dmax + 0.5 * sumOthers; // meters (diameter)
+      const cEqM = dEqM * PI;              // meters (circumference)
+
+      const dEqFt = dEqM * FT_PER_M;
+      const cEqFt = cEqM * FT_PER_M;
+
+      outC.textContent = `${cEqM.toFixed(2)} m (${cEqFt.toFixed(2)} ft)`;
+      outD.textContent = `${dEqM.toFixed(2)} m (${dEqFt.toFixed(2)} ft)`;
+      outUsed.textContent = `Trunks used: ${circVals.length} (largest diameter counted fully; others at 50%).`;
+
+      lastMetersCirc = cEqM.toFixed(2);
+      copyBtn.disabled = false;
+      copyBtn.textContent = 'Copy result (m)';
+    }
+
+    async function copyMeters(){
+      if (!lastMetersCirc) return;
+      try {
+        await navigator.clipboard.writeText(lastMetersCirc);
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyBtn.textContent = 'Copy result (m)'; }, 1200);
+      } catch {
+        const tmp = document.createElement('input');
+        tmp.value = lastMetersCirc;
+        document.body.appendChild(tmp);
+        tmp.select();
+        document.execCommand('copy');
+        document.body.removeChild(tmp);
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyBtn.textContent = 'Copy result (m)'; }, 1200);
+      }
+    }
+
+    function resetAll(){
+      setTimeout(() => {
+        // Clear rows and re-add two blanks
+        list.innerHTML = '';
+        trunkCount = 0;
+        addTrunk();
+        addTrunk();
+        lastMetersCirc = '';
+        copyBtn.disabled = true;
+        copyBtn.textContent = 'Copy result (m)';
+        outC.textContent = '—';
+        outD.textContent = '—';
+        outUsed.textContent = '—';
+      }, 0);
+    }
+
+    // Init with two inputs
+    addTrunk();
+    addTrunk();
+
+    // Events
+    form.addEventListener('submit', calculate);
+    form.addEventListener('reset', resetAll);
+    addBtn.addEventListener('click', () => addTrunk());
+    remBtn.addEventListener('click', () => {
+      if (trunkCount > 1) removeTrunk();
+    });
+    unitM.addEventListener('click', () => setUnit('m'));
+    unitFt.addEventListener('click', () => setUnit('ft'));
+    $('#copy').addEventListener('click', copyMeters);
+
+    // Keyboard: Enter anywhere triggers calculate (native form submit)
+  </script>
+</body>
+</html>
