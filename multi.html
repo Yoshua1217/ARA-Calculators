@@ -25,13 +25,20 @@
     }
     input.error { border-color:#e11900; box-shadow:0 0 0 3px rgba(225,25,0,.15); outline:none; }
 
-    .row { display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:end; }
-    .trunks { display:flex; flex-direction:column; gap:8px; }
+    .row { display:grid; grid-template-columns: 1fr; gap:6px; align-items:start; }
+    .trunks { display:flex; flex-direction:column; gap:10px; }
+
     .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
     button { padding:10px 14px; border:0; border-radius:8px; cursor:pointer; }
     .btn-primary { background:var(--dark); color:#fff; }
     .btn-secondary { background:#e9e9e9; color:#111; }
     button[disabled]{ opacity:.6; cursor:not-allowed; }
+
+    .hint { font-size:.86rem; color:#b2271a; display:none; }
+    .hint.show { display:block; }
+    .largest-label { font-weight:800; }
+    .badge { display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; background:#111; color:#fff; font-size:.75rem; vertical-align:middle; }
+    .badge.hide { display:none; }
 
     .result { margin-top:16px; font-size:1.05rem; }
     .result p { margin:6px 0; }
@@ -60,7 +67,7 @@
 
     <form id="form" action="#">
       <div class="trunks" id="trunk-list">
-        <!-- trunk rows injected here -->
+        <!-- rows injected here -->
       </div>
 
       <div class="btn-row" style="margin-top:10px;">
@@ -89,6 +96,7 @@
   <script>
     const PI = Math.PI, FT_PER_M = 3.28084, M_PER_FT = 0.3048;
     const $ = s => document.querySelector(s);
+
     const form = $('#form');
     const list = $('#trunk-list');
     const addBtn = $('#add');
@@ -104,20 +112,28 @@
     let lastMetersCirc = ''; // for Copy (m)
     let trunkCount = 0;
     const MAX_TRUNKS = 30;
-    const MIN_TRUNKS = 2;
 
     function fmt2(x){ return Number.isFinite(x) ? x.toFixed(2) : '—'; }
 
     function addTrunk(value=''){
       if (trunkCount >= MAX_TRUNKS) return;
       trunkCount++;
-      const wrap = document.createElement('div');
-      wrap.className = 'row';
-      wrap.dataset.index = String(trunkCount);
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.dataset.index = String(trunkCount);
 
+      const labelWrap = document.createElement('div');
       const label = document.createElement('label');
       label.htmlFor = `c-${trunkCount}`;
+      label.className = 'trunk-label';
       label.textContent = `Trunk ${trunkCount} circumference (${inputUnit})`;
+
+      const badge = document.createElement('span');
+      badge.className = 'badge hide';
+      badge.textContent = 'Largest';
+
+      labelWrap.appendChild(label);
+      labelWrap.appendChild(badge);
 
       const inp = document.createElement('input');
       inp.id = `c-${trunkCount}`;
@@ -127,17 +143,29 @@
       inp.placeholder = inputUnit === 'm' ? 'e.g. 1.75' : 'e.g. 5.74';
       if (value !== '') inp.value = value;
 
-      // layout: label spans full width above, input spans row
-      const container = document.createElement('div');
-      container.style.gridColumn = '1 / -1';
+      const hint = document.createElement('div');
+      hint.className = 'hint';
+      hint.textContent = ''; // filled dynamically
 
-      container.appendChild(label);
-      wrap.appendChild(container);
-      wrap.appendChild(inp);
+      row.appendChild(labelWrap);
+      row.appendChild(inp);
+      row.appendChild(hint);
+      list.appendChild(row);
 
-      list.appendChild(wrap);
-
-      inp.addEventListener('input', () => inp.classList.remove('error'));
+      // Clear red + hint on input
+      inp.addEventListener('input', () => {
+        inp.classList.remove('error');
+        hideHint(hint);
+      });
+      // Soft hints on blur for outliers
+      inp.addEventListener('blur', () => {
+        const v = parseFloat(inp.value);
+        if (Number.isFinite(v) && v > 0) {
+          maybeOutlierHint(v, hint);
+        } else {
+          hideHint(hint);
+        }
+      });
     }
 
     function removeTrunk(){
@@ -149,8 +177,8 @@
     function setUnit(newUnit){
       if (newUnit === inputUnit) return;
 
-      // Convert existing values numerically to the new unit (circumference)
-      const inputs = Array.from(list.querySelectorAll('input[type="number"]'));
+      // Convert existing numeric values to the new unit (circumference)
+      const inputs = getInputs();
       inputs.forEach(inp => {
         const v = parseFloat(inp.value);
         if (!Number.isNaN(v)) {
@@ -158,39 +186,91 @@
           const out = (newUnit === 'm') ? m : m * FT_PER_M; // meters -> new
           inp.value = out.toFixed(2);
         }
-        // Update placeholder and label units
-        const label = inp.previousElementSibling?.querySelector('label') || inp.parentElement.previousElementSibling;
       });
+
       inputUnit = newUnit;
-      // Update label text for each row
-      Array.from(list.querySelectorAll('label')).forEach((lab, i) => {
-        lab.textContent = `Trunk ${i+1} circumference (${inputUnit})`;
-      });
 
       const isM = inputUnit === 'm';
       unitM.classList.toggle('active', isM);
       unitFt.classList.toggle('active', !isM);
       unitM.setAttribute('aria-pressed', String(isM));
       unitFt.setAttribute('aria-pressed', String(!isM));
-      // Update placeholders
-      Array.from(list.querySelectorAll('input[type="number"]')).forEach(inp => {
+
+      // Update labels & placeholders
+      Array.from(list.querySelectorAll('.trunk-label')).forEach((lab, i) => {
+        lab.textContent = `Trunk ${i+1} circumference (${inputUnit})`;
+      });
+      inputs.forEach(inp => {
         inp.placeholder = isM ? 'e.g. 1.75' : 'e.g. 5.74';
       });
     }
 
+    function getInputs(){
+      return Array.from(list.querySelectorAll('input[type="number"]'));
+    }
+
+    function showHint(hintEl, msg){
+      hintEl.textContent = msg;
+      hintEl.classList.add('show');
+    }
+    function hideHint(hintEl){
+      hintEl.textContent = '';
+      hintEl.classList.remove('show');
+    }
+
+    function maybeOutlierHint(val, hintEl){
+      // Gentle nudges; still included in calc
+      if (inputUnit === 'm') {
+        if (val < 0.20) showHint(hintEl, 'This seems unusually small — check units/decimal?');
+        else if (val > 12) showHint(hintEl, 'This seems unusually large — check units?');
+        else hideHint(hintEl);
+      } else {
+        if (val < 0.66) showHint(hintEl, 'This seems unusually small — check units/decimal?');
+        else if (val > 40) showHint(hintEl, 'This seems unusually large — check units?');
+        else hideHint(hintEl);
+      }
+    }
+
+    function clearLargestHighlights(){
+      list.querySelectorAll('.largest-label').forEach(el => el.classList.remove('largest-label'));
+      list.querySelectorAll('.badge').forEach(b => b.classList.add('hide'));
+    }
+
     function calculate(e){
       e.preventDefault();
-      const inputs = Array.from(list.querySelectorAll('input[type="number"]'));
-      const circVals = inputs
-        .map(inp => ({ inp, val: parseFloat(inp.value) }))
-        .filter(x => Number.isFinite(x.val) && x.val > 0);
+      clearLargestHighlights();
 
-      // Validation: need at least one trunk with a value
-      if (circVals.length === 0) {
-        // mark first input
-        const first = inputs[0];
-        first.classList.add('error');
-        first.focus();
+      const inputs = getInputs();
+      let anyInvalid = false;
+
+      // Build list of usable circumferences (positive numbers), keep mapping to rows
+      const rows = inputs.map(inp => {
+        const row = inp.closest('.row');
+        const hint = row.querySelector('.hint');
+        const val = parseFloat(inp.value);
+        // Reset immediate errors
+        inp.classList.remove('error');
+        hideHint(hint);
+
+        if (Number.isNaN(val)) return { inp, row, val: NaN, ok:false };
+
+        if (val <= 0) {
+          inp.classList.add('error');
+          showHint(hint, 'Enter a positive number.');
+          anyInvalid = true;
+          return { inp, row, val, ok:false };
+        }
+
+        // Optional outlier hints (not invalid)
+        maybeOutlierHint(val, hint);
+
+        return { inp, row, val, ok:true };
+      });
+
+      const valid = rows.filter(r => r.ok);
+      if (valid.length === 0) {
+        // No usable values at all
+        inputs[0]?.classList.add('error');
         outC.textContent = '—';
         outD.textContent = '—';
         outUsed.textContent = 'Please enter at least one circumference.';
@@ -199,32 +279,43 @@
         return;
       }
 
-      // Convert circumference to meters (linear conversion), then to diameters
-      const diametersM = circVals.map(({ val }) => {
-        const cMeters = (inputUnit === 'm') ? val : val * M_PER_FT;
-        return cMeters / PI;
+      // Convert circumference -> diameter (in meters)
+      const withDiam = valid.map((r, i) => {
+        const cMeters = (inputUnit === 'm') ? r.val : r.val * M_PER_FT;
+        const dMeters = cMeters / PI;
+        return { ...r, cMeters, dMeters, idx: i };
       });
 
-      // Find largest diameter and sum of others
-      let dmax = Math.max(...diametersM);
-      // If multiple equal max, one counts as max, others go to "others" half
-      let sumOthers = diametersM.reduce((acc, d) => acc + (d === dmax ? 0 : d), 0);
-      // Handle case where there are multiple equal maxima:
-      const maxCount = diametersM.filter(d => d === dmax).length;
-      if (maxCount > 1) {
-        // One counts as max; the rest go to others
-        sumOthers = diametersM.reduce((acc, d) => acc + d, 0) - dmax;
-      }
+      // Find maxima (allow tiny epsilon for ties)
+      const eps = 1e-9;
+      const dmax = Math.max(...withDiam.map(x => x.dMeters));
+      const maxRows = withDiam.filter(x => Math.abs(x.dMeters - dmax) < eps);
 
-      const dEqM = dmax + 0.5 * sumOthers; // meters (diameter)
-      const cEqM = dEqM * PI;              // meters (circumference)
+      // Sum others (one of the max set counts fully; others half)
+      const sumAll = withDiam.reduce((acc, x) => acc + x.dMeters, 0);
+      const dEqM = dmax + 0.5 * (sumAll - dmax);
+      const cEqM = dEqM * PI;
 
       const dEqFt = dEqM * FT_PER_M;
       const cEqFt = cEqM * FT_PER_M;
 
       outC.textContent = `${cEqM.toFixed(2)} m (${cEqFt.toFixed(2)} ft)`;
       outD.textContent = `${dEqM.toFixed(2)} m (${dEqFt.toFixed(2)} ft)`;
-      outUsed.textContent = `Trunks used: ${circVals.length} (largest diameter counted fully; others at 50%).`;
+
+      // Highlight largest trunk(s)
+      maxRows.forEach(r => {
+        const lab = r.row.querySelector('.trunk-label');
+        const badge = r.row.querySelector('.badge');
+        if (lab) lab.classList.add('largest-label');
+        if (badge) badge.classList.remove('hide');
+      });
+
+      // Explain usage
+      if (maxRows.length === 1) {
+        outUsed.textContent = `Trunks used: ${withDiam.length}. Largest trunk is bolded and counted fully; all others counted at 50%.`;
+      } else {
+        outUsed.textContent = `Trunks used: ${withDiam.length}. Multiple trunks tie for largest (bolded); one is counted fully, the rest at 50%.`;
+      }
 
       lastMetersCirc = cEqM.toFixed(2);
       copyBtn.disabled = false;
@@ -262,6 +353,7 @@
         outC.textContent = '—';
         outD.textContent = '—';
         outUsed.textContent = '—';
+        clearLargestHighlights();
       }, 0);
     }
 
@@ -273,14 +365,10 @@
     form.addEventListener('submit', calculate);
     form.addEventListener('reset', resetAll);
     addBtn.addEventListener('click', () => addTrunk());
-    remBtn.addEventListener('click', () => {
-      if (trunkCount > 1) removeTrunk();
-    });
+    remBtn.addEventListener('click', () => { if (trunkCount > 1) removeTrunk(); });
     unitM.addEventListener('click', () => setUnit('m'));
     unitFt.addEventListener('click', () => setUnit('ft'));
     $('#copy').addEventListener('click', copyMeters);
-
-    // Keyboard: Enter anywhere triggers calculate (native form submit)
   </script>
 </body>
 </html>
