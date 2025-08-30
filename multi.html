@@ -35,7 +35,7 @@
     .btn-primary { background: var(--dark); color:#fff; }
     .btn-secondary { background:#e9e9e9; color:#111; }
     .btn-ghost { background:#f5f5f5; color:#111; }
-    .btn-secondary.active { background: var(--dark); color:#fff; } /* make Generate Description go dark when active */
+    .btn-secondary.active { background: var(--dark); color:#fff; } /* Generate Description dark when active */
     button[disabled]{ opacity:.6; cursor:not-allowed; }
 
     .hint { font-size:.86rem; color:#b2271a; display:none; }
@@ -48,7 +48,6 @@
     .result p { margin:6px 0; }
     .foot { margin-top:18px; font-size:.9rem; color:#666; line-height:1.35; }
     form { margin:0; }
-    code { background:#f2f2f2; padding:2px 6px; border-radius:6px; }
     .tiny { color:#666; font-size:.85rem; }
 
     .descwrap { margin-top:16px; }
@@ -161,6 +160,12 @@
 
     function fmt2(x){ return Number.isFinite(x) ? x.toFixed(2) : '—'; }
 
+    function markDescDirty(){
+      descBox.textContent = '—';
+      copyDescBtn.disabled = true;
+      genDescBtn.classList.remove('active');
+    }
+
     function addTrunk(value=''){
       if (trunkCount >= MAX_TRUNKS) return;
       trunkCount++;
@@ -197,7 +202,7 @@
       row.appendChild(hint);
       list.appendChild(row);
 
-      inp.addEventListener('input', () => { inp.classList.remove('error'); hideHint(hint); });
+      inp.addEventListener('input', () => { inp.classList.remove('error'); hideHint(hint); markDescDirty(); });
       inp.addEventListener('blur', () => {
         const v = parseFloat(inp.value);
         if (Number.isFinite(v) && v > 0) maybeOutlierHint(v, hint); else hideHint(hint);
@@ -209,6 +214,7 @@
       list.lastElementChild?.remove();
       trunkCount--;
       renumberLabels();
+      markDescDirty();
     }
 
     function renumberLabels(){
@@ -269,6 +275,8 @@
       // Update labels & placeholders
       renumberLabels();
       getInputs().forEach(inp => { inp.placeholder = isM ? 'e.g. 1.75' : 'e.g. 5.74'; });
+
+      markDescDirty();
     }
 
     function parseBulk(text){
@@ -289,8 +297,7 @@
       lastMetersCirc = '';
       copyBtn.disabled = true;
       outC.textContent = '—'; outD.textContent = '—'; outUsed.textContent = '—';
-      descBox.textContent = '—'; copyDescBtn.disabled = true;
-      genDescBtn.classList.remove('active');
+      markDescDirty();
       renumberLabels();
     }
 
@@ -321,6 +328,7 @@
       list.appendChild(frag);
       renumberLabels();
       clearLargestHighlights();
+      markDescDirty();
       // Recalculate to re-highlight and refresh outputs if there are numbers
       if (valid.length > 0) calculate(new Event('submit'));
     }
@@ -351,8 +359,7 @@
         outC.textContent = '—'; outD.textContent = '—';
         outUsed.textContent = 'Please enter at least one circumference.';
         copyBtn.disabled = true; lastMetersCirc = ''; lastCalc = null;
-        descBox.textContent = '—'; copyDescBtn.disabled = true;
-        genDescBtn.classList.remove('active');
+        markDescDirty();
         return;
       }
 
@@ -379,7 +386,7 @@
       outC.textContent = `${cEqM.toFixed(2)} m (${cEqFt.toFixed(2)} ft)`;
       outD.textContent = `${dEqM.toFixed(2)} m (${dEqFt.toFixed(2)} ft)`;
 
-      // Highlight largest labels; set badge text depending on tie
+      // Highlight largest; set badge text depending on tie
       const badgeText = (maxRows.length > 1) ? 'Tied for largest' : 'Largest';
       maxRows.forEach(r => {
         const lab = r.row.querySelector('.trunk-label');
@@ -417,10 +424,8 @@
         tie: maxRows.length > 1
       };
 
-      // Clear previous description (user can regenerate)
-      descBox.textContent = '—';
-      copyDescBtn.disabled = true;
-      genDescBtn.classList.remove('active');
+      // Description must be regenerated after every calc
+      markDescDirty();
     }
 
     async function copyMeters(){
@@ -445,7 +450,7 @@
         if (!lastCalc) return;
       }
 
-      // Build HTML bullets
+      // Build HTML bullets (with bold largest)
       const ul1 = document.createElement('ul');
       const title1 = document.createElement('p');
       title1.innerHTML = '<strong>Individual trunks (circumference → diameter)</strong>';
@@ -480,21 +485,49 @@
       genDescBtn.classList.add('active'); // dark style after generating
     }
 
+    // *** RICH-HTML COPY FIX ***
     async function copyDescription(){
-      // Copy plain text of the description
+      const html = descBox.innerHTML.trim();
+      // Plain-text fallback: bullets
+      const items = Array.from(descBox.querySelectorAll('li')).map(li => `- ${li.innerText}`);
+      const text = items.length ? items.join('\n') : descBox.innerText.trim();
+      if (!html || html === '—') return;
+
+      if (navigator.clipboard && window.ClipboardItem) {
+        try {
+          const data = {
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([text], { type: "text/plain" })
+          };
+          await navigator.clipboard.write([new ClipboardItem(data)]);
+          copyDescBtn.textContent = 'Copied ✓';
+          setTimeout(() => { copyDescBtn.textContent = 'Copy description'; }, 1200);
+          return;
+        } catch (e) {
+          // fall through to legacy path
+        }
+      }
+
+      // Fallback: contentEditable trick to preserve formatting in most browsers
       const temp = document.createElement('div');
-      temp.innerHTML = descBox.innerHTML;
-      const text = temp.textContent.trim();
-      if (!text || text === '—') return;
+      temp.contentEditable = 'true';
+      temp.style.position = 'fixed';
+      temp.style.left = '-9999px';
+      temp.innerHTML = html;
+      document.body.appendChild(temp);
+
+      const range = document.createRange();
+      range.selectNodeContents(temp);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+
       try {
-        await navigator.clipboard.writeText(text);
+        document.execCommand('copy');
         copyDescBtn.textContent = 'Copied ✓';
-        setTimeout(() => { copyDescBtn.textContent = 'Copy description'; }, 1200);
-      } catch {
-        const tmp = document.createElement('textarea');
-        tmp.value = text; document.body.appendChild(tmp);
-        tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
-        copyDescBtn.textContent = 'Copied ✓';
+      } finally {
+        sel.removeAllRanges();
+        document.body.removeChild(temp);
         setTimeout(() => { copyDescBtn.textContent = 'Copy description'; }, 1200);
       }
     }
@@ -509,8 +542,7 @@
         copyBtn.textContent = 'Copy result (m)';
         outC.textContent = '—'; outD.textContent = '—'; outUsed.textContent = '—';
         clearLargestHighlights();
-        descBox.textContent = '—'; copyDescBtn.disabled = true;
-        genDescBtn.classList.remove('active');
+        markDescDirty();
         renumberLabels();
       }, 0);
     }
@@ -521,11 +553,11 @@
     // Events
     form.addEventListener('submit', calculate);
     form.addEventListener('reset', resetAll);
-    addBtn.addEventListener('click', () => addTrunk());
+    addBtn.addEventListener('click', () => { addTrunk(); markDescDirty(); });
     remBtn.addEventListener('click', () => { if (trunkCount > 1) removeTrunk(); });
     sortBtn.addEventListener('click', sortByDiameter);
     $('#fill').addEventListener('click', fillFromBulk);
-    $('#clear-bulk').addEventListener('click', () => bulk.value = '');
+    $('#clear-bulk').addEventListener('click', () => { bulk.value = ''; });
     unitM.addEventListener('click', () => setUnit('m'));
     unitFt.addEventListener('click', () => setUnit('ft'));
     $('#copy').addEventListener('click', copyMeters);
