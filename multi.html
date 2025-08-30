@@ -35,6 +35,7 @@
     .btn-primary { background: var(--dark); color:#fff; }
     .btn-secondary { background:#e9e9e9; color:#111; }
     .btn-ghost { background:#f5f5f5; color:#111; }
+    .btn-secondary.active { background: var(--dark); color:#fff; } /* make Generate Description go dark when active */
     button[disabled]{ opacity:.6; cursor:not-allowed; }
 
     .hint { font-size:.86rem; color:#b2271a; display:none; }
@@ -52,9 +53,11 @@
 
     .descwrap { margin-top:16px; }
     .descbox {
-      width:100%; min-height:120px; white-space:pre-wrap; background:#fafafa;
-      border:1px solid #e6e6e6; border-radius:10px; padding:12px; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+      width:100%; min-height:120px; background:#fafafa;
+      border:1px solid #e6e6e6; border-radius:10px; padding:12px;
+      white-space:normal; font-family: inherit; /* regular text */
     }
+    .descbox ul { margin: 6px 0 6px 20px; }
   </style>
 </head>
 <body>
@@ -94,6 +97,7 @@
 2.05
 0.77"></textarea>
           <div class="tiny">Uses current unit (<span id="unit-tag">m</span>). Ignores text; keeps positive numbers only.</div>
+          <div class="tiny"><em>Make sure your measurements match the unit selected at the top (Meters/Feet).</em></div>
           <div class="btn-row" style="margin-top:10px;">
             <button type="button" id="fill" class="btn-ghost">Fill trunks from bulk</button>
             <button type="button" id="clear-bulk" class="btn-ghost">Clear bulk</button>
@@ -151,7 +155,7 @@
 
     let inputUnit = 'm';     // 'm' or 'ft'
     let lastMetersCirc = ''; // for Copy (m)
-    let lastCalc = null;     // keep detailed calc for description
+    let lastCalc = null;     // detailed calc for description
     let trunkCount = 0;
     const MAX_TRUNKS = 60;
 
@@ -234,7 +238,10 @@
 
     function clearLargestHighlights(){
       list.querySelectorAll('.largest-label').forEach(el => el.classList.remove('largest-label'));
-      list.querySelectorAll('.badge').forEach(b => b.classList.add('hide'));
+      list.querySelectorAll('.badge').forEach(b => {
+        b.classList.add('hide');
+        b.textContent = 'Largest';
+      });
     }
 
     function setUnit(newUnit){
@@ -283,6 +290,7 @@
       copyBtn.disabled = true;
       outC.textContent = '—'; outD.textContent = '—'; outUsed.textContent = '—';
       descBox.textContent = '—'; copyDescBtn.disabled = true;
+      genDescBtn.classList.remove('active');
       renumberLabels();
     }
 
@@ -344,6 +352,7 @@
         outUsed.textContent = 'Please enter at least one circumference.';
         copyBtn.disabled = true; lastMetersCirc = ''; lastCalc = null;
         descBox.textContent = '—'; copyDescBtn.disabled = true;
+        genDescBtn.classList.remove('active');
         return;
       }
 
@@ -370,17 +379,19 @@
       outC.textContent = `${cEqM.toFixed(2)} m (${cEqFt.toFixed(2)} ft)`;
       outD.textContent = `${dEqM.toFixed(2)} m (${dEqFt.toFixed(2)} ft)`;
 
-      // Highlight largest labels
+      // Highlight largest labels; set badge text depending on tie
+      const badgeText = (maxRows.length > 1) ? 'Tied for largest' : 'Largest';
       maxRows.forEach(r => {
         const lab = r.row.querySelector('.trunk-label');
         const badge = r.row.querySelector('.badge');
         if (lab) lab.classList.add('largest-label');
-        if (badge) badge.classList.remove('hide');
+        if (badge) { badge.textContent = badgeText; badge.classList.remove('hide'); }
       });
 
-      outUsed.textContent = maxRows.length === 1
-        ? `Trunks used: ${withDiam.length}. Largest trunk is bolded and counted fully; all others counted at 50%.`
-        : `Trunks used: ${withDiam.length}. Multiple trunks tie for largest (bolded); one is counted fully, the rest at 50%.`;
+      // Explain usage (with clarification)
+      outUsed.textContent = (maxRows.length === 1)
+        ? `Trunks used: ${withDiam.length}. Largest trunk is bolded and counted fully; all others counted at 50% (per ARA formula).`
+        : `Trunks used: ${withDiam.length}. Multiple trunks are tied for largest (bolded); one is counted fully, the rest at 50% (per ARA formula).`;
 
       // Save details for copy + description
       lastMetersCirc = cEqM.toFixed(2);
@@ -402,12 +413,14 @@
           };
         }),
         dEqM: dEqM.toFixed(2), cEqM: cEqM.toFixed(2),
-        dEqFt: dEqFt.toFixed(2), cEqFt: cEqFt.toFixed(2)
+        dEqFt: dEqFt.toFixed(2), cEqFt: cEqFt.toFixed(2),
+        tie: maxRows.length > 1
       };
 
-      // Clear previous description if any (so user regenerates fresh)
+      // Clear previous description (user can regenerate)
       descBox.textContent = '—';
       copyDescBtn.disabled = true;
+      genDescBtn.classList.remove('active');
     }
 
     async function copyMeters(){
@@ -431,23 +444,47 @@
         calculate(new Event('submit'));
         if (!lastCalc) return;
       }
-      const lines = [];
-      lines.push('Trunks (circumference → diameter):');
-      lastCalc.trunks.forEach(t => {
-        const tag = t.isLargest ? ' (largest)' : '';
-        lines.push(`- T${t.index}: ${t.cM} m (${t.cF} ft) → ${t.dM} m (${t.dF} ft)${tag}`);
-      });
-      lines.push('');
-      lines.push('Combined (ARA method):');
-      lines.push(`- Equivalent circumference: ${lastCalc.cEqM} m (${lastCalc.cEqFt} ft)`);
-      lines.push(`- Equivalent diameter: ${lastCalc.dEqM} m (${lastCalc.dEqFt} ft)`);
 
-      descBox.textContent = lines.join('\n');
+      // Build HTML bullets
+      const ul1 = document.createElement('ul');
+      const title1 = document.createElement('p');
+      title1.innerHTML = '<strong>Individual trunks (circumference → diameter)</strong>';
+      lastCalc.trunks.forEach(t => {
+        const li = document.createElement('li');
+        const text = `T${t.index}: ${t.cM} m (${t.cF} ft) → ${t.dM} m (${t.dF} ft)`;
+        if (t.isLargest) {
+          li.innerHTML = `<strong>${text}</strong>`;
+        } else {
+          li.textContent = text;
+        }
+        ul1.appendChild(li);
+      });
+
+      const title2 = document.createElement('p');
+      title2.innerHTML = '<strong>Full tree (ARA method)</strong>';
+      const ul2 = document.createElement('ul');
+      const liC = document.createElement('li');
+      liC.textContent = `Full tree circumference: ${lastCalc.cEqM} m (${lastCalc.cEqFt} ft)`;
+      const liD = document.createElement('li');
+      liD.textContent = `Full tree diameter: ${lastCalc.dEqM} m (${lastCalc.dEqFt} ft)`;
+      ul2.appendChild(liC);
+      ul2.appendChild(liD);
+
+      descBox.innerHTML = '';
+      descBox.appendChild(title1);
+      descBox.appendChild(ul1);
+      descBox.appendChild(title2);
+      descBox.appendChild(ul2);
+
       copyDescBtn.disabled = false;
+      genDescBtn.classList.add('active'); // dark style after generating
     }
 
     async function copyDescription(){
-      const text = descBox.textContent.trim();
+      // Copy plain text of the description
+      const temp = document.createElement('div');
+      temp.innerHTML = descBox.innerHTML;
+      const text = temp.textContent.trim();
       if (!text || text === '—') return;
       try {
         await navigator.clipboard.writeText(text);
@@ -473,7 +510,7 @@
         outC.textContent = '—'; outD.textContent = '—'; outUsed.textContent = '—';
         clearLargestHighlights();
         descBox.textContent = '—'; copyDescBtn.disabled = true;
-        // keep bulk content as-is; optional: bulk.value = '';
+        genDescBtn.classList.remove('active');
         renumberLabels();
       }, 0);
     }
