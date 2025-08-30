@@ -8,30 +8,33 @@
     :root { --radius:12px; --dark:#111; --light:#f2f2f2; }
     .card, .card * { box-sizing: border-box; }
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:24px; }
-    .card { max-width: 720px; margin:0 auto; padding:20px; border:1px solid #ddd; border-radius:var(--radius); }
+    .card { max-width: 840px; margin:0 auto; padding:20px; border:1px solid #ddd; border-radius:var(--radius); }
     h1 { margin:0 0 10px; font-size:1.6rem; }
     .sub { margin:0 0 16px; color:#555; }
     .note { width:100%; background:#f7f7f7; padding:10px 12px; border-radius:var(--radius); border:1px solid #e7e7e7; margin-bottom:16px; }
 
     .help { margin:8px 0 6px; color:#444; font-size:.95rem; }
     .unit-toggle { display:flex; gap:8px; margin:0 0 12px; }
-    .toggle-btn { padding:8px 12px; border:1px solid #ccc; border-radius:8px; background:var(--light); cursor:pointer; user-select:none; }
-    .toggle-btn.active { background:var(--dark); color:#fff; border-color:var(--dark); }
+    .toggle-btn { padding:8px 12px; border:1px solid #ccc; border-radius:8px; background: var(--light); cursor:pointer; user-select:none; }
+    .toggle-btn.active { background: var(--dark); color:#fff; border-color: var(--dark); }
     .toggle-btn:focus-visible { outline:2px solid var(--dark); outline-offset:2px; }
 
     label { display:block; margin:10px 0 6px; font-weight:600; }
-    input[type="number"] {
+    input[type="number"], textarea {
       width:100%; display:block; padding:10px; border:1px solid #ccc; border-radius:8px; font-size:1rem;
     }
+    textarea { min-height: 80px; resize: vertical; }
     input.error { border-color:#e11900; box-shadow:0 0 0 3px rgba(225,25,0,.15); outline:none; }
 
+    .grid { display:grid; grid-template-columns: 1.3fr 1fr; gap:18px; align-items:start; }
     .row { display:grid; grid-template-columns: 1fr; gap:6px; align-items:start; }
     .trunks { display:flex; flex-direction:column; gap:10px; }
 
     .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
-    button { padding:10px 14px; border:0; border-radius:8px; cursor:pointer; }
-    .btn-primary { background:var(--dark); color:#fff; }
+    button, a.button { padding:10px 14px; border:0; border-radius:8px; cursor:pointer; display:inline-block; text-decoration:none; text-align:center; }
+    .btn-primary { background: var(--dark); color:#fff; }
     .btn-secondary { background:#e9e9e9; color:#111; }
+    .btn-ghost { background:#f5f5f5; color:#111; }
     button[disabled]{ opacity:.6; cursor:not-allowed; }
 
     .hint { font-size:.86rem; color:#b2271a; display:none; }
@@ -45,6 +48,13 @@
     .foot { margin-top:18px; font-size:.9rem; color:#666; line-height:1.35; }
     form { margin:0; }
     code { background:#f2f2f2; padding:2px 6px; border-radius:6px; }
+    .tiny { color:#666; font-size:.85rem; }
+
+    .descwrap { margin-top:16px; }
+    .descbox {
+      width:100%; min-height:120px; white-space:pre-wrap; background:#fafafa;
+      border:1px solid #e6e6e6; border-radius:10px; padding:12px; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    }
   </style>
 </head>
 <body>
@@ -66,16 +76,32 @@
     </div>
 
     <form id="form" action="#">
-      <div class="trunks" id="trunk-list">
-        <!-- rows injected here -->
+      <div class="grid">
+        <!-- LEFT: trunk entries -->
+        <div>
+          <div class="trunks" id="trunk-list"><!-- rows injected here --></div>
+          <div class="btn-row" style="margin-top:10px;">
+            <button type="button" id="add"    class="btn-secondary">Add trunk</button>
+            <button type="button" id="remove" class="btn-secondary">Remove last</button>
+            <button type="button" id="sort"   class="btn-ghost" title="Sort by diameter (desc)">Sort by diameter</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: bulk paste -->
+        <div>
+          <label for="bulk">Bulk paste (numbers only, any separators)</label>
+          <textarea id="bulk" placeholder="e.g. 1.72, 0.98 1.10
+2.05
+0.77"></textarea>
+          <div class="tiny">Uses current unit (<span id="unit-tag">m</span>). Ignores text; keeps positive numbers only.</div>
+          <div class="btn-row" style="margin-top:10px;">
+            <button type="button" id="fill" class="btn-ghost">Fill trunks from bulk</button>
+            <button type="button" id="clear-bulk" class="btn-ghost">Clear bulk</button>
+          </div>
+        </div>
       </div>
 
-      <div class="btn-row" style="margin-top:10px;">
-        <button type="button" id="add"    class="btn-secondary">Add trunk</button>
-        <button type="button" id="remove" class="btn-secondary">Remove last</button>
-      </div>
-
-      <div class="btn-row" style="margin-top:14px;">
+      <div class="btn-row" style="margin-top:16px;">
         <button type="submit"  class="btn-primary">Calculate</button>
         <button type="button" id="copy"   class="btn-secondary" disabled title="Copies equivalent circumference in meters only">Copy result (m)</button>
         <button type="reset"  id="reset"  class="btn-secondary">Reset</button>
@@ -86,6 +112,15 @@
       <p><strong>Equivalent circumference:</strong> <span id="ceq">—</span></p>
       <p><strong>Equivalent diameter:</strong> <span id="deq">—</span></p>
       <p id="used">—</p>
+    </div>
+
+    <!-- Description generator -->
+    <div class="descwrap">
+      <div class="btn-row">
+        <button type="button" id="gendesc" class="btn-secondary" title="Create a bullet list summary">Generate description</button>
+        <button type="button" id="copydesc" class="btn-ghost" disabled>Copy description</button>
+      </div>
+      <div id="desc" class="descbox" aria-live="polite">—</div>
     </div>
 
     <div class="foot">
@@ -101,17 +136,24 @@
     const list = $('#trunk-list');
     const addBtn = $('#add');
     const remBtn = $('#remove');
+    const sortBtn = $('#sort');
     const copyBtn = $('#copy');
     const outC = $('#ceq');
     const outD = $('#deq');
     const outUsed = $('#used');
     const unitM = $('#unit-m');
     const unitFt = $('#unit-ft');
+    const bulk = $('#bulk');
+    const unitTag = $('#unit-tag');
+    const genDescBtn = $('#gendesc');
+    const copyDescBtn = $('#copydesc');
+    const descBox = $('#desc');
 
     let inputUnit = 'm';     // 'm' or 'ft'
     let lastMetersCirc = ''; // for Copy (m)
+    let lastCalc = null;     // keep detailed calc for description
     let trunkCount = 0;
-    const MAX_TRUNKS = 30;
+    const MAX_TRUNKS = 60;
 
     function fmt2(x){ return Number.isFinite(x) ? x.toFixed(2) : '—'; }
 
@@ -145,26 +187,16 @@
 
       const hint = document.createElement('div');
       hint.className = 'hint';
-      hint.textContent = ''; // filled dynamically
 
       row.appendChild(labelWrap);
       row.appendChild(inp);
       row.appendChild(hint);
       list.appendChild(row);
 
-      // Clear red + hint on input
-      inp.addEventListener('input', () => {
-        inp.classList.remove('error');
-        hideHint(hint);
-      });
-      // Soft hints on blur for outliers
+      inp.addEventListener('input', () => { inp.classList.remove('error'); hideHint(hint); });
       inp.addEventListener('blur', () => {
         const v = parseFloat(inp.value);
-        if (Number.isFinite(v) && v > 0) {
-          maybeOutlierHint(v, hint);
-        } else {
-          hideHint(hint);
-        }
+        if (Number.isFinite(v) && v > 0) maybeOutlierHint(v, hint); else hideHint(hint);
       });
     }
 
@@ -172,36 +204,12 @@
       if (trunkCount <= 1) return;
       list.lastElementChild?.remove();
       trunkCount--;
+      renumberLabels();
     }
 
-    function setUnit(newUnit){
-      if (newUnit === inputUnit) return;
-
-      // Convert existing numeric values to the new unit (circumference)
-      const inputs = getInputs();
-      inputs.forEach(inp => {
-        const v = parseFloat(inp.value);
-        if (!Number.isNaN(v)) {
-          const m = (inputUnit === 'm') ? v : v * M_PER_FT; // old -> meters
-          const out = (newUnit === 'm') ? m : m * FT_PER_M; // meters -> new
-          inp.value = out.toFixed(2);
-        }
-      });
-
-      inputUnit = newUnit;
-
-      const isM = inputUnit === 'm';
-      unitM.classList.toggle('active', isM);
-      unitFt.classList.toggle('active', !isM);
-      unitM.setAttribute('aria-pressed', String(isM));
-      unitFt.setAttribute('aria-pressed', String(!isM));
-
-      // Update labels & placeholders
+    function renumberLabels(){
       Array.from(list.querySelectorAll('.trunk-label')).forEach((lab, i) => {
         lab.textContent = `Trunk ${i+1} circumference (${inputUnit})`;
-      });
-      inputs.forEach(inp => {
-        inp.placeholder = isM ? 'e.g. 1.75' : 'e.g. 5.74';
       });
     }
 
@@ -209,25 +217,18 @@
       return Array.from(list.querySelectorAll('input[type="number"]'));
     }
 
-    function showHint(hintEl, msg){
-      hintEl.textContent = msg;
-      hintEl.classList.add('show');
-    }
-    function hideHint(hintEl){
-      hintEl.textContent = '';
-      hintEl.classList.remove('show');
-    }
+    function showHint(hEl, msg){ hEl.textContent = msg; hEl.classList.add('show'); }
+    function hideHint(hEl){ hEl.textContent = ''; hEl.classList.remove('show'); }
 
-    function maybeOutlierHint(val, hintEl){
-      // Gentle nudges; still included in calc
+    function maybeOutlierHint(val, hEl){
       if (inputUnit === 'm') {
-        if (val < 0.20) showHint(hintEl, 'This seems unusually small — check units/decimal?');
-        else if (val > 12) showHint(hintEl, 'This seems unusually large — check units?');
-        else hideHint(hintEl);
+        if (val < 0.20) showHint(hEl, 'This seems unusually small — check units/decimal?');
+        else if (val > 12) showHint(hEl, 'This seems unusually large — check units?');
+        else hideHint(hEl);
       } else {
-        if (val < 0.66) showHint(hintEl, 'This seems unusually small — check units/decimal?');
-        else if (val > 40) showHint(hintEl, 'This seems unusually large — check units?');
-        else hideHint(hintEl);
+        if (val < 0.66) showHint(hEl, 'This seems unusually small — check units/decimal?');
+        else if (val > 40) showHint(hEl, 'This seems unusually large — check units?');
+        else hideHint(hEl);
       }
     }
 
@@ -236,62 +237,129 @@
       list.querySelectorAll('.badge').forEach(b => b.classList.add('hide'));
     }
 
+    function setUnit(newUnit){
+      if (newUnit === inputUnit) return;
+
+      // Convert existing numbers to the new unit (circumference)
+      getInputs().forEach(inp => {
+        const v = parseFloat(inp.value);
+        if (!Number.isNaN(v)) {
+          const m = (inputUnit === 'm') ? v : v * M_PER_FT; // old -> m
+          const out = (newUnit === 'm') ? m : m * FT_PER_M; // m -> new
+          inp.value = out.toFixed(2);
+        }
+      });
+
+      inputUnit = newUnit;
+      unitTag.textContent = inputUnit;
+
+      const isM = inputUnit === 'm';
+      unitM.classList.toggle('active', isM);
+      unitFt.classList.toggle('active', !isM);
+      unitM.setAttribute('aria-pressed', String(isM));
+      unitFt.setAttribute('aria-pressed', String(!isM));
+
+      // Update labels & placeholders
+      renumberLabels();
+      getInputs().forEach(inp => { inp.placeholder = isM ? 'e.g. 1.75' : 'e.g. 5.74'; });
+    }
+
+    function parseBulk(text){
+      const nums = (text.match(/[-+]?\d*\.?\d+/g) || [])
+        .map(s => parseFloat(s))
+        .filter(v => Number.isFinite(v) && v > 0);
+      return nums;
+    }
+
+    function fillFromBulk(){
+      const vals = parseBulk(bulk.value);
+      if (vals.length === 0) return;
+      // rebuild rows sized to vals
+      list.innerHTML = '';
+      trunkCount = 0;
+      vals.forEach(v => addTrunk(v.toFixed(2)));
+      clearLargestHighlights();
+      lastMetersCirc = '';
+      copyBtn.disabled = true;
+      outC.textContent = '—'; outD.textContent = '—'; outUsed.textContent = '—';
+      descBox.textContent = '—'; copyDescBtn.disabled = true;
+      renumberLabels();
+    }
+
+    function sortByDiameter(){
+      // Split rows into valid (with diameter in meters) and the rest
+      const rows = Array.from(list.children);
+      const valid = [];
+      const emptyOrInvalid = [];
+      rows.forEach(row => {
+        const inp = row.querySelector('input[type="number"]');
+        const val = parseFloat(inp.value);
+        if (Number.isFinite(val) && val > 0) {
+          const cMeters = (inputUnit === 'm') ? val : val * M_PER_FT;
+          const dMeters = cMeters / PI;
+          valid.push({ row, dMeters });
+        } else {
+          emptyOrInvalid.push(row);
+        }
+      });
+      if (valid.length < 2) return; // nothing to sort
+
+      valid.sort((a,b) => b.dMeters - a.dMeters);
+      // Rebuild order
+      const frag = document.createDocumentFragment();
+      valid.forEach(v => frag.appendChild(v.row));
+      emptyOrInvalid.forEach(r => frag.appendChild(r));
+      list.innerHTML = '';
+      list.appendChild(frag);
+      renumberLabels();
+      clearLargestHighlights();
+      // Recalculate to re-highlight and refresh outputs if there are numbers
+      if (valid.length > 0) calculate(new Event('submit'));
+    }
+
     function calculate(e){
-      e.preventDefault();
+      if (e) e.preventDefault();
       clearLargestHighlights();
 
       const inputs = getInputs();
-      let anyInvalid = false;
-
-      // Build list of usable circumferences (positive numbers), keep mapping to rows
       const rows = inputs.map(inp => {
         const row = inp.closest('.row');
         const hint = row.querySelector('.hint');
         const val = parseFloat(inp.value);
-        // Reset immediate errors
-        inp.classList.remove('error');
-        hideHint(hint);
+        inp.classList.remove('error'); hideHint(hint);
 
         if (Number.isNaN(val)) return { inp, row, val: NaN, ok:false };
-
         if (val <= 0) {
-          inp.classList.add('error');
-          showHint(hint, 'Enter a positive number.');
-          anyInvalid = true;
+          inp.classList.add('error'); showHint(hint, 'Enter a positive number.');
           return { inp, row, val, ok:false };
         }
-
-        // Optional outlier hints (not invalid)
         maybeOutlierHint(val, hint);
-
         return { inp, row, val, ok:true };
       });
 
       const valid = rows.filter(r => r.ok);
       if (valid.length === 0) {
-        // No usable values at all
         inputs[0]?.classList.add('error');
-        outC.textContent = '—';
-        outD.textContent = '—';
+        outC.textContent = '—'; outD.textContent = '—';
         outUsed.textContent = 'Please enter at least one circumference.';
-        copyBtn.disabled = true;
-        lastMetersCirc = '';
+        copyBtn.disabled = true; lastMetersCirc = ''; lastCalc = null;
+        descBox.textContent = '—'; copyDescBtn.disabled = true;
         return;
       }
 
-      // Convert circumference -> diameter (in meters)
+      // circumference -> diameter (in meters)
       const withDiam = valid.map((r, i) => {
         const cMeters = (inputUnit === 'm') ? r.val : r.val * M_PER_FT;
         const dMeters = cMeters / PI;
         return { ...r, cMeters, dMeters, idx: i };
       });
 
-      // Find maxima (allow tiny epsilon for ties)
+      // Identify largest (ties allowed)
       const eps = 1e-9;
       const dmax = Math.max(...withDiam.map(x => x.dMeters));
       const maxRows = withDiam.filter(x => Math.abs(x.dMeters - dmax) < eps);
 
-      // Sum others (one of the max set counts fully; others half)
+      // Combined diameter & circumference
       const sumAll = withDiam.reduce((acc, x) => acc + x.dMeters, 0);
       const dEqM = dmax + 0.5 * (sumAll - dmax);
       const cEqM = dEqM * PI;
@@ -302,7 +370,7 @@
       outC.textContent = `${cEqM.toFixed(2)} m (${cEqFt.toFixed(2)} ft)`;
       outD.textContent = `${dEqM.toFixed(2)} m (${dEqFt.toFixed(2)} ft)`;
 
-      // Highlight largest trunk(s)
+      // Highlight largest labels
       maxRows.forEach(r => {
         const lab = r.row.querySelector('.trunk-label');
         const badge = r.row.querySelector('.badge');
@@ -310,16 +378,36 @@
         if (badge) badge.classList.remove('hide');
       });
 
-      // Explain usage
-      if (maxRows.length === 1) {
-        outUsed.textContent = `Trunks used: ${withDiam.length}. Largest trunk is bolded and counted fully; all others counted at 50%.`;
-      } else {
-        outUsed.textContent = `Trunks used: ${withDiam.length}. Multiple trunks tie for largest (bolded); one is counted fully, the rest at 50%.`;
-      }
+      outUsed.textContent = maxRows.length === 1
+        ? `Trunks used: ${withDiam.length}. Largest trunk is bolded and counted fully; all others counted at 50%.`
+        : `Trunks used: ${withDiam.length}. Multiple trunks tie for largest (bolded); one is counted fully, the rest at 50%.`;
 
+      // Save details for copy + description
       lastMetersCirc = cEqM.toFixed(2);
       copyBtn.disabled = false;
       copyBtn.textContent = 'Copy result (m)';
+
+      lastCalc = {
+        unit: inputUnit,
+        trunks: withDiam.map((x, idx) => {
+          const cM = x.cMeters;
+          const cF = cM * FT_PER_M;
+          const dM = x.dMeters;
+          const dF = dM * FT_PER_M;
+          return {
+            index: idx + 1,
+            cM: cM.toFixed(2), cF: cF.toFixed(2),
+            dM: dM.toFixed(2), dF: dF.toFixed(2),
+            isLargest: Math.abs(dM - dmax) < eps
+          };
+        }),
+        dEqM: dEqM.toFixed(2), cEqM: cEqM.toFixed(2),
+        dEqFt: dEqFt.toFixed(2), cEqFt: cEqFt.toFixed(2)
+      };
+
+      // Clear previous description if any (so user regenerates fresh)
+      descBox.textContent = '—';
+      copyDescBtn.disabled = true;
     }
 
     async function copyMeters(){
@@ -330,45 +418,82 @@
         setTimeout(() => { copyBtn.textContent = 'Copy result (m)'; }, 1200);
       } catch {
         const tmp = document.createElement('input');
-        tmp.value = lastMetersCirc;
-        document.body.appendChild(tmp);
-        tmp.select();
-        document.execCommand('copy');
-        document.body.removeChild(tmp);
+        tmp.value = lastMetersCirc; document.body.appendChild(tmp);
+        tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
         copyBtn.textContent = 'Copied ✓';
         setTimeout(() => { copyBtn.textContent = 'Copy result (m)'; }, 1200);
       }
     }
 
+    function generateDescription(){
+      // Ensure we have a calculation
+      if (!lastCalc) {
+        calculate(new Event('submit'));
+        if (!lastCalc) return;
+      }
+      const lines = [];
+      lines.push('Trunks (circumference → diameter):');
+      lastCalc.trunks.forEach(t => {
+        const tag = t.isLargest ? ' (largest)' : '';
+        lines.push(`- T${t.index}: ${t.cM} m (${t.cF} ft) → ${t.dM} m (${t.dF} ft)${tag}`);
+      });
+      lines.push('');
+      lines.push('Combined (ARA method):');
+      lines.push(`- Equivalent circumference: ${lastCalc.cEqM} m (${lastCalc.cEqFt} ft)`);
+      lines.push(`- Equivalent diameter: ${lastCalc.dEqM} m (${lastCalc.dEqFt} ft)`);
+
+      descBox.textContent = lines.join('\n');
+      copyDescBtn.disabled = false;
+    }
+
+    async function copyDescription(){
+      const text = descBox.textContent.trim();
+      if (!text || text === '—') return;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyDescBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyDescBtn.textContent = 'Copy description'; }, 1200);
+      } catch {
+        const tmp = document.createElement('textarea');
+        tmp.value = text; document.body.appendChild(tmp);
+        tmp.select(); document.execCommand('copy'); document.body.removeChild(tmp);
+        copyDescBtn.textContent = 'Copied ✓';
+        setTimeout(() => { copyDescBtn.textContent = 'Copy description'; }, 1200);
+      }
+    }
+
     function resetAll(){
       setTimeout(() => {
-        // Clear rows and re-add two blanks
         list.innerHTML = '';
         trunkCount = 0;
-        addTrunk();
-        addTrunk();
-        lastMetersCirc = '';
+        addTrunk(); addTrunk();
+        lastMetersCirc = ''; lastCalc = null;
         copyBtn.disabled = true;
         copyBtn.textContent = 'Copy result (m)';
-        outC.textContent = '—';
-        outD.textContent = '—';
-        outUsed.textContent = '—';
+        outC.textContent = '—'; outD.textContent = '—'; outUsed.textContent = '—';
         clearLargestHighlights();
+        descBox.textContent = '—'; copyDescBtn.disabled = true;
+        // keep bulk content as-is; optional: bulk.value = '';
+        renumberLabels();
       }, 0);
     }
 
-    // Init with two inputs
-    addTrunk();
-    addTrunk();
+    // Init
+    addTrunk(); addTrunk();
 
     // Events
     form.addEventListener('submit', calculate);
     form.addEventListener('reset', resetAll);
     addBtn.addEventListener('click', () => addTrunk());
     remBtn.addEventListener('click', () => { if (trunkCount > 1) removeTrunk(); });
+    sortBtn.addEventListener('click', sortByDiameter);
+    $('#fill').addEventListener('click', fillFromBulk);
+    $('#clear-bulk').addEventListener('click', () => bulk.value = '');
     unitM.addEventListener('click', () => setUnit('m'));
     unitFt.addEventListener('click', () => setUnit('ft'));
     $('#copy').addEventListener('click', copyMeters);
+    genDescBtn.addEventListener('click', generateDescription);
+    copyDescBtn.addEventListener('click', copyDescription);
   </script>
 </body>
 </html>
