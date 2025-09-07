@@ -51,11 +51,13 @@
 
     /* Description area */
     .descwrap { margin-top:16px; }
+    .descwrap .btn-row { margin-bottom:10px; } /* gap between buttons and box */
     .descbox {
       width:100%; min-height:120px; background:#fafafa;
       border:1px solid #e6e6e6; border-radius:10px; padding:12px;
       white-space:normal; font-family: inherit;
     }
+    .descbox p { margin: 0 0 6px; }           /* no extra top blank line */
     .descbox ul { margin: 6px 0 6px 20px; }
   </style>
 </head>
@@ -265,7 +267,9 @@
       const title2 = document.createElement('p');
       title2.innerHTML = '<strong>Computed height (ARA formula)</strong>';
       const ul2 = document.createElement('ul');
-      const liF = document.createElement('li'); liF.textContent = 'height = tan(angle°) × distance + eye height';
+      const liF = document.createElement('li');
+      liF.textContent =
+        `height = tan(${lastCalc.angleDeg}°) × ${lastCalc.distanceM} m + ${lastCalc.eyeM} m = ${lastCalc.heightM} m (${lastCalc.heightFt} ft)`;
       const liH = document.createElement('li'); liH.innerHTML = `<strong>Tree height:</strong> ${lastCalc.heightM} m (${lastCalc.heightFt} ft)`;
       ul2.appendChild(liF); ul2.appendChild(liH);
 
