@@ -140,6 +140,13 @@
           <button type="button" id="unit-ft" class="toggle-btn" aria-pressed="false">Feet (ft)</button>
         </div>
 
+        <!-- Calc mode toggle -->
+        <p class="help"><strong>Calculation mode:</strong></p>
+        <div class="unit-toggle" role="group" aria-label="Calculation mode">
+          <button type="button" id="mode-manual" class="toggle-btn active" aria-pressed="true">Manual (buttons)</button>
+          <button type="button" id="mode-auto"   class="toggle-btn" aria-pressed="false">Auto (on change)</button>
+        </div>
+
         <!-- Single-trunk circumference -->
         <div id="single-circ-block" style="display:none; margin-top:10px;">
           <label for="singleC">Circumference (<span class="unit-tag">m</span>)</label>
@@ -150,7 +157,7 @@
         <!-- Multi-trunk circumference widget -->
         <div id="multi-block" style="display:none; margin-top:10px;">
           <div class="note" style="margin-bottom:10px;">
-            <strong>Multi-trunk entry:</strong> Add each trunk’s <em>circumference</em>. Largest trunk counts 100%, others 50% (ARA method).
+            <strong>Multi-trunk entry:</strong> Add each trunk’s <em>circumference</em>.
           </div>
           <div class="row" style="align-items:start;">
             <div>
@@ -176,6 +183,7 @@
             </div>
           </div>
           <div id="mt-result" class="tiny" style="margin-top:8px; color:#333;">—</div>
+          <div class="tiny" style="margin-top:4px;">* Largest trunk counts 100%, others 50%.</div>
         </div>
 
         <!-- Height -->
@@ -211,7 +219,9 @@
               <input id="spreadMinor" type="number" step="0.01" inputmode="decimal" placeholder="optional">
             </div>
           </div>
-          <div class="tiny">Enter one or both; the mean will be shown below.</div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="spread-calc" class="btn-secondary">Calculate canopy spread</button>
+          </div>
         </div>
       </section>
 
@@ -267,7 +277,6 @@
 
     function toM(val, unit){ return unit === 'm' ? val : val * M_PER_FT; }
     function mToFt(m){ return m * FT_PER_M; }
-
     function nowLocal24(){
       const d = new Date();
       const y = d.getFullYear();
@@ -277,10 +286,12 @@
       const mi = String(d.getMinutes()).padStart(2,'0');
       return `${y}-${mo}-${da} ${h}:${mi}`;
     }
+    function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
     // --------- DOM refs ----------
     const unitM = $('#unit-m'), unitFt = $('#unit-ft');
     const unitTags = $$('.unit-tag');
+    const modeManualBtn = $('#mode-manual'), modeAutoBtn = $('#mode-auto');
 
     const treeName = $('#treeName'), species = $('#species'), condition = $('#condition'), treeType = $('#treeType');
 
@@ -301,6 +312,7 @@
 
     // Spread
     const spreadMajor = $('#spreadMajor'), spreadMinor = $('#spreadMinor');
+    const spreadCalc  = $('#spread-calc');
 
     // Copy row
     const copyHeight = $('#copyHeight'), copyEqCirc = $('#copyEqCirc'), copyAvgCirc = $('#copyAvgCirc'), copySpread = $('#copySpread');
@@ -312,14 +324,15 @@
     const genDesc = $('#genDesc'), copyDesc = $('#copyDesc'), descBox = $('#desc'), emailBtn = $('#emailBtn');
 
     // --------- State ----------
-    let inputUnit = 'm'; // global m/ft for all measurements
+    let inputUnit = 'm';
+    let calcMode = 'manual'; // 'manual' | 'auto'
     let mtCount = 0; const MT_MAX = 60;
 
     // Last computed values (meters-based)
-    let lastHeight = null; // {hM, hFt, angleDeg, dM, eM}
-    let lastSingle = null; // {cM, cFt, dM, dFt}
-    let lastMulti  = null; // {trunks:[{cM,dM,isLargest}], dEqM,cEqM,dEqFt,cEqFt, tie, cAvgM, cAvgFt}
-    let lastSpread = null; // {majorM?, minorM?, meanM, meanFt}
+    let lastHeight = null;
+    let lastSingle = null;
+    let lastMulti  = null;
+    let lastSpread = null;
     let descDirty  = true;
 
     // --------- Unit toggle ----------
@@ -367,21 +380,36 @@
 
       markDescDirty();
       saveState();
-    }
 
+      // Auto recalc if needed
+      if (calcMode === 'auto'){
+        if (treeType.value === 'Single trunk tree') recomputeSingle();
+        if (treeType.value === 'Multi trunked tree') calcMulti();
+        calcHeight(); calcSpread();
+      }
+    }
     unitM.addEventListener('click', () => setUnit('m'));
     unitFt.addEventListener('click', () => setUnit('ft'));
+
+    // --------- Calc mode toggle ----------
+    function setCalcMode(mode){
+      calcMode = mode;
+      const isManual = mode === 'manual';
+      modeManualBtn.classList.toggle('active', isManual);
+      modeAutoBtn.classList.toggle('active', !isManual);
+      modeManualBtn.setAttribute('aria-pressed', String(isManual));
+      modeAutoBtn.setAttribute('aria-pressed', String(!isManual));
+      saveState();
+    }
+    modeManualBtn.addEventListener('click', () => setCalcMode('manual'));
+    modeAutoBtn.addEventListener('click', () => setCalcMode('auto'));
 
     // --------- Basics & type gating ----------
     function updateTypeVisibility(){
       const t = treeType.value;
       singleBlock.style.display = (t === 'Single trunk tree') ? '' : 'none';
       mtBlock.style.display     = (t === 'Multi trunked tree') ? '' : 'none';
-      // Others -> both hidden for circumference
-      markDescDirty();
-      saveState();
-      updateResultsPanel();
-      updateCopyButtons();
+      markDescDirty(); saveState(); updateResultsPanel(); updateCopyButtons();
     }
     treeType.addEventListener('change', updateTypeVisibility);
 
@@ -395,12 +423,9 @@
       } else {
         lastSingle = null;
       }
-      markDescDirty();
-      updateResultsPanel();
-      updateCopyButtons();
-      saveState();
+      markDescDirty(); updateResultsPanel(); updateCopyButtons(); saveState();
     }
-    singleC.addEventListener('input', recomputeSingle);
+    singleC.addEventListener('input', () => { recomputeSingle(); if (calcMode==='auto') updateResultsPanel(); });
 
     // --------- Multi-trunk widget ----------
     function addMtRow(value=''){
@@ -412,8 +437,7 @@
       row.dataset.index = String(mtCount);
 
       const labelWrap = document.createElement('div');
-      labelWrap.style.display = 'flex';
-      labelWrap.style.alignItems = 'center';
+      labelWrap.style.display = 'flex'; labelWrap.style.alignItems = 'center';
 
       const label = document.createElement('label');
       label.htmlFor = `mt-${mtCount}`;
@@ -424,8 +448,7 @@
       badge.className = 'badge hide';
       badge.textContent = 'Largest';
 
-      labelWrap.appendChild(label);
-      labelWrap.appendChild(badge);
+      labelWrap.appendChild(label); labelWrap.appendChild(badge);
 
       const inp = document.createElement('input');
       inp.id = `mt-${mtCount}`;
@@ -438,7 +461,10 @@
       row.appendChild(labelWrap); row.appendChild(inp); row.appendChild(hint);
       mtList.appendChild(row);
 
-      inp.addEventListener('input', () => { inp.classList.remove('error'); hint.classList.remove('show'); markDescDirty(); saveState(); });
+      inp.addEventListener('input', () => {
+        inp.classList.remove('error'); hint.classList.remove('show'); markDescDirty(); saveState();
+        if (calcMode === 'auto') calcMulti();
+      });
       inp.addEventListener('blur', () => {
         const v = parseFloat(inp.value);
         maybeMtOutlierHint(v, hint);
@@ -461,15 +487,14 @@
       mtList.lastElementChild?.remove();
       mtCount--;
       renumberMtLabels();
-      markDescDirty();
-      saveState();
+      markDescDirty(); saveState();
+      if (calcMode==='auto') calcMulti();
     }
     function renumberMtLabels(){
       Array.from(mtList.querySelectorAll('.mt-label')).forEach((lab,i)=>{
         lab.textContent = `Trunk ${i+1} circumference (${inputUnit})`;
       });
     }
-
     function parseMtBulk(text, limit = MT_MAX){
       const vals = [];
       if (!text) return vals;
@@ -490,17 +515,15 @@
       }
       return vals;
     }
-
     function mtFillFromBulk(){
       const vals = parseMtBulk(mtBulk.value, MT_MAX);
       if (vals.length === 0) return;
       mtList.innerHTML=''; mtCount=0;
       vals.forEach(v=>addMtRow(v.toFixed(2)));
       mtResult.textContent='—';
-      markDescDirty();
-      saveState();
+      markDescDirty(); saveState();
+      if (calcMode==='auto') calcMulti();
     }
-
     function mtSortByDiameter(){
       const rows = Array.from(mtList.children);
       const valid=[], invalid=[];
@@ -516,30 +539,21 @@
       const frag = document.createDocumentFragment();
       valid.forEach(v=>frag.appendChild(v.row)); invalid.forEach(r=>frag.appendChild(r));
       mtList.innerHTML=''; mtList.appendChild(frag);
-      renumberMtLabels();
-      clearMtLargest();
-      markDescDirty();
-      saveState();
+      renumberMtLabels(); clearMtLargest();
+      markDescDirty(); saveState();
+      if (calcMode==='auto') calcMulti();
     }
-
     function clearMtLargest(){
       mtList.querySelectorAll('.largest-label').forEach(el => el.classList.remove('largest-label'));
       mtList.querySelectorAll('.badge').forEach(b=>{ b.classList.add('hide'); b.textContent='Largest'; });
     }
-
     function calcMulti(){
       clearMtLargest();
       const items = Array.from(mtList.querySelectorAll('input[type="number"]'));
-      const rows = items.map(inp=>{
-        const row = inp.closest('.row'); const hint=row.querySelector('.hint');
-        const val = parseFloat(inp.value);
-        inp.classList.remove('error'); hint.classList.remove('show');
-        if (!Number.isFinite(val) || val <= 0) { return {ok:false, row, val}; }
-        maybeMtOutlierHint(val, hint);
-        return {ok:true, row, val};
-      });
+      const valid = items
+        .map(inp => ({ inp, val: parseFloat(inp.value), row: inp.closest('.row') }))
+        .filter(o => Number.isFinite(o.val) && o.val > 0);
 
-      const valid = rows.filter(r=>r.ok);
       if (valid.length === 0){
         lastMulti=null; mtResult.textContent='Enter at least one trunk circumference.'; updateResultsPanel(); updateCopyButtons(); saveState(); return;
       }
@@ -580,12 +594,8 @@
       };
 
       mtResult.textContent = `Calculated ${withD.length} trunk${withD.length>1?'s':''}.`;
-      markDescDirty();
-      updateResultsPanel();
-      updateCopyButtons();
-      saveState();
+      markDescDirty(); updateResultsPanel(); updateCopyButtons(); saveState();
     }
-
     mtAdd.addEventListener('click', ()=>{ addMtRow(); markDescDirty(); saveState(); });
     mtRemove.addEventListener('click', ()=>{ if (mtCount>1) removeMtRow(); });
     mtSort.addEventListener('click', mtSortByDiameter);
@@ -600,13 +610,11 @@
       const dM = toM(d, inputUnit); const eM = toM(e, inputUnit);
       const hM = tanDeg(a)*dM + eM;
       lastHeight = { hM, hFt: mToFt(hM), angleDeg: Number(a.toFixed(1)), dM, eM };
-      markDescDirty();
-      updateResultsPanel();
-      updateCopyButtons();
-      saveState();
+      markDescDirty(); updateResultsPanel(); updateCopyButtons(); saveState();
     }
     hCalc.addEventListener('click', calcHeight);
-    [hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input', ()=>{ markDescDirty(); }));
+    [hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input', ()=>{ markDescDirty(); if (calcMode==='auto') calcHeight(); }));
+    [hAngle,hDist,hEye].forEach(i=>i.addEventListener('keydown', (e)=>{ if (e.key==='Enter'){ e.preventDefault(); calcHeight(); }}));
 
     // --------- Spread calc ----------
     function calcSpread(){
@@ -619,12 +627,10 @@
         const meanM = ( (mMaj??0) + (mMin??0) ) / ( (haveMaj?1:0) + (haveMin?1:0) );
         lastSpread = { majorM:mMaj, minorM:mMin, meanM, meanFt:mToFt(meanM) };
       }
-      markDescDirty();
-      updateResultsPanel();
-      updateCopyButtons();
-      saveState();
+      markDescDirty(); updateResultsPanel(); updateCopyButtons(); saveState();
     }
-    [spreadMajor, spreadMinor].forEach(inp=>inp.addEventListener('input', calcSpread));
+    spreadCalc.addEventListener('click', calcSpread);
+    [spreadMajor, spreadMinor].forEach(inp=>inp.addEventListener('input', ()=>{ markDescDirty(); if (calcMode==='auto') calcSpread(); }));
 
     // --------- Results panel & copy buttons ----------
     function updateResultsPanel(){
@@ -638,7 +644,7 @@
       // Eq/Entered circumference
       const t = treeType.value;
       if (t === 'Multi trunked tree' && lastMulti){
-        resEqCirc.textContent = `Equivalent circumference (ARA): ${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft)`;
+        resEqCirc.textContent = `Equivalent circumference: ${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft)`;
         resAvgCirc.style.display = '';
         resAvgCirc.textContent = `Average circumference (multi): ${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft)`;
       } else if (t === 'Single trunk tree' && lastSingle){
@@ -648,7 +654,7 @@
       } else {
         resEqCirc.textContent = 'Equivalent / Entered circumference: —';
         resAvgCirc.style.display = (t==='Multi trunked tree')?'':'none';
-        resAvgCirc.textContent = (t==='Multi trunked tree')?'Average circumference (multi): —':'Average circumference (multi): —';
+        resAvgCirc.textContent = 'Average circumference (multi): —';
       }
 
       // Spread
@@ -704,17 +710,14 @@
     }
 
     function ensureCalcsOnDemand(){
-      // If multi type and rows exist but no calc yet, try computing
       if (treeType.value === 'Multi trunked tree'){
         const anyVal = $$('#mt-list input[type="number"]').some(i=>Number.isFinite(parseFloat(i.value)));
         if (anyVal && !lastMulti) calcMulti();
       }
-      // Height: if all three present, compute
       const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value);
       if (Number.isFinite(a) && Number.isFinite(d) && Number.isFinite(e) && !lastHeight) calcHeight();
-      // Single trunk: recompute if needed
+      if (!lastSpread && (Number.isFinite(parseFloat(spreadMajor.value)) || Number.isFinite(parseFloat(spreadMinor.value)))) calcSpread();
       if (treeType.value === 'Single trunk tree' && !lastSingle && Number.isFinite(parseFloat(singleC.value))) recomputeSingle();
-      // Spread recompute handled on input
     }
 
     function buildDescription(){
@@ -724,7 +727,6 @@
       const cond = condition.value?.trim();
       const type = treeType.value?.trim();
 
-      // Header section
       const head = document.createElement('div');
       if (name) head.innerHTML += `<p><strong>Tree</strong>: ${escapeHtml(name)}</p>`;
       if (sp)   head.innerHTML += `<p><strong>Species</strong>: ${escapeHtml(sp)}</p>`;
@@ -760,13 +762,15 @@
             if (t.isLargest){ li.innerHTML = `<strong>${txt}</strong>`; } else { li.textContent = txt; }
             ul1.appendChild(li);
           });
-          const p2 = document.createElement('p'); p2.innerHTML = '<strong>Full tree (ARA method)</strong>';
+
+          const p2 = document.createElement('p'); p2.innerHTML = '<strong>Full Tree Circumference</strong>';
           const ul2 = document.createElement('ul');
-          const liC = document.createElement('li'); liC.textContent = `Equivalent circumference: ${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft)`;
-          const liD = document.createElement('li'); liD.textContent = `Equivalent diameter: ${fmt2(lastMulti.dEqM)} m (${fmt2(lastMulti.dEqFt)} ft)`;
-          const liA = document.createElement('li'); liA.textContent = `Average circumference: ${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft)`;
-          const liR = document.createElement('li'); liR.textContent = 'Rule: largest counted 100%, others 50%';
-          ul2.appendChild(liC); ul2.appendChild(liD); ul2.appendChild(liA); ul2.appendChild(liR);
+          const liC = document.createElement('li');
+          liC.textContent = `Equivalent circumference: ${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft) → ${fmt2(lastMulti.dEqM)} m (${fmt2(lastMulti.dEqFt)} ft)`;
+          const liA = document.createElement('li');
+          const dAvgM = lastMulti.cAvgM / PI, dAvgFt = mToFt(dAvgM);
+          liA.textContent = `Average circumference: ${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft) → ${fmt2(dAvgM)} m (${fmt2(dAvgFt)} ft)`;
+          ul2.appendChild(liC); ul2.appendChild(liA);
 
           meas.appendChild(p1); meas.appendChild(ul1); meas.appendChild(p2); meas.appendChild(ul2);
         }
@@ -775,7 +779,7 @@
       // Height
       if (lastHeight){
         hasMeas = true;
-        const p = document.createElement('p'); p.innerHTML = '<strong>Height (ARA)</strong>';
+        const p = document.createElement('p'); p.innerHTML = '<strong>Height</strong>';
         const ul = document.createElement('ul');
         const liH = document.createElement('li'); liH.textContent = `Tree height: ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`;
         const liF = document.createElement('li');
@@ -787,20 +791,17 @@
       // Canopy spread
       if (lastSpread){
         hasMeas = true;
-        const p = document.createElement('p'); p.innerHTML = '<strong>Canopy spread measurements</strong>';
+        const p = document.createElement('p'); p.innerHTML = '<strong>Canopy spread</strong>';
         const ul = document.createElement('ul');
         if (Number.isFinite(lastSpread.majorM)){
-          const li = document.createElement('li'); li.textContent = `Major: ${fmt2(lastSpread.majorM)} m (${fmt2(lastSpread.meanFt * (lastSpread.majorM/lastSpread.meanM))} ft)`;
-          // above trick uses ratio to convert ft consistent; safer: compute directly:
-          li.textContent = `Major: ${fmt2(lastSpread.majorM)} m (${fmt2(mToFt(lastSpread.majorM))} ft)`;
+          const li = document.createElement('li'); li.textContent = `Major: ${fmt2(lastSpread.majorM)} m (${fmt2(mToFt(lastSpread.majorM))} ft)`;
           ul.appendChild(li);
         }
         if (Number.isFinite(lastSpread.minorM)){
-          const li = document.createElement('li');
-          li.textContent = `Minor: ${fmt2(lastSpread.minorM)} m (${fmt2(mToFt(lastSpread.minorM))} ft)`;
+          const li = document.createElement('li'); li.textContent = `Minor: ${fmt2(lastSpread.minorM)} m (${fmt2(mToFt(lastSpread.minorM))} ft)`;
           ul.appendChild(li);
         }
-        const liMean = document.createElement('li'); liMean.textContent = `Mean: ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)`;
+        const liMean = document.createElement('li'); liMean.innerHTML = `<strong>Final canopy spread:</strong> ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)`;
         ul.appendChild(liMean);
         meas.appendChild(p); meas.appendChild(ul);
       }
@@ -813,14 +814,9 @@
       obs.innerHTML = `<p><strong>Observation</strong></p><ul><li>Recorded: ${when}</li></ul>`;
       parts.push(obs);
 
-      // Stitch
       const out = document.createElement('div');
       parts.forEach(p => out.appendChild(p));
       return out.innerHTML;
-    }
-
-    function escapeHtml(s){
-      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
     function generateDescription(){
@@ -829,9 +825,6 @@
       descBox.innerHTML = html || '—';
       genDesc.classList.add('active');
       copyDesc.disabled = !html;
-      descDirty = false;
-
-      // Prepare email button
       if (html){
         const plain = extractPlainText(descBox);
         const subjName = treeName.value?.trim();
@@ -839,8 +832,11 @@
         const href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plain)}`;
         emailBtn.href = href;
         emailBtn.removeAttribute('aria-disabled');
+      } else {
+        emailBtn.setAttribute('aria-disabled', 'true'); emailBtn.href = '#';
       }
     }
+    genDesc.addEventListener('click', generateDescription);
 
     function extractPlainText(container){
       const items = Array.from(container.querySelectorAll('li')).map(li => `- ${li.innerText}`);
@@ -866,7 +862,6 @@
           return;
         } catch(e){}
       }
-      // Fallback
       const tmp = document.createElement('div');
       tmp.contentEditable='true'; tmp.style.position='fixed'; tmp.style.left='-9999px'; tmp.innerHTML = html;
       document.body.appendChild(tmp);
@@ -877,15 +872,13 @@
       const old = copyDesc.textContent; copyDesc.textContent='Copied ✓';
       setTimeout(()=>copyDesc.textContent=old,1200);
     }
-
-    genDesc.addEventListener('click', generateDescription);
     copyDesc.addEventListener('click', copyDescription);
 
     // --------- Autosave ----------
     const SAVE_KEY = 'ara_field_v1';
     function saveState(){
       const state = {
-        inputUnit,
+        inputUnit, calcMode,
         basics: {
           name: treeName.value || '',
           species: species.value || '',
@@ -903,56 +896,39 @@
     }
     function loadState(){
       let st=null; try { st = JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); } catch(e){}
-      if (!st) { // fresh init
-        // default multi with 2 rows
-        addMtRow(); addMtRow();
+      if (!st) {
+        addMtRow(); addMtRow(); // default two rows
         return;
       }
-      // unit first
       setUnit(st.inputUnit === 'ft' ? 'ft' : 'm');
-      // basics
+      setCalcMode(st.calcMode === 'auto' ? 'auto' : 'manual');
+
       treeName.value = st.basics?.name ?? '';
       species.value = st.basics?.species ?? '';
       condition.value = st.basics?.condition ?? '';
       treeType.value = st.basics?.type ?? '';
       updateTypeVisibility();
 
-      // single
       singleC.value = st.singleC ?? '';
-      recomputeSingle();
 
-      // height
       hAngle.value = st.height?.angle ?? '';
       hDist.value  = st.height?.dist ?? '';
       hEye.value   = st.height?.eye ?? '';
 
-      // spreads
       spreadMajor.value = st.spread?.major ?? '';
       spreadMinor.value = st.spread?.minor ?? '';
-      calcSpread();
 
-      // multi
       mtList.innerHTML=''; mtCount=0;
       const arr = Array.isArray(st.multi?.values) ? st.multi.values : [];
       if (arr.length>0) arr.forEach(v=>addMtRow(v));
       else { addMtRow(); addMtRow(); }
 
-      markDescDirty();
-      updateResultsPanel();
-      updateCopyButtons();
+      markDescDirty(); updateResultsPanel(); updateCopyButtons();
     }
-
-    // Save on changes
     [treeName,species,condition,treeType,singleC,hAngle,hDist,hEye,spreadMajor,spreadMinor].forEach(el=>el.addEventListener('input', saveState));
 
     // Init
     loadState();
-
-    // Ensure email disabled if no description yet
-    emailBtn.setAttribute('aria-disabled','true');
-
-    // Utility: recompute when Enter is pressed inside height inputs
-    [hAngle,hDist,hEye].forEach(i=>i.addEventListener('keydown', (e)=>{ if (e.key==='Enter'){ e.preventDefault(); calcHeight(); }}));
 
   </script>
 </body>
