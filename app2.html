@@ -357,10 +357,12 @@ function setCalcMode(m){ calcMode=m; const man=m==='manual'; modeManualBtn.class
 modeManualBtn.onclick=()=>setCalcMode('manual'); modeAutoBtn.onclick=()=>setCalcMode('auto');
 
 /* ---------- Type gating ---------- */
+function ensureTwoMtRows(){ if(mtCount===0){ addMtRow(); addMtRow(); } }
 function updateTypeVisibility(){
   const t=treeType.value;
   singleBlock.style.display=(t==='Single trunk tree')?'':'none';
   mtBlock.style.display=(t==='Multi trunked tree')?'':'none';
+  if (t==='Multi trunked tree') ensureTwoMtRows();
   markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
 treeType.onchange=updateTypeVisibility;
@@ -411,12 +413,12 @@ function calcMulti(){ clearMtLargest(); const items=Array.from(mtList.querySelec
   mtResult.textContent=`Calculated ${withD.length} trunk${withD.length>1?'s':''}.`;
   markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
-$('#mt-add').onclick=()=>{addMtRow(); markDescDirty(); formDirty=true; saveState();};
-$('#mt-remove').onclick=()=>{if(mtCount>1) removeMtRow();};
-$('#mt-sort').onclick=mtSortByDiameter;
-$('#mt-calc').onclick=calcMulti;
-$('#mt-fill').onclick=mtFillFromBulk;
-$('#mt-clear').onclick=()=>{mtBulk.value='';};
+mtAdd.onclick=()=>{addMtRow(); markDescDirty(); formDirty=true; saveState();};
+mtRemove.onclick=()=>{if(mtCount>1) removeMtRow();};
+mtSort.onclick=mtSortByDiameter;
+mtCalc.onclick=calcMulti;
+mtFill.onclick=mtFillFromBulk;
+mtClear.onclick=()=>{mtBulk.value='';};
 
 /* ---------- Height ---------- */
 function calcHeight(){ const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value);
@@ -424,7 +426,7 @@ function calcHeight(){ const a=parseFloat(hAngle.value), d=parseFloat(hDist.valu
   const dM=toM(d,inputUnit), eM=toM(e,inputUnit); const hM=tanDeg(a)*dM+eM; lastHeight={hM,hFt:mToFt(hM),angleDeg:Number(a.toFixed(1)),dM,eM};
   markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
-$('#h-calc').onclick=calcHeight;
+hCalc.onclick=calcHeight;
 [hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input',()=>{markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcHeight();}));
 [hAngle,hDist,hEye].forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();calcHeight();}}));
 
@@ -433,7 +435,7 @@ function calcSpread(){ const maj=parseFloat(spreadMajor.value), min=parseFloat(s
   if(!haveMaj&&!haveMin){ lastSpread=null; } else { const mMaj=haveMaj?toM(maj,inputUnit):null, mMin=haveMin?toM(min,inputUnit):null; const meanM=((mMaj??0)+(mMin??0))/((haveMaj?1:0)+(haveMin?1:0)); lastSpread={majorM:mMaj,minorM:mMin,meanM,meanFt:mToFt(meanM)};}
   markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
-$('#spread-calc').onclick=calcSpread;
+spreadCalc.onclick=calcSpread;
 [spreadMajor,spreadMinor].forEach(inp=>inp.addEventListener('input',()=>{markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcSpread();}));
 
 /* ---------- Results & copy buttons ---------- */
@@ -523,15 +525,6 @@ function generateDescription(){
 }
 genDesc.onclick=generateDescription;
 
-async function copyDescription(){
-  const html=descBox.innerHTML.trim(); if(!html||html==='—') return; const text=extractPlainText(descBox);
-  if(navigator.clipboard && window.ClipboardItem){ try{ await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]); const o=copyDesc.textContent; copyDesc.textContent='Copied ✓'; setTimeout(()=>copyDesc.textContent=o,1200); return;}catch{}}
-  const tmp=document.createElement('div'); tmp.contentEditable='true'; tmp.style.position='fixed'; tmp.style.left='-9999px'; tmp.innerHTML=html; document.body.appendChild(tmp);
-  const r=document.createRange(); r.selectNodeContents(tmp); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); s.removeAllRanges(); tmp.remove();
-  const o=copyDesc.textContent; copyDesc.textContent='Copied ✓'; setTimeout(()=>copyDesc.textContent=o,1200);
-}
-copyDesc.onclick=copyDescription;
-
 /* ---------- Share link (hash Base64) ---------- */
 function getFormState(){
   return {
@@ -550,7 +543,7 @@ function setFormState(st){
   setUnit(st.inputUnit==='ft'?'ft':'m'); setCalcMode(st.calcMode==='auto'?'auto':'manual');
   treeName.value=st.basics?.name??''; species.value=st.basics?.species??''; condition.value=st.basics?.condition??''; treeType.value=st.basics?.type??''; updateTypeVisibility();
   singleC.value=st.singleC??''; hAngle.value=st.height?.angle??''; hDist.value=st.height?.dist??''; hEye.value=st.height?.eye??''; spreadMajor.value=st.spread?.major??''; spreadMinor.value=st.spread?.minor??'';
-  notesEl.value=st.notes??''; (function(){notesEl.style.height='auto'; notesEl.style.height=(notesEl.scrollHeight+2)+'px';})();
+  notesEl.value=st.notes??''; autoGrow(notesEl);
   mtList.innerHTML=''; mtCount=0; const arr=Array.isArray(st.multi?.values)?st.multi.values:[]; if(arr.length>0) arr.forEach(v=>addMtRow(v)); else {addMtRow(); addMtRow();}
   markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=false;
   if(st.desc){ descBox.innerHTML=st.desc; copyDesc.disabled=false; shareBtn.disabled=false; }
@@ -581,7 +574,7 @@ addGroupBtn.onclick=()=>{ const name=prompt('New group name'); if(!name) return;
 
 function renderLog(){
   const entries=getLog(); const groups=getGroups();
-  const host=document.getElementById('logList'); host.innerHTML='';
+  const host=logList; host.innerHTML='';
   if(entries.length===0){ host.innerHTML='<span class="tiny">No saved trees yet.</span>'; return; }
 
   if(viewMode==='date'){
@@ -635,12 +628,12 @@ function deleteEntry(id){ const arr=getLog().filter(e=>e.id!==id); setLog(arr); 
 function handleEntryClick(id){
   const entries=getLog(); const entry=entries.find(e=>e.id===id); if(!entry) return;
   openTargetEntryId=id;
-  if(formDirty){ document.getElementById('confirmSwitch').classList.add('show'); return; }
+  if(formDirty){ modalSwitch.classList.add('show'); return; }
   loadEntry(entry);
 }
-swCancel.onclick=()=>{ openTargetEntryId=null; document.getElementById('confirmSwitch').classList.remove('show'); };
-swReplace.onclick=()=>{ const e=getLog().find(x=>x.id===openTargetEntryId); if(e){ loadEntry(e); } openTargetEntryId=null; document.getElementById('confirmSwitch').classList.remove('show'); };
-swSave.onclick=()=>{ saveCurrentToLog(); const e=getLog().find(x=>x.id===openTargetEntryId); if(e){ loadEntry(e); } openTargetEntryId=null; document.getElementById('confirmSwitch').classList.remove('show'); };
+swCancel.onclick=()=>{ openTargetEntryId=null; modalSwitch.classList.remove('show'); };
+swReplace.onclick=()=>{ const e=getLog().find(x=>x.id===openTargetEntryId); if(e){ loadEntry(e); } openTargetEntryId=null; modalSwitch.classList.remove('show'); };
+swSave.onclick=()=>{ saveCurrentToLog(); const e=getLog().find(x=>x.id===openTargetEntryId); if(e){ loadEntry(e); } openTargetEntryId=null; modalSwitch.classList.remove('show'); };
 function loadEntry(e){ setFormState(e); descBox.innerHTML=e.desc||'—'; copyDesc.disabled=!e.desc; shareBtn.disabled=false; formDirty=false; }
 
 /* ---------- Save to log & copy all ---------- */
@@ -664,22 +657,40 @@ copyAllBtn.onclick=async ()=>{
 };
 
 /* ---------- Clear log with confirm ---------- */
-clearLogBtn.onclick=()=>document.getElementById('confirmClear').classList.add('show');
-clCancel.onclick=()=>document.getElementById('confirmClear').classList.remove('show');
-clConfirm.onclick=()=>{ setLog([]); document.getElementById('confirmClear').classList.remove('show'); renderLog(); };
+clearLogBtn.onclick=()=>modalClear.classList.add('show');
+clCancel.onclick=()=>modalClear.classList.remove('show');
+clConfirm.onclick=()=>{ setLog([]); modalClear.classList.remove('show'); renderLog(); };
 
-/* ---------- Share link load (now overrides autosave safely) ---------- */
+/* ---------- Boot (safe) ---------- */
 (function boot(){
-  const hashData = location.hash.startsWith('#data=') ? decodeShare(location.hash) : null;
-  if (hashData) {
-    setFormState(hashData);
-    if(hashData.desc){ descBox.innerHTML=hashData.desc; copyDesc.disabled=false; shareBtn.disabled=false; }
-  } else {
-    loadState();
+  try{
+    // initial: By date view => hide groups header
+    groupsHead.style.display='none';
+
+    // If there is a share hash, prefer it; otherwise load autosave.
+    const hashData = location.hash.startsWith('#data=') ? decodeShare(location.hash) : null;
+    if (hashData) {
+      setFormState(hashData);
+      if(hashData.desc){ descBox.innerHTML=hashData.desc; copyDesc.disabled=false; shareBtn.disabled=false; }
+    } else {
+      loadState();
+    }
+
+    // Ensure two default rows exist if user switches to multi later
+    // (loadState already adds rows on empty, but this is a safety net)
+    if (treeType.value==='Multi trunked tree') ensureTwoMtRows();
+
+    // Bind email state
+    emailBtn.setAttribute('aria-disabled','true');
+
+    // First render
+    renderLog();
+  }catch(err){
+    console.error('Boot error:', err);
+    alert('Something went wrong initializing the page. Try a hard refresh.');
   }
-  renderLog();
 })();
-emailBtn.setAttribute('aria-disabled','true'); // until description generated
 </script>
+
 </body>
 </html>
