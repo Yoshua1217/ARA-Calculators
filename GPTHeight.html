@@ -42,11 +42,21 @@
     button { padding:10px 14px; border:0; border-radius:8px; cursor:pointer; }
     .btn-primary { background: var(--dark); color:#fff; }
     .btn-secondary { background:#e9e9e9; color:#111; }
+    .btn-secondary.active { background: var(--dark); color:#fff; } /* Generate Description dark when active */
     button[disabled]{ opacity:.6; cursor:not-allowed; }
 
     .result { margin-top:16px; font-size:1.2rem; font-weight:700; }
     .foot { margin-top:18px; font-size:.9rem; color:#666; line-height:1.35; }
     form { margin: 0; }
+
+    /* Description area */
+    .descwrap { margin-top:16px; }
+    .descbox {
+      width:100%; min-height:120px; background:#fafafa;
+      border:1px solid #e6e6e6; border-radius:10px; padding:12px;
+      white-space:normal; font-family: inherit;
+    }
+    .descbox ul { margin: 6px 0 6px 20px; }
   </style>
 </head>
 <body>
@@ -77,12 +87,20 @@
       <div class="btn-row" style="margin-top:14px;">
         <button type="submit"  class="btn-primary">Calculate height</button>
         <button type="button" id="copy"  class="btn-secondary" disabled title="Copies meters value only">Copy result (m)</button>
-        <!-- use native reset so it always works -->
         <button type="reset"  id="reset" class="btn-secondary">Reset</button>
       </div>
     </form>
 
     <div class="result" id="out" aria-live="polite">—</div>
+
+    <!-- Description generator -->
+    <div class="descwrap">
+      <div class="btn-row">
+        <button type="button" id="gendesc" class="btn-secondary" title="Create a bullet list summary">Generate description</button>
+        <button type="button" id="copydesc" class="btn-ghost" disabled>Copy description</button>
+      </div>
+      <div id="desc" class="descbox" aria-live="polite">—</div>
+    </div>
 
     <div class="foot">
       Outputs in meters and feet. Angle must be in degrees.<br>
@@ -107,8 +125,14 @@
     const unitLabel1 = $('#unit-label-1');
     const unitLabel2 = $('#unit-label-2');
 
+    // Description bits
+    const genDescBtn = $('#gendesc');
+    const copyDescBtn = $('#copydesc');
+    const descBox = $('#desc');
+
     let inputUnit = 'm';            // 'm' or 'ft'
     let lastMetersStr = '';         // last calculated meters string (2 decimals)
+    let lastCalc = null;            // store details for description
 
     function tanDeg(d){ return Math.tan(d * Math.PI / 180); }
 
@@ -141,6 +165,7 @@
       unitLabel1.textContent = isM ? 'm' : 'ft';
       unitLabel2.textContent = isM ? 'm' : 'ft';
       updatePlaceholders();
+      markDescDirty();
     }
 
     function markInvalids(){
@@ -153,7 +178,7 @@
     }
 
     function calculate(e){
-      e.preventDefault();
+      if (e) e.preventDefault();
       if (!form.checkValidity()) {
         markInvalids(); // keep native popup and add red outline
         return;
@@ -179,6 +204,19 @@
 
       copyBtn.disabled = false;
       copyBtn.textContent = 'Copy result (m)';
+
+      // Save details for description (store both units, nicely rounded)
+      lastCalc = {
+        angleDeg: a.toFixed(1),
+        distanceM: dMeters.toFixed(2),
+        distanceFt: (dMeters * FT_PER_M).toFixed(2),
+        eyeM: eMeters.toFixed(2),
+        eyeFt: (eMeters * FT_PER_M).toFixed(2),
+        heightM: metersStr,
+        heightFt: feetStr
+      };
+
+      markDescDirty();
     }
 
     async function copyMeters(){
@@ -200,23 +238,117 @@
       }
     }
 
+    // ---- Description generator ----
+    function markDescDirty(){
+      descBox.textContent = '—';
+      copyDescBtn.disabled = true;
+      genDescBtn.classList.remove('active');
+    }
+
+    function generateDescription(){
+      // Ensure we have a calculation
+      if (!lastCalc) {
+        calculate(new Event('submit'));
+        if (!lastCalc) return;
+      }
+
+      const box = document.createElement('div');
+
+      const title1 = document.createElement('p');
+      title1.innerHTML = '<strong>Observation details</strong>';
+      const ul1 = document.createElement('ul');
+      const liA = document.createElement('li'); liA.textContent = `Angle to top: ${lastCalc.angleDeg}°`;
+      const liD = document.createElement('li'); liD.textContent = `Distance to trunk: ${lastCalc.distanceM} m (${lastCalc.distanceFt} ft)`;
+      const liE = document.createElement('li'); liE.textContent = `Eye height: ${lastCalc.eyeM} m (${lastCalc.eyeFt} ft)`;
+      ul1.appendChild(liA); ul1.appendChild(liD); ul1.appendChild(liE);
+
+      const title2 = document.createElement('p');
+      title2.innerHTML = '<strong>Computed height (ARA formula)</strong>';
+      const ul2 = document.createElement('ul');
+      const liF = document.createElement('li'); liF.textContent = 'height = tan(angle°) × distance + eye height';
+      const liH = document.createElement('li'); liH.innerHTML = `<strong>Tree height:</strong> ${lastCalc.heightM} m (${lastCalc.heightFt} ft)`;
+      ul2.appendChild(liF); ul2.appendChild(liH);
+
+      box.appendChild(title1); box.appendChild(ul1);
+      box.appendChild(title2); box.appendChild(ul2);
+
+      descBox.innerHTML = box.innerHTML;
+      copyDescBtn.disabled = false;
+      genDescBtn.classList.add('active');
+    }
+
+    async function copyDescription(){
+      const html = descBox.innerHTML.trim();
+      // Plain-text fallback: bullets
+      const items = Array.from(descBox.querySelectorAll('li')).map(li => `- ${li.innerText}`);
+      const text = items.length ? items.join('\n') : descBox.innerText.trim();
+      if (!html || html === '—') return;
+
+      if (navigator.clipboard && window.ClipboardItem) {
+        try {
+          const data = {
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([text], { type: "text/plain" })
+          };
+          await navigator.clipboard.write([new ClipboardItem(data)]);
+          copyDescBtn.textContent = 'Copied ✓';
+          setTimeout(() => { copyDescBtn.textContent = 'Copy description'; }, 1200);
+          return;
+        } catch (e) {
+          // fall through to legacy path
+        }
+      }
+
+      // Fallback: contentEditable trick to preserve formatting
+      const temp = document.createElement('div');
+      temp.contentEditable = 'true';
+      temp.style.position = 'fixed';
+      temp.style.left = '-9999px';
+      temp.innerHTML = html;
+      document.body.appendChild(temp);
+
+      const range = document.createRange();
+      range.selectNodeContents(temp);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      try {
+        document.execCommand('copy');
+        copyDescBtn.textContent = 'Copied ✓';
+      } finally {
+        sel.removeAllRanges();
+        document.body.removeChild(temp);
+        setTimeout(() => { copyDescBtn.textContent = 'Copy description'; }, 1200);
+      }
+    }
+    // -------------------------------
+
     // Native reset handler: runs AFTER the browser clears the fields
     form.addEventListener('reset', () => {
       setTimeout(() => {
         clearErrors();
         out.textContent = '—';
         lastMetersStr = '';
+        lastCalc = null;
         copyBtn.disabled = true;
         copyBtn.textContent = 'Copy result (m)';
-        updatePlaceholders(); // keep placeholders consistent with current unit
+        updatePlaceholders();
+        markDescDirty();
       }, 0);
     });
 
     // Events
     form.addEventListener('submit', calculate);
     copyBtn.addEventListener('click', copyMeters);
+    genDescBtn.addEventListener('click', generateDescription);
+    copyDescBtn.addEventListener('click', copyDescription);
+
     [angle, distance, eye].forEach(inp => {
-      inp.addEventListener('input', () => { if (inp.validity.valid) inp.classList.remove('error'); });
+      inp.addEventListener('input', () => {
+        if (inp.validity.valid) inp.classList.remove('error');
+        markDescDirty();
+      });
       inp.addEventListener('invalid', () => inp.classList.add('error'));
     });
     unitM.addEventListener('click', () => setActiveUnit('m'));
