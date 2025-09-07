@@ -232,7 +232,7 @@
           <button type="button" id="copyHeight"  class="btn-secondary" disabled title="Copy height (m)">Copy Height (m)</button>
           <button type="button" id="copyEqCirc"  class="btn-secondary" disabled title="Copy equivalent/entered circumference (m)">Copy Eq. Circ (m)</button>
           <button type="button" id="copyAvgCirc" class="btn-secondary" disabled title="Copy average circumference (m)">Copy Avg Circ (m)</button>
-          <button type="button" id="copySpread"  class="btn-secondary" disabled title="Copy canopy spread mean (m)">Copy Canopy (m)</button>
+          <button type="button" id="copySpread"  class="btn-secondary" disabled title="Copy Canopy (m)">Copy Canopy (m)</button>
         </div>
       </section>
 
@@ -244,7 +244,7 @@
           <p id="res-height">Height: —</p>
           <p id="res-eqcirc">Equivalent / Entered circumference: —</p>
           <p id="res-avgcirc" style="display:none;">Average circumference (multi): —</p>
-          <p id="res-spread">Canopy spread (mean): —</p>
+          <p id="res-spread">Final canopy spread: —</p>
         </div>
       </section>
 
@@ -659,9 +659,9 @@
 
       // Spread
       if (lastSpread){
-        resSpread.textContent = `Canopy spread (mean): ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)`;
+        resSpread.textContent = `Final canopy spread: ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)`;
       } else {
-        resSpread.textContent = 'Canopy spread (mean): —';
+        resSpread.textContent = 'Final canopy spread: —';
       }
     }
 
