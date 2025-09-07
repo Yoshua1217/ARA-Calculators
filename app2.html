@@ -8,7 +8,6 @@
   :root{--radius:12px;--dark:#111;--light:#f2f2f2;--border:#ddd;--muted:#666;--danger:#d93c3c;}
   *{box-sizing:border-box}
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:24px;color:#111;background:#fff}
-  /* Wider main, slightly narrower sidebar */
   .wrap{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:260px 1fr;gap:20px}
   @media (max-width:980px){.wrap{grid-template-columns:1fr}}
 
@@ -20,7 +19,6 @@
   .tab.active{background:#111;color:#fff;border-color:#111}
   .tab.disabled{opacity:.5}
 
-  /* LEFT: Session Log panel now flex column with footer pinned bottom */
   .side{border:1px solid var(--border);border-radius:var(--radius);background:#fafafa;padding:12px;display:flex;flex-direction:column;min-height:420px}
   .side>header{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px}
   .side h2{margin:0;font-size:1.1rem}
@@ -35,28 +33,29 @@
   .button,button{padding:10px 14px;border:0;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
   .btn-primary{background:var(--dark);color:#fff}
   .btn-secondary{background:#e9e9e9;color:#111}
+  .btn-secondary.active{background:var(--dark);color:#fff}   /* turns dark after calculate */
   .btn-ghost{background:#f5f5f5;color:#111}
   .danger{background:#f5e9e9}
   .danger:hover,.danger:active{background:var(--danger);color:#fff}
   .tiny{color:#666;font-size:.86rem}
 
-  /* Cards: tighter top padding, small gaps between stacked boxes */
   .card{border:1px solid var(--border);border-radius:var(--radius);background:#fff;margin-bottom:14px}
   .card .block{padding:12px 18px}
-  .card .block + .block{border-top:1px solid #eee} /* used only when we deliberately want a divider */
-  .card h2{margin:6px 0 10px;font-size:1.15rem} /* smaller forehead */
+  .card h2{margin:6px 0 10px;font-size:1.15rem}
+
   .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media (max-width:720px){.row{grid-template-columns:1fr}}
 
   label{display:block;font-weight:600;margin:10px 0 6px}
   input[type="text"],input[type="number"],select,textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:1rem;background:#fff}
   textarea{min-height:80px;resize:none;overflow:hidden}
+
   .unit-toggle{display:flex;gap:8px;margin:8px 0 10px}
   .toggle-btn{padding:8px 12px;border:1px solid #ccc;border-radius:8px;background:var(--light);cursor:pointer}
   .toggle-btn.active{background:var(--dark);color:#fff;border-color:var(--dark)}
   .toggle-btn:focus-visible{outline:2px solid var(--dark);outline-offset:2px}
-  .note{background:#fafafa;border:1px solid #eee;border-radius:12px;padding:10px 12px;color:#444}
 
+  .note{background:#fafafa;border:1px solid #eee;border-radius:12px;padding:10px 12px;color:#444}
   .results{background:#f7f7f7;border:1px solid #e7e7e7;border-radius:12px;padding:12px}
   .results h3{margin:0 0 8px;font-size:1.05rem}
   .results p{margin:6px 0}
@@ -67,28 +66,20 @@
   .hint{font-size:.86rem;color:#b2271a;display:none}.hint.show{display:block}
   .largest-label{font-weight:800}.badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#111;color:#fff;font-size:.75rem;vertical-align:middle}
   .badge.hide{display:none}
-  input.error{border-color:#e11900;box-shadow:0 0 0 3px rgba(225,25,0,.15)}
 
-  /* Log list / buckets */
   .bucket{margin:8px 0 10px}
   .bucket-title{font-weight:700;margin:10px 0 6px}
-  .bucket-body{min-height:42px} /* keeps height while dragging */
+  .bucket-body{min-height:42px}
   .entry{border:1px solid #e1e1e1;border-radius:10px;background:#fff;padding:8px;margin-bottom:8px;cursor:grab}
   .entry:hover{background:#f7f7f7}
   .entry .name{font-weight:700}
   .entry .ts{font-size:.86rem;color:#666;margin-top:2px}
   .drop-target{outline:2px dashed #bbb;outline-offset:4px;border-radius:8px;padding:4px}
-  /* Modals */
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:999}
-  .modal.show{display:flex}
-  .modal .sheet{max-width:520px;background:#fff;border-radius:12px;padding:16px;border:1px solid #ddd}
-  .modal h3{margin:0 0 8px}.modal p{margin:4px 0 12px}
-  .modal .btn-row{display:flex;gap:10px;justify-content:flex-end}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <!-- LEFT: SESSION LOG -->
+  <!-- SIDEBAR -->
   <aside class="side" id="logPanel">
     <header>
       <h2>Session Log</h2>
@@ -103,7 +94,7 @@
       <button class="pill" id="addGroupBtn">+ Group</button>
     </div>
 
-    <div class="side-scroller" id="logList" class="tiny">No saved trees yet.</div>
+    <div class="side-scroller" id="logList">No saved trees yet.</div>
 
     <div class="side-footer">
       <button id="copyAllBtn" class="btn-ghost tiny" title="Copy all descriptions as backup">Copy all (backup)</button>
@@ -112,7 +103,7 @@
     </div>
   </aside>
 
-  <!-- RIGHT: APP -->
+  <!-- MAIN -->
   <main>
     <header>
       <h1>ARA Field Tools</h1>
@@ -124,7 +115,7 @@
       <div class="tab disabled" title="Coming soon">QR Tools</div>
     </nav>
 
-    <!-- CARD 1: FORM (Basic details + Measurements + Notes) -->
+    <!-- CARD 1: FORM -->
     <section class="card" id="card-form">
       <div class="block">
         <h2>Basic details</h2>
@@ -148,7 +139,11 @@
             <label for="treeType">Tree type</label>
             <select id="treeType">
               <option value="">— select —</option>
-              <option>Single trunk tree</option><option>Multi trunked tree</option><option>Grove</option><option>Forest</option><option>Clonal aspen</option>
+              <option>Single trunk tree</option>
+              <option>Multi trunked tree</option>
+              <option>Grove</option>
+              <option>Forest</option>
+              <option>Clonal aspen</option>
             </select>
           </div>
         </div>
@@ -168,7 +163,7 @@
           <button type="button" id="mode-auto"   class="toggle-btn" aria-pressed="false">Auto (on change)</button>
         </div>
 
-        <!-- Single-trunk circumference -->
+        <!-- Single trunk circumference -->
         <div id="single-circ-block" style="display:none;margin-top:10px;">
           <label for="singleC">Circumference (<span class="unit-tag">m</span>)</label>
           <input id="singleC" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 3.10">
@@ -187,7 +182,7 @@
                 <button type="button" id="mt-add" class="btn-secondary">Add trunk</button>
                 <button type="button" id="mt-remove" class="btn-secondary">Remove last</button>
                 <button type="button" id="mt-sort" class="btn-ghost" title="Sort by diameter (desc)">Sort by diameter</button>
-                <button type="button" id="mt-calc" class="btn-primary">Calculate multi-trunk</button>
+                <button type="button" id="mt-calc" class="btn-secondary">Calculate multi-trunk</button>
               </div>
             </div>
             <div>
@@ -223,6 +218,24 @@
           </div>
           <div class="unit-toggle" style="margin-top:10px;">
             <button type="button" id="h-calc" class="btn-secondary">Calculate height</button>
+          </div>
+        </div>
+
+        <!-- Canopy spread (two-entry optional) -->
+        <div id="spread-block" style="margin-top:18px;">
+          <label>Canopy spread (optional)</label>
+          <div class="row">
+            <div>
+              <label for="spreadMajor">Major axis (<span class="unit-tag">m</span>)</label>
+              <input id="spreadMajor" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 30.00">
+            </div>
+            <div>
+              <label for="spreadMinor">Minor axis (<span class="unit-tag">m</span>)</label>
+              <input id="spreadMinor" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 20.00">
+            </div>
+          </div>
+          <div class="unit-toggle" style="margin-top:10px;">
+            <button type="button" id="spread-calc" class="btn-secondary">Calculate canopy spread</button>
           </div>
         </div>
       </div>
@@ -303,30 +316,39 @@
 </div>
 
 <script>
-/* ---------- Utilities ---------- */
+/* ---------- Helpers ---------- */
 const PI=Math.PI, FT_PER_M=3.28084, M_PER_FT=0.3048;
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const tanDeg=d=>Math.tan(d*Math.PI/180);
 const fmt2=x=>Number.isFinite(x)?x.toFixed(2):'—', fmt1=x=>Number.isFinite(x)?x.toFixed(1):'—';
 const toM=(v,u)=>u==='m'?v:v*M_PER_FT, mToFt=m=>m*FT_PER_M;
-const nowLocal24=()=>{const d=new Date();const pad=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const nowLocal24=()=>{const d=new Date();const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`};
 const uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
 const escapeHtml=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-/* ---------- DOM refs (form) ---------- */
+/* ---------- DOM refs ---------- */
 const unitM=$('#unit-m'), unitFt=$('#unit-ft'), unitTags=$$('.unit-tag');
 const modeManualBtn=$('#mode-manual'), modeAutoBtn=$('#mode-auto');
 const treeName=$('#treeName'), species=$('#species'), condition=$('#condition'), treeType=$('#treeType');
+
 const singleBlock=$('#single-circ-block'), singleC=$('#singleC');
-const mtBlock=$('#multi-block'), mtList=$('#mt-list'), mtAdd=$('#mt-add'), mtRemove=$('#mt-remove'), mtSort=$('#mt-sort'), mtCalc=$('#mt-calc'), mtBulk=$('#mt-bulk'), mtFill=$('#mt-fill'), mtClear=$('#mt-clear'), mtResult=$('#mt-result');
+
+const mtBlock=$('#multi-block'), mtList=$('#mt-list'), mtAdd=$('#mt-add'), mtRemove=$('#mt-remove'),
+      mtSort=$('#mt-sort'), mtCalc=$('#mt-calc'), mtBulk=$('#mt-bulk'), mtFill=$('#mt-fill'),
+      mtClear=$('#mt-clear'), mtResult=$('#mt-result');
+
 const hAngle=$('#h-angle'), hDist=$('#h-dist'), hEye=$('#h-eye'), hCalc=$('#h-calc');
-const notesEl=$('#notes');
+
 const spreadMajor=$('#spreadMajor'), spreadMinor=$('#spreadMinor'), spreadCalc=$('#spread-calc');
+
+const notesEl=$('#notes');
+
 const copyHeight=$('#copyHeight'), copyEqCirc=$('#copyEqCirc'), copyAvgCirc=$('#copyAvgCirc'), copySpread=$('#copySpread');
 const resHeight=$('#res-height'), resEqCirc=$('#res-eqcirc'), resAvgCirc=$('#res-avgcirc'), resSpread=$('#res-spread');
+
 const genDesc=$('#genDesc'), copyDesc=$('#copyDesc'), shareBtn=$('#shareLink'), descBox=$('#desc'), emailBtn=$('#emailBtn'), resetFormBtn=$('#resetForm'), saveLogBtn=$('#saveLog');
 
-/* ---------- DOM refs (log) ---------- */
+/* Sidebar */
 const logList=$('#logList'), viewDate=$('#viewDate'), viewGroup=$('#viewGroup'), groupsHead=$('#groupsHead'), addGroupBtn=$('#addGroupBtn'), copyAllBtn=$('#copyAllBtn'), clearLogBtn=$('#clearLogBtn');
 const modalClear=$('#confirmClear'), clCancel=$('#clCancel'), clConfirm=$('#clConfirm');
 const modalSwitch=$('#confirmSwitch'), swCancel=$('#swCancel'), swSave=$('#swSave'), swReplace=$('#swReplace');
@@ -338,10 +360,14 @@ let descDirty=true, formDirty=false, openTargetEntryId=null;
 const SAVE_KEY='ara_field_v1', LOG_KEY='ara_field_log_v1', GROUPS_KEY='ara_field_groups_v1';
 const DEFAULT_GROUPS=['Favourite Trees','Big Trees','Unique Trees'];
 
-/* ---------- Unit toggle & calc mode ---------- */
+/* ---------- UI helpers ---------- */
+const setBtnActive=(btn,active)=>{ if(!btn) return; btn.classList.toggle('active', !!active); };
+const touch = el => el && el.dispatchEvent(new Event('input'));
+
+/* ---------- Units & mode ---------- */
 function setUnit(u){
   if(u===inputUnit) return;
-  const conv=(inp)=>{const v=parseFloat(inp.value); if(!Number.isNaN(v)){ const m=toM(v,inputUnit); inp.value=(u==='m'?m:m*FT_PER_M).toFixed(2); }};
+  const conv=inp=>{ if(!inp) return; const v=parseFloat(inp.value); if(!Number.isNaN(v)){ const m=toM(v,inputUnit); inp.value=(u==='m'?m:m*FT_PER_M).toFixed(2); }};
   [singleC,hDist,hEye,spreadMajor,spreadMinor].forEach(conv);
   $$('#mt-list input[type="number"]').forEach(conv);
   inputUnit=u; const isM=u==='m';
@@ -353,7 +379,11 @@ function setUnit(u){
 }
 unitM.onclick=()=>setUnit('m'); unitFt.onclick=()=>setUnit('ft');
 
-function setCalcMode(m){ calcMode=m; const man=m==='manual'; modeManualBtn.classList.toggle('active',man); modeAutoBtn.classList.toggle('active',!man); modeManualBtn.setAttribute('aria-pressed',String(man)); modeAutoBtn.setAttribute('aria-pressed',String(!man)); saveState();}
+function setCalcMode(m){ calcMode=m; const man=m==='manual';
+  modeManualBtn.classList.toggle('active',man); modeAutoBtn.classList.toggle('active',!man);
+  modeManualBtn.setAttribute('aria-pressed',String(man)); modeAutoBtn.setAttribute('aria-pressed',String(!man));
+  saveState();
+}
 modeManualBtn.onclick=()=>setCalcMode('manual'); modeAutoBtn.onclick=()=>setCalcMode('auto');
 
 /* ---------- Type gating ---------- */
@@ -367,8 +397,8 @@ function updateTypeVisibility(){
 }
 treeType.onchange=updateTypeVisibility;
 
-/* ---------- Auto-expanding Notes ---------- */
-function autoGrow(el){ el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
+/* ---------- Notes auto-grow ---------- */
+function autoGrow(el){ if(!el) return; el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
 notesEl.addEventListener('input',()=>{ autoGrow(notesEl); markDescDirty(); formDirty=true; saveState(); });
 
 /* ---------- Single trunk ---------- */
@@ -376,13 +406,17 @@ function recomputeSingle(){
   const v=parseFloat(singleC.value);
   if(Number.isFinite(v)&&v>0){ const cM=toM(v,inputUnit); const dM=cM/PI; lastSingle={cM,cFt:mToFt(cM),dM,dFt:mToFt(dM)}; }
   else lastSingle=null;
+  setBtnActive($('#single-circ-block .btn-secondary'), true);
   markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
-singleC.oninput=()=>{recomputeSingle(); if(calcMode==='auto') updateResultsPanel();};
+singleC.oninput=()=>{ setBtnActive($('#single-circ-block .btn-secondary'), false); if(calcMode==='auto') recomputeSingle(); };
 
 /* ---------- Multi-trunk ---------- */
 const MT_MAX=60;
-function addMtRow(val=''){ if(mtCount>=MT_MAX) return; mtCount++; const row=document.createElement('div'); row.className='row'; row.style.gridTemplateColumns='1fr'; row.dataset.index=String(mtCount);
+function addMtRow(val=''){
+  if(mtCount>=MT_MAX) return;
+  mtCount++;
+  const row=document.createElement('div'); row.className='row'; row.style.gridTemplateColumns='1fr'; row.dataset.index=String(mtCount);
   const labelWrap=document.createElement('div'); labelWrap.style.display='flex'; labelWrap.style.alignItems='center';
   const lab=document.createElement('label'); lab.htmlFor=`mt-${mtCount}`; lab.className='mt-label'; lab.textContent=`Trunk ${mtCount} circumference (${inputUnit})`;
   const badge=document.createElement('span'); badge.className='badge hide'; badge.textContent='Largest';
@@ -390,7 +424,7 @@ function addMtRow(val=''){ if(mtCount>=MT_MAX) return; mtCount++; const row=docu
   const inp=document.createElement('input'); inp.id=`mt-${mtCount}`; inp.type='number'; inp.step='0.01'; inp.inputMode='decimal'; if(val!=='') inp.value=val;
   const hint=document.createElement('div'); hint.className='hint';
   row.appendChild(labelWrap); row.appendChild(inp); row.appendChild(hint); mtList.appendChild(row);
-  inp.addEventListener('input',()=>{inp.classList.remove('error'); hint.classList.remove('show'); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti();});
+  inp.addEventListener('input',()=>{inp.classList.remove('error'); hint.classList.remove('show'); setBtnActive(mtCalc,false); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti();});
   inp.addEventListener('blur',()=>maybeMtOutlierHint(parseFloat(inp.value),hint));
 }
 function maybeMtOutlierHint(val,h){ if(!Number.isFinite(val)||val<=0){h.classList.remove('show');return}
@@ -398,19 +432,40 @@ function maybeMtOutlierHint(val,h){ if(!Number.isFinite(val)||val<=0){h.classLis
     else if(val>12){h.textContent='Unusually large — check units?';h.classList.add('show');} else h.classList.remove('show');}
   else{ if(val<0.66){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
     else if(val>40){h.textContent='Unusually large — check units?';h.classList.add('show');} else h.classList.remove('show');} }
-function removeMtRow(){ if(mtCount<=1) return; mtList.lastElementChild?.remove(); mtCount--; renumberMtLabels(); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti(); }
+function removeMtRow(){ if(mtCount<=1) return; mtList.lastElementChild?.remove(); mtCount--; renumberMtLabels(); setBtnActive(mtCalc,false); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti(); }
 function renumberMtLabels(){ $$('#mt-list .mt-label').forEach((lab,i)=>lab.textContent=`Trunk ${i+1} circumference (${inputUnit})`); }
-function parseMtBulk(text,limit=MT_MAX){ const vals=[]; if(!text) return vals; let s=String(text).replace(/[×X]/g,'x'); const repRE=/(\d+)\s*x\s*([-+]?\d*\.?\d+)/g; s=s.replace(repRE,(_,nStr,vStr)=>{const n=parseInt(nStr,10), v=parseFloat(vStr); if(Number.isFinite(n)&&n>0&&Number.isFinite(v)&&v>0){for(let i=0;i<n&&vals.length<limit;i++) vals.push(v);} return ' ';}); const singles=s.match(/[-+]?\d*\.?\d+/g)||[]; for(const m of singles){ if(vals.length>=limit) break; const v=parseFloat(m); if(Number.isFinite(v)&&v>0) vals.push(v);} return vals; }
-function mtFillFromBulk(){ const vals=parseMtBulk(mtBulk.value,MT_MAX); if(vals.length===0)return; mtList.innerHTML=''; mtCount=0; vals.forEach(v=>addMtRow(v.toFixed(2))); mtResult.textContent='—'; markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti(); }
-function mtSortByDiameter(){ const rows=Array.from(mtList.children); const valid=[], invalid=[]; rows.forEach(row=>{ const inp=row.querySelector('input'); const v=parseFloat(inp.value); if(Number.isFinite(v)&&v>0){const cM=toM(v,inputUnit), dM=cM/PI; valid.push({row,dM});} else invalid.push(row);}); if(valid.length<2) return; valid.sort((a,b)=>b.dM-a.dM); const frag=document.createDocumentFragment(); valid.forEach(v=>frag.appendChild(v.row)); invalid.forEach(r=>frag.appendChild(r)); mtList.innerHTML=''; mtList.appendChild(frag); renumberMtLabels(); clearMtLargest(); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti(); }
+function parseMtBulk(text,limit=MT_MAX){
+  const vals=[]; if(!text) return vals; let s=String(text).replace(/[×X]/g,'x');
+  const repRE=/(\d+)\s*x\s*([-+]?\d*\.?\d+)/g;
+  s=s.replace(repRE,(_,nStr,vStr)=>{const n=parseInt(nStr,10), v=parseFloat(vStr); if(Number.isFinite(n)&&n>0&&Number.isFinite(v)&&v>0){for(let i=0;i<n&&vals.length<limit;i++) vals.push(v);} return ' ';});
+  const singles=s.match(/[-+]?\d*\.?\d+/g)||[];
+  for(const m of singles){ if(vals.length>=limit) break; const v=parseFloat(m); if(Number.isFinite(v)&&v>0) vals.push(v);}
+  return vals;
+}
+function mtFillFromBulk(){ const vals=parseMtBulk(mtBulk.value,MT_MAX); if(vals.length===0)return; mtList.innerHTML=''; mtCount=0; vals.forEach(v=>addMtRow(v.toFixed(2))); mtResult.textContent='—'; setBtnActive(mtCalc,false); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti(); }
+function mtSortByDiameter(){
+  const rows=Array.from(mtList.children); const valid=[], invalid=[];
+  rows.forEach(row=>{ const inp=row.querySelector('input'); const v=parseFloat(inp.value); if(Number.isFinite(v)&&v>0){const cM=toM(v,inputUnit), dM=cM/PI; valid.push({row,dM});} else invalid.push(row);});
+  if(valid.length<2) return;
+  valid.sort((a,b)=>b.dM-a.dM);
+  const frag=document.createDocumentFragment(); valid.forEach(v=>frag.appendChild(v.row)); invalid.forEach(r=>frag.appendChild(r));
+  mtList.innerHTML=''; mtList.appendChild(frag); renumberMtLabels(); clearMtLargest(); setBtnActive(mtCalc,false);
+  markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti();
+}
 function clearMtLargest(){ mtList.querySelectorAll('.largest-label').forEach(el=>el.classList.remove('largest-label')); mtList.querySelectorAll('.badge').forEach(b=>{b.classList.add('hide'); b.textContent='Largest';}); }
-function calcMulti(){ clearMtLargest(); const items=Array.from(mtList.querySelectorAll('input')); const valid=items.map(inp=>({inp,val:parseFloat(inp.value),row:inp.closest('.row')})).filter(o=>Number.isFinite(o.val)&&o.val>0); if(valid.length===0){lastMulti=null; mtResult.textContent='Enter at least one trunk circumference.'; updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); return;}
+function calcMulti(){
+  clearMtLargest();
+  const items=Array.from(mtList.querySelectorAll('input'));
+  const valid=items.map(inp=>({inp,val:parseFloat(inp.value),row:inp.closest('.row')})).filter(o=>Number.isFinite(o.val)&&o.val>0);
+  if(valid.length===0){ lastMulti=null; mtResult.textContent='Enter at least one trunk circumference.'; updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); return; }
   const withD=valid.map((r,i)=>{const cM=toM(r.val,inputUnit); const dM=cM/PI; return {row:r.row,cM,dM,idx:i+1};});
   const eps=1e-9; const dmax=Math.max(...withD.map(x=>x.dM)); const maxRows=withD.filter(x=>Math.abs(x.dM-dmax)<eps); const sumAll=withD.reduce((a,x)=>a+x.dM,0);
   const dEqM=dmax+0.5*(sumAll-dmax); const cEqM=dEqM*PI; const cAvgM=withD.reduce((a,x)=>a+x.cM,0)/withD.length;
-  const badgeText=(maxRows.length>1)?'Tied for largest':'Largest'; maxRows.forEach(r=>{const lab=r.row.querySelector('.mt-label'); const badge=r.row.querySelector('.badge'); lab?.classList.add('largest-label'); if(badge){badge.textContent=badgeText; badge.classList.remove('hide');}});
+  const badgeText=(maxRows.length>1)?'Tied for largest':'Largest';
+  maxRows.forEach(r=>{const lab=r.row.querySelector('.mt-label'); const badge=r.row.querySelector('.badge'); lab?.classList.add('largest-label'); if(badge){badge.textContent=badgeText; badge.classList.remove('hide');}});
   lastMulti={ trunks:withD.map(t=>({index:t.idx,cM:t.cM,cFt:mToFt(t.cM),dM:t.dM,dFt:mToFt(t.dM),isLargest:Math.abs(t.dM-dmax)<eps})), dEqM,cEqM,dEqFt:mToFt(dEqM),cEqFt:mToFt(cEqM), cAvgM,cAvgFt:mToFt(cAvgM), tie:maxRows.length>1 };
   mtResult.textContent=`Calculated ${withD.length} trunk${withD.length>1?'s':''}.`;
+  setBtnActive(mtCalc,true);
   markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
 mtAdd.onclick=()=>{addMtRow(); markDescDirty(); formDirty=true; saveState();};
@@ -421,24 +476,35 @@ mtFill.onclick=mtFillFromBulk;
 mtClear.onclick=()=>{mtBulk.value='';};
 
 /* ---------- Height ---------- */
-function calcHeight(){ const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value);
-  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null; updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); return;}
-  const dM=toM(d,inputUnit), eM=toM(e,inputUnit); const hM=tanDeg(a)*dM+eM; lastHeight={hM,hFt:mToFt(hM),angleDeg:Number(a.toFixed(1)),dM,eM};
+function calcHeight(){
+  const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value);
+  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null; updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); return; }
+  const dM=toM(d,inputUnit), eM=toM(e,inputUnit); const hM=tanDeg(a)*dM+eM;
+  lastHeight={hM,hFt:mToFt(hM),angleDeg:Number(a.toFixed(1)),dM,eM};
+  setBtnActive(hCalc,true);
   markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
 hCalc.onclick=calcHeight;
-[hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input',()=>{markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcHeight();}));
+[hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input',()=>{ setBtnActive(hCalc,false); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcHeight();}));
 [hAngle,hDist,hEye].forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();calcHeight();}}));
 
-/* ---------- Spread ---------- */
-function calcSpread(){ const maj=parseFloat(spreadMajor.value), min=parseFloat(spreadMinor.value); const haveMaj=Number.isFinite(maj), haveMin=Number.isFinite(min);
-  if(!haveMaj&&!haveMin){ lastSpread=null; } else { const mMaj=haveMaj?toM(maj,inputUnit):null, mMin=haveMin?toM(min,inputUnit):null; const meanM=((mMaj??0)+(mMin??0))/((haveMaj?1:0)+(haveMin?1:0)); lastSpread={majorM:mMaj,minorM:mMin,meanM,meanFt:mToFt(meanM)};}
+/* ---------- Canopy spread ---------- */
+function calcSpread(){
+  const maj=parseFloat(spreadMajor.value), min=parseFloat(spreadMinor.value);
+  const haveMaj=Number.isFinite(maj), haveMin=Number.isFinite(min);
+  if(!haveMaj&&!haveMin){ lastSpread=null; setBtnActive(spreadCalc,false); }
+  else {
+    const mMaj=haveMaj?toM(maj,inputUnit):null, mMin=haveMin?toM(min,inputUnit):null;
+    const meanM=((mMaj??0)+(mMin??0))/((haveMaj?1:0)+(haveMin?1:0));
+    lastSpread={majorM:mMaj,minorM:mMin,meanM,meanFt:mToFt(meanM)};
+    setBtnActive(spreadCalc,true);
+  }
   markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
 spreadCalc.onclick=calcSpread;
-[spreadMajor,spreadMinor].forEach(inp=>inp.addEventListener('input',()=>{markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcSpread();}));
+[spreadMajor,spreadMinor].forEach(inp=>inp.addEventListener('input',()=>{ setBtnActive(spreadCalc,false); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcSpread();}));
 
-/* ---------- Results & copy buttons ---------- */
+/* ---------- Results & Copy ---------- */
 function updateResultsPanel(){
   resHeight.textContent = lastHeight ? `Height: ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)` : 'Height: —';
   const t=treeType.value;
@@ -462,7 +528,10 @@ function updateCopyButtons(){
   else { copyEqCirc.disabled=true; copyAvgCirc.disabled=true; }
   copySpread.disabled=!(lastSpread&&Number.isFinite(lastSpread.meanM));
 }
-async function copyText(txt,btn){ try{ await navigator.clipboard.writeText(txt); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200);}catch{ const t=document.createElement('input'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200);} }
+async function copyText(txt,btn){
+  try{ await navigator.clipboard.writeText(txt); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200);}
+  catch{ const t=document.createElement('input'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200);}
+}
 copyHeight.onclick=()=>{ if(lastHeight) copyText(fmt2(lastHeight.hM),copyHeight); };
 copyEqCirc.onclick=()=>{ const t=treeType.value; if(t==='Multi trunked tree'&&lastMulti) copyText(fmt2(lastMulti.cEqM),copyEqCirc); if(t==='Single trunk tree'&&lastSingle) copyText(fmt2(lastSingle.cM),copyEqCirc); };
 copyAvgCirc.onclick=()=>{ if(lastMulti) copyText(fmt2(lastMulti.cAvgM),copyAvgCirc); };
@@ -478,28 +547,58 @@ function ensureCalcsOnDemand(){
 }
 function buildDescription(){
   const parts=[]; const name=treeName.value?.trim(), sp=species.value?.trim(), cond=condition.value?.trim(), type=treeType.value?.trim();
-  const head=document.createElement('div'); if(name) head.innerHTML+=`<p><strong>Tree</strong>: ${escapeHtml(name)}</p>`; if(sp) head.innerHTML+=`<p><strong>Species</strong>: ${escapeHtml(sp)}</p>`; if(cond) head.innerHTML+=`<p><strong>Condition</strong>: ${escapeHtml(cond)}</p>`; if(type) head.innerHTML+=`<p><strong>Type</strong>: ${escapeHtml(type)}</p>`; if(head.innerHTML) parts.push(head);
+  const head=document.createElement('div');
+  if(name) head.innerHTML+=`<p><strong>Tree</strong>: ${escapeHtml(name)}</p>`;
+  if(sp)   head.innerHTML+=`<p><strong>Species</strong>: ${escapeHtml(sp)}</p>`;
+  if(cond) head.innerHTML+=`<p><strong>Condition</strong>: ${escapeHtml(cond)}</p>`;
+  if(type) head.innerHTML+=`<p><strong>Type</strong>: ${escapeHtml(type)}</p>`;
+  if(head.innerHTML) parts.push(head);
+
   const meas=document.createElement('div'); let has=false;
 
-  if(type==='Single trunk tree' && lastSingle){ has=true; const p1=document.createElement('p'); p1.innerHTML='<strong>Measurements</strong>'; const ul=document.createElement('ul'); const li=document.createElement('li'); li.textContent=`Circumference: ${fmt2(lastSingle.cM)} m (${fmt2(lastSingle.cFt)} ft) → Diameter: ${fmt2(lastSingle.dM)} m (${fmt2(lastSingle.dFt)} ft)`; ul.appendChild(li); meas.appendChild(p1); meas.appendChild(ul); }
+  if(type==='Single trunk tree' && lastSingle){
+    has=true;
+    const p1=document.createElement('p'); p1.innerHTML='<strong>Measurements</strong>';
+    const ul=document.createElement('ul');
+    const li=document.createElement('li');
+    li.textContent=`Circumference: ${fmt2(lastSingle.cM)} m (${fmt2(lastSingle.cFt)} ft) → Diameter: ${fmt2(lastSingle.dM)} m (${fmt2(lastSingle.dFt)} ft)`;
+    ul.appendChild(li); meas.appendChild(p1); meas.appendChild(ul);
+  }
 
-  if(type==='Multi trunked tree'){ const trunks=lastMulti?.trunks??[]; if(trunks.length>0){ has=true;
-      const p1=document.createElement('p'); p1.innerHTML='<strong>Individual trunks (circumference → diameter)</strong>'; const ul1=document.createElement('ul');
-      trunks.forEach(t=>{ const li=document.createElement('li'); const txt=`T${t.index}: ${fmt2(t.cM)} m (${fmt2(t.cFt)} ft) → ${fmt2(t.dM)} m (${fmt2(t.dFt)} ft)`; if(t.isLargest){ li.innerHTML=`<strong>${txt}</strong>`;} else { li.textContent=txt;} ul1.appendChild(li);});
-      const p2=document.createElement('p'); p2.innerHTML='<strong>Full Tree Circumference (circumference → diameter)</strong>'; const ul2=document.createElement('ul');
+  if(type==='Multi trunked tree'){
+    const trunks=lastMulti?.trunks??[];
+    if(trunks.length>0){
+      has=true;
+      const p1=document.createElement('p'); p1.innerHTML='<strong>Individual trunks (circumference → diameter)</strong>';
+      const ul1=document.createElement('ul');
+      trunks.forEach(t=>{
+        const li=document.createElement('li');
+        const txt=`T${t.index}: ${fmt2(t.cM)} m (${fmt2(t.cFt)} ft) → ${fmt2(t.dM)} m (${fmt2(t.dFt)} ft)`;
+        if(t.isLargest){ li.innerHTML=`<strong>${txt}</strong>`;} else { li.textContent=txt;}
+        ul1.appendChild(li);
+      });
+      const p2=document.createElement('p'); p2.innerHTML='<strong>Full Tree Circumference (circumference → diameter)</strong>';
+      const ul2=document.createElement('ul');
       const liC=document.createElement('li'); liC.textContent=`Equivalent circumference: ${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft) → ${fmt2(lastMulti.dEqM)} m (${fmt2(lastMulti.dEqFt)} ft)`;
       const liA=document.createElement('li'); const dAvgM=lastMulti.cAvgM/PI, dAvgFt=mToFt(dAvgM); liA.textContent=`Average circumference: ${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft) → ${fmt2(dAvgM)} m (${fmt2(dAvgFt)} ft)`;
       ul2.appendChild(liC); ul2.appendChild(liA);
       meas.appendChild(p1); meas.appendChild(ul1); meas.appendChild(p2); meas.appendChild(ul2);
-  }}
+    }
+  }
 
-  if(lastHeight){ has=true; const p=document.createElement('p'); p.innerHTML='<strong>Height</strong>'; const ul=document.createElement('ul');
+  if(lastHeight){
+    has=true;
+    const p=document.createElement('p'); p.innerHTML='<strong>Height</strong>';
+    const ul=document.createElement('ul');
     const liH=document.createElement('li'); liH.textContent=`Tree height: ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`;
     const liF=document.createElement('li'); liF.textContent=`height = tan(${fmt1(lastHeight.angleDeg)}°) × ${fmt2(lastHeight.dM)} m + ${fmt2(lastHeight.eM)} m = ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`;
     ul.appendChild(liH); ul.appendChild(liF); meas.appendChild(p); meas.appendChild(ul);
   }
 
-  if(lastSpread){ has=true; const p=document.createElement('p'); p.innerHTML='<strong>Canopy spread</strong>'; const ul=document.createElement('ul');
+  if(lastSpread){
+    has=true;
+    const p=document.createElement('p'); p.innerHTML='<strong>Canopy spread</strong>';
+    const ul=document.createElement('ul');
     if(Number.isFinite(lastSpread.majorM)){ const li=document.createElement('li'); li.textContent=`Major: ${fmt2(lastSpread.majorM)} m (${fmt2(mToFt(lastSpread.majorM))} ft)`; ul.appendChild(li); }
     if(Number.isFinite(lastSpread.minorM)){ const li=document.createElement('li'); li.textContent=`Minor: ${fmt2(lastSpread.minorM)} m (${fmt2(mToFt(lastSpread.minorM))} ft)`; ul.appendChild(li); }
     const liMean=document.createElement('li'); liMean.innerHTML=`<strong>Final canopy spread: ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)</strong>`; ul.appendChild(liMean);
@@ -509,23 +608,53 @@ function buildDescription(){
   if(has) parts.push(meas);
 
   const nTxt=notesEl.value.trim();
-  if(nTxt){ const n=document.createElement('div'); n.innerHTML='<p><strong>Notes</strong></p>'; const ul=document.createElement('ul'); nTxt.split(/\n+/).forEach(line=>{ const li=document.createElement('li'); li.textContent=line; ul.appendChild(li); }); n.appendChild(ul); parts.push(n); }
+  if(nTxt){
+    const n=document.createElement('div');
+    n.innerHTML='<p><strong>Notes</strong></p>';
+    const ul=document.createElement('ul');
+    nTxt.split(/\n+/).forEach(line=>{ const li=document.createElement('li'); li.textContent=line; ul.appendChild(li); });
+    n.appendChild(ul); parts.push(n);
+  }
 
-  const obs=document.createElement('div'); const when=nowLocal24(); obs.innerHTML=`<p><strong>Observation</strong></p><ul><li>Recorded: ${when}</li></ul>`; parts.push(obs);
+  const obs=document.createElement('div');
+  const when=nowLocal24();
+  obs.innerHTML=`<p><strong>Observation</strong></p><ul><li>Recorded: ${when}</li></ul>`;
+  parts.push(obs);
+
   const out=document.createElement('div'); parts.forEach(p=>out.appendChild(p)); return out.innerHTML;
 }
-function extractPlainText(container){ const items=Array.from(container.querySelectorAll('li')).map(li=>`- ${li.innerText}`); const paras=Array.from(container.querySelectorAll('p')).map(p=>p.innerText); return [...paras,...items].join('\n').trim();}
-
+function extractPlainText(container){
+  const items=Array.from(container.querySelectorAll('li')).map(li=>`- ${li.innerText}`);
+  const paras=Array.from(container.querySelectorAll('p')).map(p=>p.innerText);
+  return [...paras,...items].join('\n').trim();
+}
 function generateDescription(){
   ensureCalcsOnDemand();
   const html=buildDescription(); descBox.innerHTML=html||'—'; copyDesc.disabled=!html; shareBtn.disabled=!html;
-  if(html){ const plain=extractPlainText(descBox); const nm=treeName.value?.trim(); const subject=`ARA Field Nomination${nm?' – '+nm:''}`; emailBtn.href=`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plain)}`; emailBtn.removeAttribute('aria-disabled'); }
-  else { emailBtn.setAttribute('aria-disabled','true'); emailBtn.href='#'; }
+  if(html){
+    const plain=extractPlainText(descBox); const nm=treeName.value?.trim();
+    const subject=`ARA Field Nomination${nm?' – '+nm:''}`;
+    emailBtn.href=`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plain)}`;
+    emailBtn.removeAttribute('aria-disabled');
+  } else { emailBtn.setAttribute('aria-disabled','true'); emailBtn.href='#'; }
   descDirty=false; formDirty=false;
 }
 genDesc.onclick=generateDescription;
 
-/* ---------- Share link (hash Base64) ---------- */
+copyDesc.onclick=async ()=>{
+  const html=descBox.innerHTML.trim(); if(!html||html==='—') return; const text=extractPlainText(descBox);
+  if(navigator.clipboard && window.ClipboardItem){
+    try{
+      await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]);
+      const o=copyDesc.textContent; copyDesc.textContent='Copied ✓'; setTimeout(()=>copyDesc.textContent=o,1200); return;
+    }catch{}
+  }
+  const tmp=document.createElement('div'); tmp.contentEditable='true'; tmp.style.position='fixed'; tmp.style.left='-9999px'; tmp.innerHTML=html; document.body.appendChild(tmp);
+  const r=document.createRange(); r.selectNodeContents(tmp); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); s.removeAllRanges(); tmp.remove();
+  const o=copyDesc.textContent; copyDesc.textContent='Copied ✓'; setTimeout(()=>copyDesc.textContent=o,1200);
+};
+
+/* ---------- Share link ---------- */
 function getFormState(){
   return {
     inputUnit, calcMode,
@@ -550,24 +679,24 @@ function setFormState(st){
 }
 function encodeShare(state){ const json=JSON.stringify(state); const b64=btoa(unescape(encodeURIComponent(json))); return location.origin+location.pathname+'#data='+b64; }
 function decodeShare(hash){ try{ const b64=hash.replace(/^#?data=/,''); const json=decodeURIComponent(escape(atob(b64))); return JSON.parse(json);}catch{ return null; } }
-shareBtn.onclick=async ()=>{ const url=encodeShare(getFormState()); if(url.length>2000) alert('Heads up: this link is quite long. It will still work, but some apps may truncate it.'); await copyText(url, shareBtn); };
+shareBtn.onclick=async ()=>{ const url=encodeShare(getFormState()); if(url.length>2000) alert('Heads up: this link is long. Some apps may truncate it.'); await copyText(url, shareBtn); };
 
 /* ---------- Autosave ---------- */
 function saveState(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(getFormState())); }catch{} }
 function loadState(){ let st=null; try{ st=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); }catch{}; if(st) setFormState(st); else { addMtRow(); addMtRow(); } }
 [treeName,species,condition,treeType,singleC,hAngle,hDist,hEye,spreadMajor,spreadMinor,notesEl].forEach(el=>el.addEventListener('input',saveState));
 
-/* ---------- Reset form (not log) ---------- */
+/* ---------- Reset form ---------- */
 resetFormBtn.onclick=()=>{ localStorage.setItem(SAVE_KEY, JSON.stringify({inputUnit,calcMode})); location.reload(); };
 
-/* ---------- Session Log storage ---------- */
+/* ---------- Log storage ---------- */
 function getLog(){ try{ return JSON.parse(localStorage.getItem(LOG_KEY)||'[]'); }catch{ return []; } }
 function setLog(arr){ try{ localStorage.setItem(LOG_KEY, JSON.stringify(arr)); }catch{} }
 function getGroups(){ try{ const g=JSON.parse(localStorage.getItem(GROUPS_KEY)||'null'); if(Array.isArray(g)&&g.length) return g; return DEFAULT_GROUPS.slice(); }catch{ return DEFAULT_GROUPS.slice(); } }
 function setGroups(g){ try{ localStorage.setItem(GROUPS_KEY, JSON.stringify(g)); }catch{} }
 
 /* ---------- Render log ---------- */
-let viewMode='date'; // 'date' | 'group'
+let viewMode='date';
 viewDate.onclick=()=>{viewMode='date'; viewDate.classList.add('active'); viewGroup.classList.remove('active'); groupsHead.style.display='none'; renderLog();};
 viewGroup.onclick=()=>{viewMode='group'; viewGroup.classList.add('active'); viewDate.classList.remove('active'); groupsHead.style.display='flex'; renderLog();};
 addGroupBtn.onclick=()=>{ const name=prompt('New group name'); if(!name) return; const groups=getGroups(); if(!groups.includes(name)) {groups.push(name); setGroups(groups); renderLog();} };
@@ -624,7 +753,7 @@ function renderEntry(e,draggable=false){
 function moveEntryToGroup(id,g){ const entries=getLog(); const i=entries.findIndex(x=>x.id===id); if(i>=0){ entries[i].group=(g==='No group')?'':g; setLog(entries); renderLog(); } }
 function deleteEntry(id){ const arr=getLog().filter(e=>e.id!==id); setLog(arr); renderLog(); }
 
-/* ---------- Entry click with confirm ---------- */
+/* Entry click with confirm */
 function handleEntryClick(id){
   const entries=getLog(); const entry=entries.find(e=>e.id===id); if(!entry) return;
   openTargetEntryId=id;
@@ -636,7 +765,7 @@ swReplace.onclick=()=>{ const e=getLog().find(x=>x.id===openTargetEntryId); if(e
 swSave.onclick=()=>{ saveCurrentToLog(); const e=getLog().find(x=>x.id===openTargetEntryId); if(e){ loadEntry(e); } openTargetEntryId=null; modalSwitch.classList.remove('show'); };
 function loadEntry(e){ setFormState(e); descBox.innerHTML=e.desc||'—'; copyDesc.disabled=!e.desc; shareBtn.disabled=false; formDirty=false; }
 
-/* ---------- Save to log & copy all ---------- */
+/* Save to log & Copy all */
 function saveCurrentToLog(){
   const st=getFormState(); st.id = st.id || uid(); st.ts = Date.now();
   const arr=getLog(); const idx=arr.findIndex(x=>x.id===st.id);
@@ -656,41 +785,26 @@ copyAllBtn.onclick=async ()=>{
   await navigator.clipboard.writeText(blocks);
 };
 
-/* ---------- Clear log with confirm ---------- */
+/* Clear log with confirm */
 clearLogBtn.onclick=()=>modalClear.classList.add('show');
 clCancel.onclick=()=>modalClear.classList.remove('show');
 clConfirm.onclick=()=>{ setLog([]); modalClear.classList.remove('show'); renderLog(); };
 
-/* ---------- Boot (safe) ---------- */
+/* ---------- Boot ---------- */
 (function boot(){
   try{
-    // initial: By date view => hide groups header
-    groupsHead.style.display='none';
-
-    // If there is a share hash, prefer it; otherwise load autosave.
+    groupsHead.style.display='none';          // By date default
     const hashData = location.hash.startsWith('#data=') ? decodeShare(location.hash) : null;
-    if (hashData) {
-      setFormState(hashData);
-      if(hashData.desc){ descBox.innerHTML=hashData.desc; copyDesc.disabled=false; shareBtn.disabled=false; }
-    } else {
-      loadState();
-    }
-
-    // Ensure two default rows exist if user switches to multi later
-    // (loadState already adds rows on empty, but this is a safety net)
+    if (hashData) { setFormState(hashData); if(hashData.desc){ descBox.innerHTML=hashData.desc; copyDesc.disabled=false; shareBtn.disabled=false; } }
+    else { loadState(); }
     if (treeType.value==='Multi trunked tree') ensureTwoMtRows();
-
-    // Bind email state
     emailBtn.setAttribute('aria-disabled','true');
-
-    // First render
     renderLog();
   }catch(err){
     console.error('Boot error:', err);
-    alert('Something went wrong initializing the page. Try a hard refresh.');
+    alert('Init failed — try a hard refresh.');
   }
 })();
 </script>
-
 </body>
 </html>
