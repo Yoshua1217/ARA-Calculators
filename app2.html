@@ -569,6 +569,60 @@ async function copyText(txt,btn){
   try{ await navigator.clipboard.writeText(txt); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200);}
   catch{ const t=document.createElement('input'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200);}
 }
+// Mini flash feedback for the tiny buttons in the sidebar
+function flashMini(btn, ok='Copied ✓', restore){
+  const prev = btn.textContent;
+  btn.disabled = true;
+  btn.classList.add('active');      // dark look
+  btn.textContent = ok;
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.classList.remove('active');
+    btn.textContent = restore || prev;
+  }, 1100);
+}
+
+// Copy a saved entry's description (HTML + Plain Text if possible)
+async function copyDescOfEntry(entry, btn){
+  const html = entry.desc || '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const text = tmp.innerText || '(no description)';
+
+  try {
+    if (navigator.clipboard && window.ClipboardItem && html) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html':  new Blob([html],  { type: 'text/html' }),
+          'text/plain': new Blob([text],  { type: 'text/plain' })
+        })
+      ]);
+    } else {
+      await navigator.clipboard.writeText(text);
+    }
+    flashMini(btn, 'Copied ✓', 'Copy');
+  } catch (err) {
+    console.error('Copy failed:', err);
+    // Fallback prompt if permissions block clipboard
+    const ok = window.prompt('Copy the description:', text);
+    if (ok !== null) flashMini(btn, 'Ready ✓', 'Copy');
+  }
+}
+
+// Copy a share link for the saved entry
+async function copyShareLinkOfEntry(entry, btn){
+  const url = encodeShare(entry);
+  try {
+    await navigator.clipboard.writeText(url);
+    flashMini(btn, 'Link copied ✓', 'Share');
+  } catch (err) {
+    console.error('Link copy failed:', err);
+    // Fallback prompt if permissions block clipboard
+    const ok = window.prompt('Copy this link:', url);
+    if (ok !== null) flashMini(btn, 'Ready ✓', 'Share');
+  }
+}
+
 copyHeight.onclick=()=>{ if(lastHeight) copyText(fmt2(lastHeight.hM),copyHeight); };
 copyEqCirc.onclick=()=>{ const t=treeType.value; if(t==='Multi trunked tree'&&lastMulti) copyText(fmt2(lastMulti.cEqM),copyEqCirc); if(t==='Single trunk tree'&&lastSingle) copyText(fmt2(lastSingle.cM),copyEqCirc); };
 copyAvgCirc.onclick=()=>{ if(lastMulti) copyText(fmt2(lastMulti.cAvgM),copyAvgCirc); };
@@ -778,19 +832,68 @@ function renderLog(){
     });
   }
 }
-function renderEntry(e,draggable=false){
-  const card=document.createElement('div'); card.className='entry'; if(draggable){ card.draggable=true; card.ondragstart=(ev)=>ev.dataTransfer.setData('text/plain', e.id); }
-  const name=document.createElement('div'); name.className='name'; name.textContent=e.basics?.name || 'Untitled';
-  const ts=document.createElement('div'); ts.className='ts'; ts.textContent=new Date(e.ts).toISOString().slice(0,16).replace('T',' ');
-  card.appendChild(name); card.appendChild(ts);
-  card.onclick=()=>handleEntryClick(e.id);
-  const row=document.createElement('div'); row.className='unit-toggle'; row.style.marginTop='6px';
-  const btnCopy=document.createElement('button'); btnCopy.className='btn-ghost tiny'; btnCopy.textContent='Copy'; btnCopy.onclick=(ev)=>{ ev.stopPropagation(); const tmp=document.createElement('div'); tmp.innerHTML=e.desc||'(no description)'; const text=tmp.innerText; navigator.clipboard.writeText(text); };
-  const btnShare=document.createElement('button'); btnShare.className='btn-ghost tiny'; btnShare.textContent='Share'; btnShare.onclick=(ev)=>{ ev.stopPropagation(); const url=encodeShare(e); navigator.clipboard.writeText(url); };
-  const btnDel=document.createElement('button'); btnDel.className='danger tiny'; btnDel.textContent='Delete'; btnDel.onclick=(ev)=>{ ev.stopPropagation(); deleteEntry(e.id); };
-  row.appendChild(btnCopy); row.appendChild(btnShare); row.appendChild(btnDel); card.appendChild(row);
+function renderEntry(e, draggable = false){
+  const card = document.createElement('div');
+  card.className = 'entry';
+  if (draggable){
+    card.draggable = true;
+    card.ondragstart = (ev) => ev.dataTransfer.setData('text/plain', e.id);
+  }
+
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.textContent = e.basics?.name || 'Untitled';
+
+  const ts = document.createElement('div');
+  ts.className = 'ts';
+  ts.textContent = new Date(e.ts).toISOString().slice(0,16).replace('T',' ');
+
+  card.appendChild(name);
+  card.appendChild(ts);
+
+  // Clicking anywhere on the card loads the entry (with confirm if dirty)
+  card.onclick = () => handleEntryClick(e.id);
+
+  // Row of mini actions
+  const row = document.createElement('div');
+  row.className = 'unit-toggle';
+  row.style.marginTop = '6px';
+
+  const btnCopy = document.createElement('button');
+  btnCopy.className = 'btn-ghost tiny';
+  btnCopy.textContent = 'Copy';
+  btnCopy.title = 'Copy saved description';
+  btnCopy.onclick = (ev) => {
+    ev.stopPropagation();
+    copyDescOfEntry(e, btnCopy);
+  };
+
+  const btnShare = document.createElement('button');
+  btnShare.className = 'btn-ghost tiny';
+  btnShare.textContent = 'Share';
+  btnShare.title = 'Copy share link';
+  btnShare.onclick = (ev) => {
+    ev.stopPropagation();
+    copyShareLinkOfEntry(e, btnShare);
+  };
+
+  const btnDel = document.createElement('button');
+  btnDel.className = 'danger tiny';
+  btnDel.textContent = 'Delete';
+  btnDel.title = 'Delete from log';
+  btnDel.onclick = (ev) => {
+    ev.stopPropagation();
+    deleteEntry(e.id);
+  };
+
+  row.appendChild(btnCopy);
+  row.appendChild(btnShare);
+  row.appendChild(btnDel);
+  card.appendChild(row);
+
   return card;
 }
+
 function moveEntryToGroup(id,g){ const entries=getLog(); const i=entries.findIndex(x=>x.id===id); if(i>=0){ entries[i].group=(g==='No group')?'':g; setLog(entries); renderLog(); } }
 function deleteEntry(id){ const arr=getLog().filter(e=>e.id!==id); setLog(arr); renderLog(); }
 
