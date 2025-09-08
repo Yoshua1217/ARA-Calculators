@@ -382,16 +382,26 @@ const DEFAULT_GROUPS=['Favourite Trees','Big Trees','Unique Trees'];
 const setBtnActive=(btn,active)=>{ if(!btn) return; btn.classList.toggle('active', !!active); };
 const touch = el => el && el.dispatchEvent(new Event('input'));
 function updateSaveButton(){
-  if (formDirty) {
-    saveLogBtn.disabled=false;
+  // If the form has never been saved (no id), always allow a first save.
+  if (!currentId) {
+    saveLogBtn.disabled = false;
     saveLogBtn.classList.remove('active');
-    saveLogBtn.textContent='Save to log';
+    saveLogBtn.textContent = 'Save to log';
+    return;
+  }
+
+  // Existing entry: enable when dirty, show Saved ✓ when clean.
+  if (formDirty) {
+    saveLogBtn.disabled = false;
+    saveLogBtn.classList.remove('active');
+    saveLogBtn.textContent = 'Save to log';
   } else {
-    saveLogBtn.disabled=true;
-    saveLogBtn.classList.add('active');     // dark
-    saveLogBtn.textContent='Saved ✓';
+    saveLogBtn.disabled = true;
+    saveLogBtn.classList.add('active');  // dark, “saved” look
+    saveLogBtn.textContent = 'Saved ✓';
   }
 }
+
 
 /* ---------- Units & mode ---------- */
 function setUnit(u){
