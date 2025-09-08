@@ -382,13 +382,12 @@ const DEFAULT_GROUPS=['Favourite Trees','Big Trees','Unique Trees'];
 const setBtnActive=(btn,active)=>{ if(!btn) return; btn.classList.toggle('active', !!active); };
 const touch = el => el && el.dispatchEvent(new Event('input'));
 function updateSaveButton(){
-  // If the form has never been saved (no id), always allow a first save.
-  if (!currentId) {
-    saveLogBtn.disabled = false;
-    saveLogBtn.classList.remove('active');
-    saveLogBtn.textContent = 'Save to log';
-    return;
-  }
+  // Always allow saving (duplicates are OK now)
+  saveLogBtn.disabled = false;
+  saveLogBtn.classList.remove('active');
+  saveLogBtn.textContent = 'Save to log';
+}
+
 
   // Existing entry: enable when dirty, show Saved ✓ when clean.
   if (formDirty) {
@@ -675,8 +674,9 @@ function generateDescription(){
     const subject=`ARA Field Nomination${nm?' – '+nm:''}`;
     emailBtn.href=`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plain)}`;
     emailBtn.removeAttribute('aria-disabled');
-  } else { emailBtn.setAttribute('aria-disabled','true'); emailBtn.href='#'; }
-  descDirty=false; formDirty=false; updateSaveButton();
+  } else { emailBtn.setAttribute('aria-disabled','true'); 
+            emailBtn.href='#'; }
+  
 }
 genDesc.onclick=generateDescription;
 
@@ -809,17 +809,29 @@ function loadEntry(e){ setFormState(e); descBox.innerHTML=e.desc||'—'; copyDes
 
 /* Save to log & Copy all */
 function saveCurrentToLog(){
-  const st=getFormState();
-  st.id = currentId || uid();                // keep same id -> update, not duplicate
-  currentId = st.id;
+  // Take a snapshot of the current form
+  const st = getFormState();
+
+  // Always create a NEW entry (duplicates allowed)
+  st.id = uid();
   st.ts = Date.now();
 
-  const arr=getLog();
-  const idx=arr.findIndex(x=>x.id===st.id);
-  if(idx>=0) arr[idx]=st; else arr.push(st);
+  // Save and re-render the sidebar
+  const arr = getLog();
+  arr.push(st);
+  setLog(arr);
+  renderLog();
 
-  setLog(arr); renderLog(); formDirty=false; updateSaveButton();
+  // Flash a quick "Saved ✓" but keep the button usable
+  const orig = saveLogBtn.textContent;
+  saveLogBtn.classList.add('active');    // dark style for a moment
+  saveLogBtn.textContent = 'Saved ✓';
+  setTimeout(() => {
+    saveLogBtn.classList.remove('active');
+    saveLogBtn.textContent = orig;       // 'Save to log'
+  }, 1200);
 }
+
 saveLogBtn.onclick=saveCurrentToLog;
 
 copyAllBtn.onclick=async ()=>{
