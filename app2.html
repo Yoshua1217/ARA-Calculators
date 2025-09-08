@@ -374,7 +374,7 @@ const modalSwitch=$('#confirmSwitch'), swCancel=$('#swCancel'), swSave=$('#swSav
 let inputUnit='m', calcMode='manual', mtCount=0;
 let lastHeight=null, lastSingle=null, lastMulti=null, lastSpread=null;
 let descDirty=true, formDirty=false, openTargetEntryId=null;
-let currentId=null;                                     // <— track current entry id
+let currentId=null; // kept to avoid errors if referenced elsewhere
 const SAVE_KEY='ara_field_v1', LOG_KEY='ara_field_log_v1', GROUPS_KEY='ara_field_groups_v1';
 const DEFAULT_GROUPS=['Favourite Trees','Big Trees','Unique Trees'];
 
@@ -387,20 +387,6 @@ function updateSaveButton(){
   saveLogBtn.classList.remove('active');
   saveLogBtn.textContent = 'Save to log';
 }
-
-
-  // Existing entry: enable when dirty, show Saved ✓ when clean.
-  if (formDirty) {
-    saveLogBtn.disabled = false;
-    saveLogBtn.classList.remove('active');
-    saveLogBtn.textContent = 'Save to log';
-  } else {
-    saveLogBtn.disabled = true;
-    saveLogBtn.classList.add('active');  // dark, “saved” look
-    saveLogBtn.textContent = 'Saved ✓';
-  }
-}
-
 
 /* ---------- Units & mode ---------- */
 function setUnit(u){
@@ -424,14 +410,27 @@ function setCalcMode(m){ calcMode=m; const man=m==='manual';
 }
 modeManualBtn.onclick=()=>setCalcMode('manual'); modeAutoBtn.onclick=()=>setCalcMode('auto');
 
-/* ---------- Type gating ---------- */
+/* ---------- Type gating (single vs multi) ---------- */
 function ensureTwoMtRows(){ if(mtCount===0){ addMtRow(); addMtRow(); } }
 function updateTypeVisibility(){
   const t=treeType.value;
-  singleBlock.style.display=(t==='Single trunk tree')?'':'none';
-  mtBlock.style.display=(t==='Multi trunked tree')?'':'none';
-  if (t==='Multi trunked tree') ensureTwoMtRows();
-  markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); updateSaveButton();
+  // Show/hide sections
+  if (t==='Single trunk tree') {
+    singleBlock.style.display='';
+    mtBlock.style.display='none';
+  } else if (t==='Multi trunked tree') {
+    singleBlock.style.display='none';
+    mtBlock.style.display='';
+    ensureTwoMtRows();
+  } else {
+    singleBlock.style.display='none';
+    mtBlock.style.display='none';
+  }
+  // Reset result texts appropriately
+  updateResultsPanel();
+  updateCopyButtons();
+  markDescDirty();
+  formDirty=true; saveState(); updateSaveButton();
 }
 treeType.onchange=updateTypeVisibility;
 
@@ -674,9 +673,9 @@ function generateDescription(){
     const subject=`ARA Field Nomination${nm?' – '+nm:''}`;
     emailBtn.href=`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plain)}`;
     emailBtn.removeAttribute('aria-disabled');
-  } else { emailBtn.setAttribute('aria-disabled','true'); 
-            emailBtn.href='#'; }
-  
+  } else { emailBtn.setAttribute('aria-disabled','true'); emailBtn.href='#'; }
+  descDirty=false;            // keep this
+  // Do NOT set formDirty here; do NOT call updateSaveButton here
 }
 genDesc.onclick=generateDescription;
 
@@ -696,7 +695,7 @@ copyDesc.onclick=async ()=>{
 /* ---------- Share link ---------- */
 function getFormState(){
   return {
-    id: currentId || '',                // <— keep id so saves update instead of duplicate
+    id: currentId || '', // harmless now
     inputUnit, calcMode,
     basics:{name:treeName.value||'',species:species.value||'',condition:condition.value||'',type:treeType.value||''},
     singleC: singleC.value||'',
@@ -709,9 +708,9 @@ function getFormState(){
 }
 function setFormState(st){
   if(!st) return;
-  currentId = st.id || null;          // <— restore id if present
   setUnit(st.inputUnit==='ft'?'ft':'m'); setCalcMode(st.calcMode==='auto'?'auto':'manual');
-  treeName.value=st.basics?.name??''; species.value=st.basics?.species??''; condition.value=st.basics?.condition??''; treeType.value=st.basics?.type??''; updateTypeVisibility();
+  treeName.value=st.basics?.name??''; species.value=st.basics?.species??''; condition.value=st.basics?.condition??''; treeType.value=st.basics?.type??'';
+  updateTypeVisibility();
   singleC.value=st.singleC??''; hAngle.value=st.height?.angle??''; hDist.value=st.height?.dist??''; hEye.value=st.height?.eye??''; spreadMajor.value=st.spread?.major??''; spreadMinor.value=st.spread?.minor??'';
   notesEl.value=st.notes??''; autoGrow(notesEl);
   mtList.innerHTML=''; mtCount=0; const arr=Array.isArray(st.multi?.values)?st.multi.values:[]; if(arr.length>0) arr.forEach(v=>addMtRow(v)); else {addMtRow(); addMtRow();}
@@ -805,33 +804,25 @@ function handleEntryClick(id){
 swCancel.onclick=()=>{ openTargetEntryId=null; modalSwitch.classList.remove('show'); };
 swReplace.onclick=()=>{ const e=getLog().find(x=>x.id===openTargetEntryId); if(e){ loadEntry(e); } openTargetEntryId=null; modalSwitch.classList.remove('show'); };
 swSave.onclick=()=>{ saveCurrentToLog(); const e=getLog().find(x=>x.id===openTargetEntryId); if(e){ loadEntry(e); } openTargetEntryId=null; modalSwitch.classList.remove('show'); };
-function loadEntry(e){ setFormState(e); descBox.innerHTML=e.desc||'—'; copyDesc.disabled=!e.desc; shareBtn.disabled=false; formDirty=false; currentId=e.id||null; updateSaveButton(); }
+function loadEntry(e){ setFormState(e); descBox.innerHTML=e.desc||'—'; copyDesc.disabled=!e.desc; shareBtn.disabled=false; formDirty=false; updateSaveButton(); }
 
-/* Save to log & Copy all */
+/* Save to log (duplicates allowed) & Copy all */
 function saveCurrentToLog(){
-  // Take a snapshot of the current form
   const st = getFormState();
-
-  // Always create a NEW entry (duplicates allowed)
   st.id = uid();
   st.ts = Date.now();
 
-  // Save and re-render the sidebar
   const arr = getLog();
   arr.push(st);
   setLog(arr);
   renderLog();
 
-  // Flash a quick "Saved ✓" but keep the button usable
+  // flash confirmation
   const orig = saveLogBtn.textContent;
-  saveLogBtn.classList.add('active');    // dark style for a moment
+  saveLogBtn.classList.add('active');
   saveLogBtn.textContent = 'Saved ✓';
-  setTimeout(() => {
-    saveLogBtn.classList.remove('active');
-    saveLogBtn.textContent = orig;       // 'Save to log'
-  }, 1200);
+  setTimeout(()=>{ saveLogBtn.classList.remove('active'); saveLogBtn.textContent = orig; }, 1200);
 }
-
 saveLogBtn.onclick=saveCurrentToLog;
 
 copyAllBtn.onclick=async ()=>{
@@ -857,10 +848,11 @@ clConfirm.onclick=()=>{ setLog([]); modalClear.classList.remove('show'); renderL
     const hashData = location.hash.startsWith('#data=') ? decodeShare(location.hash) : null;
     if (hashData) { setFormState(hashData); if(hashData.desc){ descBox.innerHTML=hashData.desc; copyDesc.disabled=false; shareBtn.disabled=false; } }
     else { loadState(); }
-    if (treeType.value==='Multi trunked tree') ensureTwoMtRows();
+    // Ensure correct section visibility on first load
+    updateTypeVisibility();
     emailBtn.setAttribute('aria-disabled','true');
     renderLog();
-    updateSaveButton();                        // set initial Save button state
+    updateSaveButton();
   }catch(err){
     console.error('Boot error:', err);
     alert('Init failed — try a hard refresh.');
