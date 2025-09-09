@@ -30,10 +30,9 @@
   .btn-secondary{background:#e9e9e9;color:#111}
   .btn-ghost{background:#f5f5f5;color:#111}
   .danger{background:#f5e9e9}
-  .danger:hover,.danger:active{background:var(--danger);color:#fff}
+  .danger:hover,.danger:active{background:#d93c3c;color:#fff}
   button[disabled]{opacity:.6;cursor:not-allowed}
 
-  /* Readout */
   .readout{
     display:flex;align-items:flex-start;gap:16px;justify-content:space-between;
     border:1px solid #e7e7e7;background:#f7f7f7;border-radius:12px;padding:12px;margin:10px 0;
@@ -41,7 +40,6 @@
   .angle{font-variant-numeric:tabular-nums;font-size:2.4rem;font-weight:800;letter-spacing:0.5px}
   .micro{color:#666;font-size:.9rem}
 
-  /* BIG lock button */
   .lock-area{display:flex;justify-content:center;margin:12px 0 6px}
   .lock-btn{
     width:160px;height:160px;border-radius:999px;border:none;background:var(--dark);color:#fff;
@@ -74,6 +72,7 @@
       </div>
       <div class="unit-toggle" role="group" aria-label="Options">
         <button type="button" id="sensorStart" class="toggle-btn">Start sensor</button>
+        <button type="button" id="sensorReset" class="toggle-btn">Reset sensor</button>
         <button type="button" id="calSet" class="toggle-btn">Set 0°</button>
         <button type="button" id="calClear" class="toggle-btn">Clear 0°</button>
       </div>
@@ -135,7 +134,7 @@ const fmt2=x=>Number.isFinite(x)?x.toFixed(2):'—', fmt1=x=>Number.isFinite(x)?
 /* ---------- DOM ---------- */
 const unitM=$('#unit-m'), unitFt=$('#unit-ft'), unit1=$('#unit1'), unit2=$('#unit2');
 
-const sensorStart=$('#sensorStart');
+const sensorStart=$('#sensorStart'), sensorReset=$('#sensorReset');
 const liveAngleEl=$('#liveAngle'), liveMeta=$('#liveMeta');
 const lockBig=$('#lockBig');
 const angleInp=$('#angle'), distInp=$('#distance'), eyeInp=$('#eye');
@@ -260,6 +259,21 @@ function lockAngle(){
 }
 lockBig.onclick=lockAngle;
 
+/* ---------- Reset SENSOR (new) ---------- */
+function resetSensor(){
+  // Stop listening
+  window.removeEventListener('deviceorientation', onOrient, true);
+  sensorStart.classList.remove('active');
+  // Clear live state (keep calibration)
+  lastRaw = null;
+  locked = false;
+  lockBig.textContent = 'LOCK';
+  lockBig.disabled = true;
+  liveAngleEl.textContent = '—°';
+  updateMeta('idle');
+}
+sensorReset.onclick = resetSensor;
+
 /* ---------- Calculation ---------- */
 function calc(){
   const a = parseFloat(angleInp.value);
@@ -284,7 +298,7 @@ function calc(){
 calcBtn.onclick=calc;
 [angleInp,distInp,eyeInp].forEach(i=>i.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); calc(); }}));
 
-/* ---------- Copy & Reset ---------- */
+/* ---------- Copy & Reset (full app reset) ---------- */
 async function copyText(txt,btn){
   try{
     await navigator.clipboard.writeText(txt);
@@ -299,18 +313,10 @@ async function copyText(txt,btn){
 copyM.onclick=()=>{ const m = out.textContent.match(/Height ≈ ([\d.]+)/); if(m) copyText(m[1], copyM); };
 
 resetBtn.onclick=()=>{
-  window.removeEventListener('deviceorientation', onOrient, true);
-  sensorStart.classList.remove('active');
-
-  lastRaw=null; locked=false; calOffset=0;
-  lockBig.textContent='LOCK'; lockBig.disabled=true;
-  liveAngleEl.textContent='—°'; updateMeta('idle');
-
+  // Reset ONLY the calculator fields & outputs (keep sensor calibration and state as-is)
   angleInp.value=''; distInp.value=''; eyeInp.value='';
   out.textContent='—'; formula.textContent='height = tan(angle°) × distance + eye height';
   copyM.disabled=true;
-
-  calSet.classList.remove('active'); calClear.classList.remove('active');
 };
 
 /* ---------- Boot ---------- */
