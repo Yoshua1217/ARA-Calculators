@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ARA Field Tools — Nomination Form</title>
 <style>
-  :root{--radius:12px;--dark:#111;--light:#f2f2f2;--border:#ddd;--muted:#666;--danger:#d93c3c;}
+  :root{--radius:12px;--dark:#111;--light:#f5f5f5;--border:#ddd;--muted:#666;--danger:#d93c3c;}
   *{box-sizing:border-box}
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:24px;color:#111;background:#fff}
   .wrap{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:260px 1fr;gap:20px}
-  @media (max-width:980px){.wrap{grid-template-columns:1fr}}
+  @media (max-width:980px){ body{margin:14px} .wrap{grid-template-columns:1fr} }
 
   header{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-bottom:6px}
   h1{margin:0;font-size:1.6rem}
@@ -19,6 +19,7 @@
   .tab.active{background:#111;color:#fff;border-color:#111}
   .tab.disabled{opacity:.5}
 
+  /* Sidebar desktop */
   .side{border:1px solid var(--border);border-radius:var(--radius);background:#fafafa;padding:12px;display:flex;flex-direction:column;min-height:420px}
   .side>header{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px}
   .side h2{margin:0;font-size:1.1rem}
@@ -27,19 +28,16 @@
   .pill.active{background:#111;color:#fff;border-color:#111}
   .groups-head{display:flex;align-items:center;gap:6px;margin:6px 0 6px}
   .small{font-size:.9rem;color:#444}
-
   .side-scroller{flex:1;min-height:120px;overflow:auto}
-  .side-footer{margin-top:10px;border-top:1px solid #e7e7e7;padding-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+  .side-footer{margin-top:10px;border-top:1px solid #e7e7e7;padding-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .button,button{padding:10px 14px;border:0;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
   .btn-primary{background:var(--dark);color:#fff}
   .btn-secondary{background:#e9e9e9;color:#111}
-  .btn-secondary.active{background:var(--dark);color:#fff}
+  .btn-secondary.active,.btn-ghost.active{background:var(--dark);color:#fff}
   .btn-ghost{background:#f5f5f5;color:#111}
-  .btn-ghost.active{background:var(--dark);color:#fff}
   .danger{background:#f5e9e9}
   .danger:hover,.danger:active{background:var(--danger);color:#fff}
   .tiny{color:#666;font-size:.86rem}
-  button[disabled], .button[disabled]{ opacity:.6; cursor:not-allowed; }
 
   .card{border:1px solid var(--border);border-radius:var(--radius);background:#fff;margin-bottom:14px}
   .card .block{padding:12px 18px}
@@ -52,7 +50,7 @@
   input[type="text"],input[type="number"],select,textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:1rem;background:#fff}
   textarea{min-height:80px;resize:none;overflow:hidden}
 
-  .unit-toggle{display:flex;gap:8px;margin:8px 0 10px}
+  .unit-toggle{display:flex;gap:8px;margin:8px 0 10px;flex-wrap:wrap}
   .toggle-btn{padding:8px 12px;border:1px solid #ccc;border-radius:8px;background:var(--light);cursor:pointer}
   .toggle-btn.active{background:var(--dark);color:#fff;border-color:var(--dark)}
   .toggle-btn:focus-visible{outline:2px solid var(--dark);outline-offset:2px}
@@ -78,26 +76,34 @@
   .entry .ts{font-size:.86rem;color:#666;margin-top:2px}
   .drop-target{outline:2px dashed #bbb;outline-offset:4px;border-radius:8px;padding:4px}
 
-  /* Modals */
-  .modal{
-    position:fixed; inset:0; display:none;
-    align-items:center; justify-content:center;
-    padding:20px; background:rgba(0,0,0,.35); z-index:9999;
+  /* Height clinometer block */
+  .readout{display:flex;align-items:flex-start;gap:16px;justify-content:space-between;border:1px solid #e7e7e7;background:#f7f7f7;border-radius:12px;padding:12px;margin:10px 0}
+  .angle{font-variant-numeric:tabular-nums;font-size:2.1rem;font-weight:800;letter-spacing:0.5px}
+  .micro{color:#666;font-size:.9rem}
+  .lock-area{display:flex;justify-content:center;margin:10px 0 6px}
+  .lock-btn{width:140px;height:140px;border-radius:999px;border:none;background:var(--dark);color:#fff;font-size:1.1rem;font-weight:800;letter-spacing:.6px;box-shadow:0 10px 28px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center}
+  .lock-btn:active{transform:scale(0.98)}
+  .lock-btn[disabled]{background:#bbb;color:#fff;box-shadow:none}
+
+  /* Mobile drawer for the log */
+  @media (max-width:980px){
+    .side{position:fixed;left:0;right:0;bottom:0;top:auto;height:78vh;transform:translateY(100%);transition:transform .25s ease;z-index:999;background:#fafafa;border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);padding:12px 12px 64px 12px}
+    .side.open{transform:translateY(0)}
+    .mobile-log-toggle{position:fixed;left:12px;right:12px;bottom:12px;z-index:1000;display:flex;justify-content:center}
+    .mobile-log-toggle button{width:100%;padding:12px 16px;border-radius:999px}
   }
-  .modal.show{display:flex;}
-  .modal .sheet{
-    background:#fff; border:1px solid var(--border); border-radius:12px;
-    padding:16px; width:min(500px,100%); box-shadow:0 18px 40px rgba(0,0,0,.25);
+  @media (min-width:981px){
+    .mobile-log-toggle{display:none}
   }
-  .modal .sheet h3{margin:0 0 8px;}
-  .modal .sheet p{margin:6px 0 10px;}
-  .modal .sheet .btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;}
+
+  /* Buttons disable state */
+  button[disabled], .button[disabled]{opacity:.6;cursor:not-allowed}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <!-- SIDEBAR -->
-  <aside class="side" id="logPanel">
+  <!-- SIDEBAR / LOG -->
+  <aside class="side" id="logPanel" aria-label="Session Log">
     <header>
       <h2>Session Log</h2>
       <div class="view-toggle" role="tablist">
@@ -114,11 +120,15 @@
     <div class="side-scroller" id="logList">No saved trees yet.</div>
 
     <div class="side-footer">
-      <button id="copyAllBtn" class="btn-ghost tiny" title="Copy all descriptions as backup">Copy all (backup)</button>
       <button id="clearLogBtn" class="danger tiny" title="Remove all saved trees">Clear log</button>
       <div class="tiny" style="margin-left:auto;">Private to this device.</div>
     </div>
   </aside>
+
+  <!-- MOBILE: Show Log button -->
+  <div class="mobile-log-toggle">
+    <button id="mobileLogToggle" class="btn-primary">Show log</button>
+  </div>
 
   <!-- MAIN -->
   <main>
@@ -132,7 +142,7 @@
       <div class="tab disabled" title="Coming soon">QR Tools</div>
     </nav>
 
-    <!-- CARD 1: FORM -->
+    <!-- CARD 1: FORM (Basic + Measurements + Notes) -->
     <section class="card" id="card-form">
       <div class="block">
         <h2>Basic details</h2>
@@ -221,8 +231,37 @@
 
         <!-- Height -->
         <div id="height-block" style="margin-top:18px;">
+          <label for="h-angle"><strong>Height</strong></label>
+          <!-- Clinometer toggle -->
+          <div class="unit-toggle" role="group" aria-label="Clinometer toggle" style="margin-top:6px;">
+            <button type="button" id="clino-off" class="toggle-btn active" aria-pressed="true">Live clinometer: Off</button>
+            <button type="button" id="clino-on"  class="toggle-btn" aria-pressed="false">On (beta)</button>
+          </div>
+
+          <!-- Clinometer UI (hidden until enabled) -->
+          <div id="clino-ui" style="display:none;">
+            <div class="readout">
+              <div>
+                <div class="micro">Live angle</div>
+                <div class="angle" id="cl-live">—°</div>
+                <div class="micro" id="cl-meta">Sensor: idle • Cal: 0.0°</div>
+              </div>
+            </div>
+            <div class="unit-toggle" role="group" aria-label="Sensor options">
+              <button type="button" id="cl-start" class="toggle-btn">Start sensor</button>
+              <button type="button" id="cl-reset" class="toggle-btn">Reset sensor</button>
+              <button type="button" id="cl-zero"  class="toggle-btn">Set 0°</button>
+              <button type="button" id="cl-clear" class="toggle-btn">Clear 0°</button>
+            </div>
+            <div class="lock-area">
+              <button type="button" id="cl-lock" class="lock-btn" disabled>LOCK</button>
+            </div>
+          </div>
+
+          <!-- Manual/locked inputs -->
           <label for="h-angle">Angle to top of the tree (degrees)</label>
           <input id="h-angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5">
+
           <div class="row">
             <div>
               <label for="h-dist">Distance to trunk (<span class="unit-tag">m</span>)</label>
@@ -366,27 +405,23 @@ const resHeight=$('#res-height'), resEqCirc=$('#res-eqcirc'), resAvgCirc=$('#res
 const genDesc=$('#genDesc'), copyDesc=$('#copyDesc'), shareBtn=$('#shareLink'), descBox=$('#desc'), emailBtn=$('#emailBtn'), resetFormBtn=$('#resetForm'), saveLogBtn=$('#saveLog');
 
 /* Sidebar */
-const logList=$('#logList'), viewDate=$('#viewDate'), viewGroup=$('#viewGroup'), groupsHead=$('#groupsHead'), addGroupBtn=$('#addGroupBtn'), copyAllBtn=$('#copyAllBtn'), clearLogBtn=$('#clearLogBtn');
+const logPanel=$('#logPanel'), logList=$('#logList'), viewDate=$('#viewDate'), viewGroup=$('#viewGroup'), groupsHead=$('#groupsHead'), addGroupBtn=$('#addGroupBtn'), clearLogBtn=$('#clearLogBtn');
 const modalClear=$('#confirmClear'), clCancel=$('#clCancel'), clConfirm=$('#clConfirm');
 const modalSwitch=$('#confirmSwitch'), swCancel=$('#swCancel'), swSave=$('#swSave'), swReplace=$('#swReplace');
+
+/* Mobile log toggle */
+const mobileLogToggle=$('#mobileLogToggle');
 
 /* ---------- State ---------- */
 let inputUnit='m', calcMode='manual', mtCount=0;
 let lastHeight=null, lastSingle=null, lastMulti=null, lastSpread=null;
 let descDirty=true, formDirty=false, openTargetEntryId=null;
-let currentId=null; // kept to avoid errors if referenced elsewhere
 const SAVE_KEY='ara_field_v1', LOG_KEY='ara_field_log_v1', GROUPS_KEY='ara_field_groups_v1';
 const DEFAULT_GROUPS=['Favourite Trees','Big Trees','Unique Trees'];
 
 /* ---------- UI helpers ---------- */
 const setBtnActive=(btn,active)=>{ if(!btn) return; btn.classList.toggle('active', !!active); };
 const touch = el => el && el.dispatchEvent(new Event('input'));
-function updateSaveButton(){
-  // Always allow saving (duplicates are OK now)
-  saveLogBtn.disabled = false;
-  saveLogBtn.classList.remove('active');
-  saveLogBtn.textContent = 'Save to log';
-}
 
 /* ---------- Units & mode ---------- */
 function setUnit(u){
@@ -398,7 +433,7 @@ function setUnit(u){
   unitM.classList.toggle('active',isM); unitFt.classList.toggle('active',!isM);
   unitM.setAttribute('aria-pressed',String(isM)); unitFt.setAttribute('aria-pressed',String(!isM));
   unitTags.forEach(t=>t.textContent=isM?'m':'ft');
-  markDescDirty(); formDirty=true; saveState(); updateSaveButton();
+  markDescDirty(); formDirty=true; saveState();
   if(calcMode==='auto'){ if(treeType.value==='Single trunk tree') recomputeSingle(); if(treeType.value==='Multi trunked tree') calcMulti(); calcHeight(); calcSpread(); }
 }
 unitM.onclick=()=>setUnit('m'); unitFt.onclick=()=>setUnit('ft');
@@ -410,33 +445,20 @@ function setCalcMode(m){ calcMode=m; const man=m==='manual';
 }
 modeManualBtn.onclick=()=>setCalcMode('manual'); modeAutoBtn.onclick=()=>setCalcMode('auto');
 
-/* ---------- Type gating (single vs multi) ---------- */
+/* ---------- Type gating ---------- */
 function ensureTwoMtRows(){ if(mtCount===0){ addMtRow(); addMtRow(); } }
 function updateTypeVisibility(){
   const t=treeType.value;
-  // Show/hide sections
-  if (t==='Single trunk tree') {
-    singleBlock.style.display='';
-    mtBlock.style.display='none';
-  } else if (t==='Multi trunked tree') {
-    singleBlock.style.display='none';
-    mtBlock.style.display='';
-    ensureTwoMtRows();
-  } else {
-    singleBlock.style.display='none';
-    mtBlock.style.display='none';
-  }
-  // Reset result texts appropriately
-  updateResultsPanel();
-  updateCopyButtons();
-  markDescDirty();
-  formDirty=true; saveState(); updateSaveButton();
+  singleBlock.style.display=(t==='Single trunk tree')?'':'none';
+  mtBlock.style.display=(t==='Multi trunked tree')?'':'none';
+  if (t==='Multi trunked tree') ensureTwoMtRows();
+  markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
 treeType.onchange=updateTypeVisibility;
 
 /* ---------- Notes auto-grow ---------- */
 function autoGrow(el){ if(!el) return; el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
-notesEl.addEventListener('input',()=>{ autoGrow(notesEl); markDescDirty(); formDirty=true; saveState(); updateSaveButton(); });
+notesEl.addEventListener('input',()=>{ autoGrow(notesEl); markDescDirty(); formDirty=true; saveState(); });
 
 /* ---------- Single trunk ---------- */
 function recomputeSingle(){
@@ -444,9 +466,9 @@ function recomputeSingle(){
   if(Number.isFinite(v)&&v>0){ const cM=toM(v,inputUnit); const dM=cM/PI; lastSingle={cM,cFt:mToFt(cM),dM,dFt:mToFt(dM)}; }
   else lastSingle=null;
   setBtnActive($('#single-circ-block .btn-secondary'), true);
-  markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); updateSaveButton();
+  markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
-singleC.oninput=()=>{ setBtnActive($('#single-circ-block .btn-secondary'), false); markDescDirty(); formDirty=true; saveState(); updateSaveButton(); if(calcMode==='auto') recomputeSingle(); };
+singleC.oninput=()=>{ setBtnActive($('#single-circ-block .btn-secondary'), false); if(calcMode==='auto') recomputeSingle(); };
 
 /* ---------- Multi-trunk ---------- */
 const MT_MAX=60;
@@ -461,7 +483,7 @@ function addMtRow(val=''){
   const inp=document.createElement('input'); inp.id=`mt-${mtCount}`; inp.type='number'; inp.step='0.01'; inp.inputMode='decimal'; if(val!=='') inp.value=val;
   const hint=document.createElement('div'); hint.className='hint';
   row.appendChild(labelWrap); row.appendChild(inp); row.appendChild(hint); mtList.appendChild(row);
-  inp.addEventListener('input',()=>{inp.classList.remove('error'); hint.classList.remove('show'); setBtnActive(mtCalc,false); markDescDirty(); formDirty=true; saveState(); updateSaveButton(); if(calcMode==='auto') calcMulti();});
+  inp.addEventListener('input',()=>{inp.classList.remove('error'); hint.classList.remove('show'); setBtnActive(mtCalc,false); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti();});
   inp.addEventListener('blur',()=>maybeMtOutlierHint(parseFloat(inp.value),hint));
 }
 function maybeMtOutlierHint(val,h){ if(!Number.isFinite(val)||val<=0){h.classList.remove('show');return}
@@ -469,17 +491,16 @@ function maybeMtOutlierHint(val,h){ if(!Number.isFinite(val)||val<=0){h.classLis
     else if(val>12){h.textContent='Unusually large — check units?';h.classList.add('show');} else h.classList.remove('show');}
   else{ if(val<0.66){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
     else if(val>40){h.textContent='Unusually large — check units?';h.classList.add('show');} else h.classList.remove('show');} }
-function removeMtRow(){ if(mtCount<=1) return; mtList.lastElementChild?.remove(); mtCount--; renumberMtLabels(); setBtnActive(mtCalc,false); markDescDirty(); formDirty=true; saveState(); updateSaveButton(); if(calcMode==='auto') calcMulti(); }
+function removeMtRow(){ if(mtCount<=1) return; mtList.lastElementChild?.remove(); mtCount--; renumberMtLabels(); setBtnActive(mtCalc,false); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti(); }
 function renumberMtLabels(){ $$('#mt-list .mt-label').forEach((lab,i)=>lab.textContent=`Trunk ${i+1} circumference (${inputUnit})`); }
 function parseMtBulk(text,limit=MT_MAX){
   const vals=[]; if(!text) return vals; let s=String(text).replace(/[×X]/g,'x');
   const repRE=/(\d+)\s*x\s*([-+]?\d*\.?\d+)/g;
   s=s.replace(repRE,(_,nStr,vStr)=>{const n=parseInt(nStr,10), v=parseFloat(vStr); if(Number.isFinite(n)&&n>0&&Number.isFinite(v)&&v>0){for(let i=0;i<n&&vals.length<limit;i++) vals.push(v);} return ' ';});
-  const singles=s.match(/[-+]?\d*\.?\d+/g)||[];
-  for(const m of singles){ if(vals.length>=limit) break; const v=parseFloat(m); if(Number.isFinite(v)&&v>0) vals.push(v);}
+  const singles=s.match(/[-+]?\d*\.?\d+/g)||[]; for(const m of singles){ if(vals.length>=limit) break; const v=parseFloat(m); if(Number.isFinite(v)&&v>0) vals.push(v);}
   return vals;
 }
-function mtFillFromBulk(){ const vals=parseMtBulk(mtBulk.value,MT_MAX); if(vals.length===0)return; mtList.innerHTML=''; mtCount=0; vals.forEach(v=>addMtRow(v.toFixed(2))); mtResult.textContent='—'; setBtnActive(mtCalc,false); markDescDirty(); formDirty=true; saveState(); updateSaveButton(); if(calcMode==='auto') calcMulti(); }
+function mtFillFromBulk(){ const vals=parseMtBulk(mtBulk.value,MT_MAX); if(vals.length===0)return; mtList.innerHTML=''; mtCount=0; vals.forEach(v=>addMtRow(v.toFixed(2))); mtResult.textContent='—'; setBtnActive(mtCalc,false); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti(); }
 function mtSortByDiameter(){
   const rows=Array.from(mtList.children); const valid=[], invalid=[];
   rows.forEach(row=>{ const inp=row.querySelector('input'); const v=parseFloat(inp.value); if(Number.isFinite(v)&&v>0){const cM=toM(v,inputUnit), dM=cM/PI; valid.push({row,dM});} else invalid.push(row);});
@@ -487,14 +508,14 @@ function mtSortByDiameter(){
   valid.sort((a,b)=>b.dM-a.dM);
   const frag=document.createDocumentFragment(); valid.forEach(v=>frag.appendChild(v.row)); invalid.forEach(r=>frag.appendChild(r));
   mtList.innerHTML=''; mtList.appendChild(frag); renumberMtLabels(); clearMtLargest(); setBtnActive(mtCalc,false);
-  markDescDirty(); formDirty=true; saveState(); updateSaveButton(); if(calcMode==='auto') calcMulti();
+  markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcMulti();
 }
 function clearMtLargest(){ mtList.querySelectorAll('.largest-label').forEach(el=>el.classList.remove('largest-label')); mtList.querySelectorAll('.badge').forEach(b=>{b.classList.add('hide'); b.textContent='Largest';}); }
 function calcMulti(){
   clearMtLargest();
   const items=Array.from(mtList.querySelectorAll('input'));
   const valid=items.map(inp=>({inp,val:parseFloat(inp.value),row:inp.closest('.row')})).filter(o=>Number.isFinite(o.val)&&o.val>0);
-  if(valid.length===0){ lastMulti=null; mtResult.textContent='Enter at least one trunk circumference.'; updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); updateSaveButton(); return; }
+  if(valid.length===0){ lastMulti=null; mtResult.textContent='Enter at least one trunk circumference.'; updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); return; }
   const withD=valid.map((r,i)=>{const cM=toM(r.val,inputUnit); const dM=cM/PI; return {row:r.row,cM,dM,idx:i+1};});
   const eps=1e-9; const dmax=Math.max(...withD.map(x=>x.dM)); const maxRows=withD.filter(x=>Math.abs(x.dM-dmax)<eps); const sumAll=withD.reduce((a,x)=>a+x.dM,0);
   const dEqM=dmax+0.5*(sumAll-dmax); const cEqM=dEqM*PI; const cAvgM=withD.reduce((a,x)=>a+x.cM,0)/withD.length;
@@ -503,26 +524,26 @@ function calcMulti(){
   lastMulti={ trunks:withD.map(t=>({index:t.idx,cM:t.cM,cFt:mToFt(t.cM),dM:t.dM,dFt:mToFt(t.dM),isLargest:Math.abs(t.dM-dmax)<eps})), dEqM,cEqM,dEqFt:mToFt(dEqM),cEqFt:mToFt(cEqM), cAvgM,cAvgFt:mToFt(cAvgM), tie:maxRows.length>1 };
   mtResult.textContent=`Calculated ${withD.length} trunk${withD.length>1?'s':''}.`;
   setBtnActive(mtCalc,true);
-  markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); updateSaveButton();
+  markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
-mtAdd.onclick=()=>{addMtRow(); markDescDirty(); formDirty=true; saveState(); updateSaveButton();};
+mtAdd.onclick=()=>{addMtRow(); markDescDirty(); formDirty=true; saveState();};
 mtRemove.onclick=()=>{if(mtCount>1) removeMtRow();};
 mtSort.onclick=mtSortByDiameter;
 mtCalc.onclick=calcMulti;
 mtFill.onclick=mtFillFromBulk;
 mtClear.onclick=()=>{mtBulk.value='';};
 
-/* ---------- Height ---------- */
+/* ---------- Height (manual) ---------- */
 function calcHeight(){
   const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value);
-  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null; updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); updateSaveButton(); return; }
+  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null; updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); return; }
   const dM=toM(d,inputUnit), eM=toM(e,inputUnit); const hM=tanDeg(a)*dM+eM;
   lastHeight={hM,hFt:mToFt(hM),angleDeg:Number(a.toFixed(1)),dM,eM};
   setBtnActive(hCalc,true);
-  markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); updateSaveButton();
+  markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
 hCalc.onclick=calcHeight;
-[hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input',()=>{ setBtnActive(hCalc,false); markDescDirty(); formDirty=true; saveState(); updateSaveButton(); if(calcMode==='auto') calcHeight();}));
+[hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input',()=>{ setBtnActive(hCalc,false); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcHeight();}));
 [hAngle,hDist,hEye].forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();calcHeight();}}));
 
 /* ---------- Canopy spread ---------- */
@@ -536,10 +557,10 @@ function calcSpread(){
     lastSpread={majorM:mMaj,minorM:mMin,meanM,meanFt:mToFt(meanM)};
     setBtnActive(spreadCalc,true);
   }
-  markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState(); updateSaveButton();
+  markDescDirty(); updateResultsPanel(); updateCopyButtons(); formDirty=true; saveState();
 }
 spreadCalc.onclick=calcSpread;
-[spreadMajor,spreadMinor].forEach(inp=>inp.addEventListener('input',()=>{ setBtnActive(spreadCalc,false); markDescDirty(); formDirty=true; saveState(); updateSaveButton(); if(calcMode==='auto') calcSpread();}));
+[spreadMajor,spreadMinor].forEach(inp=>inp.addEventListener('input',()=>{ setBtnActive(spreadCalc,false); markDescDirty(); formDirty=true; saveState(); if(calcMode==='auto') calcSpread();}));
 
 /* ---------- Results & Copy ---------- */
 function updateResultsPanel(){
@@ -566,63 +587,9 @@ function updateCopyButtons(){
   copySpread.disabled=!(lastSpread&&Number.isFinite(lastSpread.meanM));
 }
 async function copyText(txt,btn){
-  try{ await navigator.clipboard.writeText(txt); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200);}
-  catch{ const t=document.createElement('input'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200);}
+  try{ await navigator.clipboard.writeText(txt); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1100);}
+  catch{ const t=document.createElement('input'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1100);}
 }
-// Mini flash feedback for the tiny buttons in the sidebar
-function flashMini(btn, ok='Copied ✓', restore){
-  const prev = btn.textContent;
-  btn.disabled = true;
-  btn.classList.add('active');      // dark look
-  btn.textContent = ok;
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.classList.remove('active');
-    btn.textContent = restore || prev;
-  }, 1100);
-}
-
-// Copy a saved entry's description (HTML + Plain Text if possible)
-async function copyDescOfEntry(entry, btn){
-  const html = entry.desc || '';
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  const text = tmp.innerText || '(no description)';
-
-  try {
-    if (navigator.clipboard && window.ClipboardItem && html) {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'text/html':  new Blob([html],  { type: 'text/html' }),
-          'text/plain': new Blob([text],  { type: 'text/plain' })
-        })
-      ]);
-    } else {
-      await navigator.clipboard.writeText(text);
-    }
-    flashMini(btn, 'Copied ✓', 'Copy');
-  } catch (err) {
-    console.error('Copy failed:', err);
-    // Fallback prompt if permissions block clipboard
-    const ok = window.prompt('Copy the description:', text);
-    if (ok !== null) flashMini(btn, 'Ready ✓', 'Copy');
-  }
-}
-
-// Copy a share link for the saved entry
-async function copyShareLinkOfEntry(entry, btn){
-  const url = encodeShare(entry);
-  try {
-    await navigator.clipboard.writeText(url);
-    flashMini(btn, 'Link copied ✓', 'Share');
-  } catch (err) {
-    console.error('Link copy failed:', err);
-    // Fallback prompt if permissions block clipboard
-    const ok = window.prompt('Copy this link:', url);
-    if (ok !== null) flashMini(btn, 'Ready ✓', 'Share');
-  }
-}
-
 copyHeight.onclick=()=>{ if(lastHeight) copyText(fmt2(lastHeight.hM),copyHeight); };
 copyEqCirc.onclick=()=>{ const t=treeType.value; if(t==='Multi trunked tree'&&lastMulti) copyText(fmt2(lastMulti.cEqM),copyEqCirc); if(t==='Single trunk tree'&&lastSingle) copyText(fmt2(lastSingle.cM),copyEqCirc); };
 copyAvgCirc.onclick=()=>{ if(lastMulti) copyText(fmt2(lastMulti.cAvgM),copyAvgCirc); };
@@ -728,8 +695,7 @@ function generateDescription(){
     emailBtn.href=`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plain)}`;
     emailBtn.removeAttribute('aria-disabled');
   } else { emailBtn.setAttribute('aria-disabled','true'); emailBtn.href='#'; }
-  descDirty=false;            // keep this
-  // Do NOT set formDirty here; do NOT call updateSaveButton here
+  descDirty=false; formDirty=false;
 }
 genDesc.onclick=generateDescription;
 
@@ -749,7 +715,6 @@ copyDesc.onclick=async ()=>{
 /* ---------- Share link ---------- */
 function getFormState(){
   return {
-    id: currentId || '', // harmless now
     inputUnit, calcMode,
     basics:{name:treeName.value||'',species:species.value||'',condition:condition.value||'',type:treeType.value||''},
     singleC: singleC.value||'',
@@ -763,8 +728,7 @@ function getFormState(){
 function setFormState(st){
   if(!st) return;
   setUnit(st.inputUnit==='ft'?'ft':'m'); setCalcMode(st.calcMode==='auto'?'auto':'manual');
-  treeName.value=st.basics?.name??''; species.value=st.basics?.species??''; condition.value=st.basics?.condition??''; treeType.value=st.basics?.type??'';
-  updateTypeVisibility();
+  treeName.value=st.basics?.name??''; species.value=st.basics?.species??''; condition.value=st.basics?.condition??''; treeType.value=st.basics?.type??''; updateTypeVisibility();
   singleC.value=st.singleC??''; hAngle.value=st.height?.angle??''; hDist.value=st.height?.dist??''; hEye.value=st.height?.eye??''; spreadMajor.value=st.spread?.major??''; spreadMinor.value=st.spread?.minor??'';
   notesEl.value=st.notes??''; autoGrow(notesEl);
   mtList.innerHTML=''; mtCount=0; const arr=Array.isArray(st.multi?.values)?st.multi.values:[]; if(arr.length>0) arr.forEach(v=>addMtRow(v)); else {addMtRow(); addMtRow();}
@@ -778,11 +742,10 @@ shareBtn.onclick=async ()=>{ const url=encodeShare(getFormState()); if(url.lengt
 /* ---------- Autosave ---------- */
 function saveState(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(getFormState())); }catch{} }
 function loadState(){ let st=null; try{ st=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); }catch{}; if(st) setFormState(st); else { addMtRow(); addMtRow(); } }
-[treeName,species,condition,treeType,singleC,hAngle,hDist,hEye,spreadMajor,spreadMinor,notesEl]
-  .forEach(el=>el.addEventListener('input',()=>{ formDirty=true; updateSaveButton(); saveState(); }));
+[treeName,species,condition,treeType,singleC,hAngle,hDist,hEye,spreadMajor,spreadMinor,notesEl].forEach(el=>el.addEventListener('input',saveState));
 
 /* ---------- Reset form ---------- */
-resetFormBtn.onclick=()=>{ currentId=null; localStorage.setItem(SAVE_KEY, JSON.stringify({inputUnit,calcMode})); location.reload(); };
+resetFormBtn.onclick=()=>{ localStorage.setItem(SAVE_KEY, JSON.stringify({inputUnit,calcMode})); location.reload(); };
 
 /* ---------- Log storage ---------- */
 function getLog(){ try{ return JSON.parse(localStorage.getItem(LOG_KEY)||'[]'); }catch{ return []; } }
@@ -799,7 +762,7 @@ addGroupBtn.onclick=()=>{ const name=prompt('New group name'); if(!name) return;
 function renderLog(){
   const entries=getLog(); const groups=getGroups();
   const host=logList; host.innerHTML='';
-  if(entries.length===0){ host.innerHTML='<span class="tiny">No saved trees yet.</span>'; return; }
+  if(entries.length===0){ host.innerHTML='<span class="tiny"><em>No saved trees yet.</em></span>'; return; }
 
   if(viewMode==='date'){
     const buckets={}; entries.forEach(e=>{ const d=new Date(e.ts); const key=d.toISOString().slice(0,10); (buckets[key]=buckets[key]||[]).push(e); });
@@ -832,72 +795,23 @@ function renderLog(){
     });
   }
 }
-function renderEntry(e, draggable = false){
-  const card = document.createElement('div');
-  card.className = 'entry';
-  if (draggable){
-    card.draggable = true;
-    card.ondragstart = (ev) => ev.dataTransfer.setData('text/plain', e.id);
-  }
-
-  const name = document.createElement('div');
-  name.className = 'name';
-  name.textContent = e.basics?.name || 'Untitled';
-
-  const ts = document.createElement('div');
-  ts.className = 'ts';
-  ts.textContent = new Date(e.ts).toISOString().slice(0,16).replace('T',' ');
-
-  card.appendChild(name);
-  card.appendChild(ts);
-
-  // Clicking anywhere on the card loads the entry (with confirm if dirty)
-  card.onclick = () => handleEntryClick(e.id);
-
-  // Row of mini actions
-  const row = document.createElement('div');
-  row.className = 'unit-toggle';
-  row.style.marginTop = '6px';
-
-  const btnCopy = document.createElement('button');
-  btnCopy.className = 'btn-ghost tiny';
-  btnCopy.textContent = 'Copy';
-  btnCopy.title = 'Copy saved description';
-  btnCopy.onclick = (ev) => {
-    ev.stopPropagation();
-    copyDescOfEntry(e, btnCopy);
-  };
-
-  const btnShare = document.createElement('button');
-  btnShare.className = 'btn-ghost tiny';
-  btnShare.textContent = 'Share';
-  btnShare.title = 'Copy share link';
-  btnShare.onclick = (ev) => {
-    ev.stopPropagation();
-    copyShareLinkOfEntry(e, btnShare);
-  };
-
-  const btnDel = document.createElement('button');
-  btnDel.className = 'danger tiny';
-  btnDel.textContent = 'Delete';
-  btnDel.title = 'Delete from log';
-  btnDel.onclick = (ev) => {
-    ev.stopPropagation();
-    deleteEntry(e.id);
-  };
-
-  row.appendChild(btnCopy);
-  row.appendChild(btnShare);
-  row.appendChild(btnDel);
-  card.appendChild(row);
-
+function renderEntry(e,draggable=false){
+  const card=document.createElement('div'); card.className='entry'; if(draggable){ card.draggable=true; card.ondragstart=(ev)=>ev.dataTransfer.setData('text/plain', e.id); }
+  const name=document.createElement('div'); name.className='name'; name.textContent=e.basics?.name || 'Untitled';
+  const ts=document.createElement('div'); ts.className='ts'; ts.textContent=new Date(e.ts).toISOString().slice(0,16).replace('T',' ');
+  card.appendChild(name); card.appendChild(ts);
+  card.onclick=()=>handleEntryClick(e.id);
+  const row=document.createElement('div'); row.className='unit-toggle'; row.style.marginTop='6px';
+  const btnCopy=document.createElement('button'); btnCopy.className='btn-ghost tiny'; btnCopy.textContent='Copy'; btnCopy.onclick=(ev)=>{ ev.stopPropagation(); copyDescOfEntry(e, btnCopy); };
+  const btnShare=document.createElement('button'); btnShare.className='btn-ghost tiny'; btnShare.textContent='Share'; btnShare.onclick=(ev)=>{ ev.stopPropagation(); copyShareLinkOfEntry(e, btnShare); };
+  const btnDel=document.createElement('button'); btnDel.className='danger tiny'; btnDel.textContent='Delete'; btnDel.onclick=(ev)=>{ ev.stopPropagation(); deleteEntry(e.id); };
+  row.appendChild(btnCopy); row.appendChild(btnShare); row.appendChild(btnDel); card.appendChild(row);
   return card;
 }
-
 function moveEntryToGroup(id,g){ const entries=getLog(); const i=entries.findIndex(x=>x.id===id); if(i>=0){ entries[i].group=(g==='No group')?'':g; setLog(entries); renderLog(); } }
 function deleteEntry(id){ const arr=getLog().filter(e=>e.id!==id); setLog(arr); renderLog(); }
 
-/* Entry click with confirm */
+/* Sidebar entry click with confirm */
 function handleEntryClick(id){
   const entries=getLog(); const entry=entries.find(e=>e.id===id); if(!entry) return;
   openTargetEntryId=id;
@@ -907,42 +821,146 @@ function handleEntryClick(id){
 swCancel.onclick=()=>{ openTargetEntryId=null; modalSwitch.classList.remove('show'); };
 swReplace.onclick=()=>{ const e=getLog().find(x=>x.id===openTargetEntryId); if(e){ loadEntry(e); } openTargetEntryId=null; modalSwitch.classList.remove('show'); };
 swSave.onclick=()=>{ saveCurrentToLog(); const e=getLog().find(x=>x.id===openTargetEntryId); if(e){ loadEntry(e); } openTargetEntryId=null; modalSwitch.classList.remove('show'); };
-function loadEntry(e){ setFormState(e); descBox.innerHTML=e.desc||'—'; copyDesc.disabled=!e.desc; shareBtn.disabled=false; formDirty=false; updateSaveButton(); }
+function loadEntry(e){ setFormState(e); descBox.innerHTML=e.desc||'—'; copyDesc.disabled=!e.desc; shareBtn.disabled=false; formDirty=false; }
 
-/* Save to log (duplicates allowed) & Copy all */
+/* Helpers for Copy/Share in log */
+function flashMini(btn, ok='Copied ✓', restore){
+  const prev = btn.textContent;
+  btn.disabled = true;
+  btn.classList.add('active');
+  btn.textContent = ok;
+  setTimeout(() => { btn.disabled = false; btn.classList.remove('active'); btn.textContent = restore || prev; }, 1100);
+}
+async function copyDescOfEntry(entry, btn){
+  const html = entry.desc || '';
+  const tmp = document.createElement('div'); tmp.innerHTML = html;
+  const text = tmp.innerText || '(no description)';
+  try{
+    if (navigator.clipboard && window.ClipboardItem && html){
+      await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]);
+    } else { await navigator.clipboard.writeText(text); }
+    flashMini(btn,'Copied ✓','Copy');
+  }catch{ const ok=prompt('Copy the description:', text); if(ok!==null) flashMini(btn,'Ready ✓','Copy'); }
+}
+async function copyShareLinkOfEntry(entry, btn){
+  const url = encodeShare(entry);
+  try{ await navigator.clipboard.writeText(url); flashMini(btn,'Link ✓','Share'); }
+  catch{ const ok=prompt('Copy this link:', url); if(ok!==null) flashMini(btn,'Ready ✓','Share'); }
+}
+
+/* Save to log */
 function saveCurrentToLog(){
-  const st = getFormState();
-  st.id = uid();
+  const st=getFormState();
+  st.id = st.id || uid();
   st.ts = Date.now();
-
-  const arr = getLog();
-  arr.push(st);
-  setLog(arr);
-  renderLog();
-
-  // flash confirmation
-  const orig = saveLogBtn.textContent;
-  saveLogBtn.classList.add('active');
-  saveLogBtn.textContent = 'Saved ✓';
-  setTimeout(()=>{ saveLogBtn.classList.remove('active'); saveLogBtn.textContent = orig; }, 1200);
+  const arr=getLog();
+  const idx=arr.findIndex(x=>x.id===st.id);
+  if(idx>=0) arr[idx]=st; else arr.push(st);
+  setLog(arr); renderLog(); formDirty=false;
 }
 saveLogBtn.onclick=saveCurrentToLog;
-
-copyAllBtn.onclick=async ()=>{
-  const entries=getLog().sort((a,b)=>a.ts-b.ts);
-  if(!entries.length){ alert('No entries to copy.'); return; }
-  const blocks=entries.map(e=>{
-    const d=new Date(e.ts).toISOString().slice(0,16).replace('T',' ');
-    const tmp=document.createElement('div'); tmp.innerHTML=e.desc||''; const text=tmp.innerText||'(no description)';
-    return `# ${e.basics?.name||'Untitled'}\n${d}\n${text}\n`;
-  }).join('\n');
-  await navigator.clipboard.writeText(blocks);
-};
 
 /* Clear log with confirm */
 clearLogBtn.onclick=()=>modalClear.classList.add('show');
 clCancel.onclick=()=>modalClear.classList.remove('show');
 clConfirm.onclick=()=>{ setLog([]); modalClear.classList.remove('show'); renderLog(); };
+
+/* ---------- Mobile log drawer ---------- */
+mobileLogToggle.addEventListener('click', ()=>{
+  const open = logPanel.classList.toggle('open');
+  mobileLogToggle.textContent = open ? 'Hide log' : 'Show log';
+});
+
+/* ---------- Clinometer (toggle + sensor) ---------- */
+const clinoOff=$('#clino-off'), clinoOn=$('#clino-on'), clinoUI=$('#clino-ui');
+const clLive=$('#cl-live'), clMeta=$('#cl-meta');
+const clStart=$('#cl-start'), clReset=$('#cl-reset'), clZero=$('#cl-zero'), clClear=$('#cl-clear'), clLock=$('#cl-lock');
+
+let clEnabled=false, clLastRaw=null, clCalOffset=0, clLocked=false;
+
+function setClinoEnabled(on){
+  clEnabled = !!on;
+  clinoOn.classList.toggle('active', on); clinoOn.setAttribute('aria-pressed', String(on));
+  clinoOff.classList.toggle('active', !on); clinoOff.setAttribute('aria-pressed', String(!on));
+  clinoUI.style.display = on ? '' : 'none';
+  if(!on){ // turning off -> stop sensor and reset live UI, keep angle input value as-is
+    window.removeEventListener('deviceorientation', onClinoOrient, true);
+    clLastRaw=null; clLocked=false; clLock.disabled=true; clLock.textContent='LOCK';
+    clLive.textContent='—°'; updateClMeta('idle');
+    clStart.classList.remove('active'); clReset.classList.remove('active');
+  }
+}
+clinoOff.onclick=()=>setClinoEnabled(false);
+clinoOn.onclick =()=>setClinoEnabled(true);
+
+function isLandscape(){
+  const so = (screen.orientation && screen.orientation.type) || '';
+  return so.includes('landscape') ||
+         (window.matchMedia && window.matchMedia('(orientation: landscape)').matches) ||
+         (window.innerWidth > window.innerHeight);
+}
+function pitchFromEvent(e){
+  const beta = (typeof e.beta==='number') ? e.beta : null;   // front/back tilt
+  const gamma= (typeof e.gamma==='number')? e.gamma: null;   // left/right
+  let pitch = isLandscape() ? -gamma : beta;
+  if(!Number.isFinite(pitch)) return null;
+  return Math.min(89, Math.max(-89, pitch));
+}
+function updateClMeta(state){
+  const text = (state==='running') ? 'Sensor: running' :
+               (state==='unavailable') ? 'Sensor: unavailable' :
+               (state==='denied') ? 'Sensor: denied' : 'Sensor: idle';
+  clMeta.textContent = `${text} • Cal: ${fmt1(clCalOffset)}°`;
+}
+async function startClino(){
+  try{
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function'){
+      const state = await DeviceOrientationEvent.requestPermission();
+      if (state !== 'granted'){ updateClMeta('denied'); return; }
+    }
+    window.addEventListener('deviceorientation', onClinoOrient, true);
+    clLock.disabled=false;
+    updateClMeta('running');
+    clStart.classList.add('active');
+  }catch(err){ console.error(err); updateClMeta('unavailable'); }
+}
+clStart.onclick=startClino;
+
+function onClinoOrient(e){
+  const raw = pitchFromEvent(e);
+  if(raw==null) return;
+  clLastRaw = raw;
+  if(!clLocked){
+    const adj = Math.min(89, Math.max(-89, raw - clCalOffset));
+    clLive.textContent = fmt1(adj) + '°';
+  }
+}
+function resetClino(){
+  window.removeEventListener('deviceorientation', onClinoOrient, true);
+  clLastRaw=null; clLocked=false; clLock.textContent='LOCK'; clLock.disabled=true;
+  clLive.textContent='—°'; updateClMeta('idle');
+  clStart.classList.remove('active'); clReset.classList.add('active');
+}
+clReset.onclick=resetClino;
+
+function setZero(){ if(clLastRaw==null){ updateClMeta('running'); return; } clCalOffset=clLastRaw; clZero.classList.add('active'); clClear.classList.remove('active'); updateClMeta('running'); if(!clLocked){ clLive.textContent=fmt1(0)+'°'; } }
+function clearZero(){ clCalOffset=0; clClear.classList.add('active'); clZero.classList.remove('active'); updateClMeta('running'); if(!clLocked && clLastRaw!=null){ clLive.textContent=fmt1(clLastRaw)+'°'; } }
+clZero.onclick=setZero; clClear.onclick=clearZero;
+
+function lockClino(){
+  if(clLastRaw==null){ updateClMeta('running'); return; }
+  const adj = Math.min(89, Math.max(-89, clLastRaw - clCalOffset));
+  clLocked = true;
+  hAngle.value = fmt1(adj); // write into the Height angle input
+  clLock.textContent = 'LOCKED';
+  clLive.textContent = fmt1(adj) + '° (locked)';
+  if (navigator.vibrate) navigator.vibrate(14);
+  clLock.style.transform='scale(0.97)'; setTimeout(()=>{ clLock.style.transform=''; },120);
+  // mark height needs recalculation
+  setBtnActive(hCalc,false); if(calcMode==='auto') calcHeight(); formDirty=true; saveState();
+}
+clLock.onclick=lockClino;
 
 /* ---------- Boot ---------- */
 (function boot(){
@@ -951,16 +969,33 @@ clConfirm.onclick=()=>{ setLog([]); modalClear.classList.remove('show'); renderL
     const hashData = location.hash.startsWith('#data=') ? decodeShare(location.hash) : null;
     if (hashData) { setFormState(hashData); if(hashData.desc){ descBox.innerHTML=hashData.desc; copyDesc.disabled=false; shareBtn.disabled=false; } }
     else { loadState(); }
-    // Ensure correct section visibility on first load
-    updateTypeVisibility();
+    if (treeType.value==='Multi trunked tree') ensureTwoMtRows();
     emailBtn.setAttribute('aria-disabled','true');
     renderLog();
-    updateSaveButton();
+    updateClMeta('idle');
   }catch(err){
     console.error('Boot error:', err);
     alert('Init failed — try a hard refresh.');
   }
 })();
+
+/* ---------- Modals (shared styles) ---------- */
 </script>
+
+<style>
+/* Modal overlay */
+.modal{
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  padding: 20px; background: rgba(0,0,0,.35); z-index: 2000;
+}
+.modal.show{ display: flex; }
+.modal .sheet{
+  background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+  width: min(500px, 100%); box-shadow: 0 18px 40px rgba(0,0,0,.25);
+}
+.modal .sheet h3{ margin: 0 0 8px; }
+.modal .sheet p{ margin: 6px 0 10px; }
+.modal .sheet .btn-row{ display:flex; gap:8px; justify-content:flex-end; margin-top:10px; }
+</style>
 </body>
 </html>
