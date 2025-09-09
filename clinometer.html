@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ARA Clinometer Height (Beta)</title>
+<style>
+  :root{--radius:12px;--dark:#111;--light:#f2f2f2;--border:#ddd;--muted:#666;--danger:#d93c3c;}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:24px;color:#111;background:#fff}
+  .card{max-width:680px;margin:0 auto;border:1px solid var(--border);border-radius:var(--radius);background:#fff}
+  .block{padding:14px 18px}
+  h1{margin:10px 18px 6px;font-size:1.6rem}
+  .sub{margin:0 18px 10px;color:#666}
+  label{display:block;margin:10px 0 6px;font-weight:600}
+  input[type="number"],input[type="text"]{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:1rem;background:#fff}
+  .unit-toggle{display:flex;gap:8px;margin:8px 0 10px}
+  .toggle-btn{padding:8px 12px;border:1px solid #ccc;border-radius:8px;background:var(--light);cursor:pointer}
+  .toggle-btn.active{background:var(--dark);color:#fff;border-color:var(--dark)}
+  .toggle-btn:focus-visible{outline:2px solid var(--dark);outline-offset:2px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:720px){.row{grid-template-columns:1fr}}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap}
+  button{padding:10px 14px;border:0;border-radius:8px;cursor:pointer}
+  .btn-primary{background:var(--dark);color:#fff}
+  .btn-secondary{background:#e9e9e9;color:#111}
+  .btn-secondary.active,.btn-ghost.active{background:var(--dark);color:#fff}
+  .btn-ghost{background:#f5f5f5;color:#111}
+  .danger{background:#f5e9e9}
+  .danger:hover,.danger:active{background:var(--danger);color:#fff}
+  .note{background:#fafafa;border:1px solid #eee;border-radius:12px;padding:10px 12px;color:#444}
+  .readout{
+    display:flex;align-items:center;justify-content:space-between;
+    border:1px solid #e7e7e7;background:#f7f7f7;border-radius:12px;padding:12px;margin:10px 0;
+  }
+  .angle{
+    font-variant-numeric: tabular-nums;
+    font-size:2.1rem;font-weight:800;letter-spacing:0.5px
+  }
+  .tiny{color:#666;font-size:.9rem}
+  .result{margin-top:8px;font-size:1.15rem;font-weight:700}
+  .foot{margin-top:10px;color:#666;font-size:.9rem;line-height:1.35}
+  code{background:#f1f1f1;padding:2px 6px;border-radius:6px}
+  button[disabled]{opacity:.6;cursor:not-allowed}
+</style>
+</head>
+<body>
+  <h1>ARA Clinometer Height</h1>
+  <p class="sub">Lock the angle from your phone’s sensors, then calculate height.</p>
+
+  <div class="card">
+    <div class="block">
+      <div class="note">
+        <strong>How to aim:</strong> Hold the phone in <em>portrait</em> and sight along the <em>top edge</em> at the treetop. Tap <strong>Start sensor</strong>, then <strong>Lock angle</strong>.
+      </div>
+
+      <p class="tiny" style="margin:10px 0 4px;"><strong>Input units</strong> apply to distance & eye height.</p>
+      <div class="unit-toggle" role="group" aria-label="Input units">
+        <button type="button" id="unit-m"  class="toggle-btn active" aria-pressed="true">Meters (m)</button>
+        <button type="button" id="unit-ft" class="toggle-btn" aria-pressed="false">Feet (ft)</button>
+      </div>
+
+      <!-- Live clinometer -->
+      <div class="readout">
+        <div>
+          <div class="tiny">Live angle</div>
+          <div class="angle" id="liveAngle">—°</div>
+          <div class="tiny" id="liveMode">Sensor: idle</div>
+        </div>
+        <div class="btn-col" style="display:flex;flex-direction:column;gap:8px">
+          <button type="button" id="start" class="btn-secondary">Start sensor</button>
+          <button type="button" id="lock" class="btn-secondary" disabled>Lock angle</button>
+          <button type="button" id="unlock" class="btn-ghost" disabled>Unlock</button>
+        </div>
+      </div>
+
+      <!-- Form values -->
+      <div class="row">
+        <div>
+          <label for="angle">Angle to top (degrees)</label>
+          <input id="angle" type="number" step="0.1" inputmode="decimal" placeholder="locked from sensor or enter manually">
+        </div>
+        <div></div>
+        <div>
+          <label for="distance">Distance to trunk (<span id="unit1">m</span>)</label>
+          <input id="distance" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 23.4">
+        </div>
+        <div>
+          <label for="eye">Eye height (<span id="unit2">m</span>)</label>
+          <input id="eye" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 1.62">
+        </div>
+      </div>
+
+      <div class="btn-row" style="margin-top:12px;">
+        <button type="button" id="calc" class="btn-primary">Calculate height</button>
+        <button type="button" id="copyM" class="btn-secondary" disabled>Copy result (m)</button>
+        <button type="button" id="reset" class="btn-ghost">Reset</button>
+      </div>
+
+      <div class="result" id="out">—</div>
+      <div class="tiny" id="formula">height = tan(angle°) × distance + eye height</div>
+      <div class="foot">
+        Outputs in meters and feet. Angle should be **above the horizon** towards the treetop. If you can’t get a lock, type the angle manually.
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ---------- Utilities ---------- */
+const FT_PER_M=3.28084, M_PER_FT=0.3048;
+const $=s=>document.querySelector(s);
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const tanDeg=d=>Math.tan(d*Math.PI/180);
+const fmt2=x=>Number.isFinite(x)?x.toFixed(2):'—', fmt1=x=>Number.isFinite(x)?x.toFixed(1):'—';
+
+/* ---------- DOM ---------- */
+const unitM=$('#unit-m'), unitFt=$('#unit-ft'), unit1=$('#unit1'), unit2=$('#unit2');
+const liveAngleEl=$('#liveAngle'), liveMode=$('#liveMode');
+const startBtn=$('#start'), lockBtn=$('#lock'), unlockBtn=$('#unlock');
+const angleInp=$('#angle'), distInp=$('#distance'), eyeInp=$('#eye');
+const calcBtn=$('#calc'), out=$('#out'), formula=$('#formula'), copyM=$('#copyM'), resetBtn=$('#reset');
+
+/* ---------- State ---------- */
+let unit='m';
+let sensorOn=false, locked=false, lastLive=null;
+
+/* ---------- Units ---------- */
+function setUnit(u){
+  if(u===unit) return;
+  const conv=inp=>{
+    const v=parseFloat(inp.value);
+    if(Number.isFinite(v)){
+      const m=(unit==='m')?v:(v*M_PER_FT);
+      inp.value=(u==='m'?m:m*FT_PER_M).toFixed(2);
+    }
+  };
+  [distInp,eyeInp].forEach(conv);
+  unit=u;
+  const isM=u==='m';
+  unitM.classList.toggle('active',isM); unitFt.classList.toggle('active',!isM);
+  unitM.setAttribute('aria-pressed',String(isM)); unitFt.setAttribute('aria-pressed',String(!isM));
+  unit1.textContent=isM?'m':'ft';
+  unit2.textContent=isM?'m':'ft';
+}
+unitM.onclick=()=>setUnit('m');
+unitFt.onclick=()=>setUnit('ft');
+
+/* ---------- Clinometer (DeviceOrientation) ---------- */
+// We recommend: portrait + top edge as sight -> pitch ≈ beta.
+// If in landscape, we approximate pitch with -gamma to keep it sane.
+function getPitchFromEvent(e){
+  // Some browsers deliver nulls briefly
+  const beta = typeof e.beta === 'number' ? e.beta : null;     // front/back
+  const gamma= typeof e.gamma=== 'number' ? e.gamma: null;     // left/right
+  let pitch = (screen.orientation && screen.orientation.type || '').includes('landscape') ? -gamma : beta;
+  if(!Number.isFinite(pitch)) return null;
+  // Clamp to a sensible range for tan()
+  return clamp(pitch, -89, 89);
+}
+
+async function startSensor(){
+  try{
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function'){
+      const state = await DeviceOrientationEvent.requestPermission();
+      if (state !== 'granted'){ liveMode.textContent='Sensor: denied'; return; }
+    }
+    window.addEventListener('deviceorientation', onOrient, true);
+    sensorOn=true;
+    startBtn.classList.add('active');
+    liveMode.textContent='Sensor: running';
+    lockBtn.disabled=false;
+  }catch(err){
+    console.error(err);
+    liveMode.textContent='Sensor: unavailable';
+  }
+}
+startBtn.onclick=startSensor;
+
+function onOrient(e){
+  const pitch = getPitchFromEvent(e);
+  if(pitch==null) return;
+  lastLive=pitch;
+  if(!locked){
+    liveAngleEl.textContent = fmt1(pitch) + '°';
+  }
+}
+
+function lockAngle(){
+  if(lastLive==null){ liveMode.textContent='Point at treetop first'; return; }
+  locked=true;
+  angleInp.value = fmt1(lastLive);
+  liveAngleEl.textContent = fmt1(lastLive) + '° (locked)';
+  lockBtn.classList.add('active');
+  unlockBtn.disabled=false;
+}
+function unlockAngle(){
+  locked=false;
+  lockBtn.classList.remove('active');
+  unlockBtn.disabled=true;
+  if(lastLive!=null){
+    liveAngleEl.textContent = fmt1(lastLive) + '°';
+  }else{
+    liveAngleEl.textContent='—°';
+  }
+}
+lockBtn.onclick=lockAngle;
+unlockBtn.onclick=unlockAngle;
+
+/* ---------- Calculation ---------- */
+function calc(){
+  const a = parseFloat(angleInp.value);
+  const d = parseFloat(distInp.value);
+  const eH= parseFloat(eyeInp.value);
+  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(eH)){
+    out.textContent='—';
+    copyM.disabled=true;
+    formula.textContent='height = tan(angle°) × distance + eye height';
+    return;
+  }
+  const dM = unit==='m' ? d : d*M_PER_FT;
+  const eM = unit==='m' ? eH: eH*M_PER_FT;
+
+  const hM = tanDeg(a) * dM + eM;
+  const hFt= hM * FT_PER_M;
+
+  out.textContent = `Height ≈ ${fmt2(hM)} m (${fmt2(hFt)} ft)`;
+  formula.textContent = `height = tan(${fmt1(a)}°) × ${fmt2(dM)} m + ${fmt2(eM)} m = ${fmt2(hM)} m (${fmt2(hFt)} ft)`;
+  copyM.disabled=false;
+}
+calcBtn.onclick=calc;
+[angleInp,distInp,eyeInp].forEach(i=>i.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); calc(); }}));
+
+/* ---------- Copy & Reset ---------- */
+async function copyText(txt,btn){
+  try{
+    await navigator.clipboard.writeText(txt);
+    const o=btn.textContent; btn.textContent='Copied ✓'; btn.classList.add('active');
+    setTimeout(()=>{btn.textContent=o; btn.classList.remove('active');},1100);
+  }catch{
+    const t=document.createElement('input'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
+    const o=btn.textContent; btn.textContent='Copied ✓'; btn.classList.add('active');
+    setTimeout(()=>{btn.textContent=o; btn.classList.remove('active');},1100);
+  }
+}
+copyM.onclick=()=>{ const m = out.textContent.match(/Height ≈ ([\d.]+)/); if(m) copyText(m[1], copyM); };
+
+resetBtn.onclick=()=>{
+  locked=false; lastLive=null;
+  startBtn.classList.remove('active');
+  liveAngleEl.textContent='—°';
+  liveMode.textContent='Sensor: idle';
+  angleInp.value=''; distInp.value=''; eyeInp.value='';
+  out.textContent='—'; formula.textContent='height = tan(angle°) × distance + eye height';
+  copyM.disabled=true;
+  lockBtn.classList.remove('active'); lockBtn.disabled=false;
+  unlockBtn.disabled=true;
+  // Stop listening to sensor (optional)
+  window.removeEventListener('deviceorientation', onOrient, true);
+  sensorOn=false;
+};
+</script>
+</body>
+</html>
