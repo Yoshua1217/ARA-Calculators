@@ -51,20 +51,6 @@
   .lock-btn:active{transform:scale(0.98)}
   .lock-btn[disabled]{background:#bbb;color:#fff;box-shadow:none}
 
-  /* Camera sight */
-  .cam-wrap{position:relative;border:1px solid #e7e7e7;border-radius:12px;overflow:hidden;background:#000;margin:10px 0 12px}
-  .cam-wrap video{display:block;width:100%;height:min(58vh,440px);object-fit:cover}
-  .crosshair{
-    position:absolute;inset:0;pointer-events:none;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .crosshair::before, .crosshair::after{
-    content:""; position:absolute; background:rgba(255,255,255,.92);
-  }
-  .crosshair::before{ width:2px; height:40%; }  /* vertical line */
-  .crosshair::after { height:2px; width:40%; }  /* horizontal line */
-  .dot{position:absolute;width:10px;height:10px;border-radius:999px;background:#fff;opacity:.92}
-
   .btn-row{display:flex;gap:10px;flex-wrap:wrap}
   .result{margin-top:10px;font-size:1.15rem;font-weight:700}
   .foot{margin-top:10px;color:#666;font-size:.9rem;line-height:1.35}
@@ -73,12 +59,12 @@
 </head>
 <body>
   <h1>ARA Clinometer Height</h1>
-  <p class="sub">Lock the angle from your phone’s sensors, then calculate height. Optional camera crosshair & 0° calibration.</p>
+  <p class="sub">Lock the angle from your phone’s sensors, then calculate height. Optional 0° calibration.</p>
 
   <div class="card">
     <div class="block">
       <div class="note">
-        <strong>How to aim:</strong> Hold the phone in <em>portrait</em> and sight along the <em>top edge</em> at the treetop. Optionally enable the <em>camera sight</em> and align the <strong>crosshair</strong> with the treetop. Tap the big <strong>LOCK</strong> circle to capture the angle.
+        <strong>How to aim:</strong> Hold the phone in <em>portrait</em> and sight along the <em>top edge</em> at the treetop. Tap <strong>Start sensor</strong>, then hit the big <strong>LOCK</strong> circle to capture the angle.
       </div>
 
       <!-- Toggles -->
@@ -88,17 +74,8 @@
       </div>
       <div class="unit-toggle" role="group" aria-label="Options">
         <button type="button" id="sensorStart" class="toggle-btn">Start sensor</button>
-        <button type="button" id="camToggle" class="toggle-btn">Camera sight: Off</button>
         <button type="button" id="calSet" class="toggle-btn">Set 0°</button>
         <button type="button" id="calClear" class="toggle-btn">Clear 0°</button>
-      </div>
-
-      <!-- Camera sight (optional) -->
-      <div id="camWrap" class="cam-wrap" style="display:none;">
-        <video id="cam" playsinline autoplay muted></video>
-        <div class="crosshair">
-          <div class="dot"></div>
-        </div>
       </div>
 
       <!-- Live readout -->
@@ -142,7 +119,7 @@
       <div class="micro" id="formula">height = tan(angle°) × distance + eye height</div>
 
       <div class="foot">
-        <strong>Tips:</strong> Lock when the phone is steady. If your case/posture adds bias, tap <em>Set 0°</em> while aiming at true horizontal to calibrate, then <em>Lock</em> on the treetop. Camera permission is optional and used only for the crosshair overlay.
+        <strong>Tips:</strong> Lock when the phone is steady. If your case/posture adds bias, tap <em>Set 0°</em> while aiming at true horizontal to calibrate, then <em>Lock</em> on the treetop.
       </div>
     </div>
   </div>
@@ -164,15 +141,12 @@ const lockBig=$('#lockBig');
 const angleInp=$('#angle'), distInp=$('#distance'), eyeInp=$('#eye');
 const calcBtn=$('#calc'), out=$('#out'), formula=$('#formula'), copyM=$('#copyM'), resetBtn=$('#reset');
 
-const camWrap=$('#camWrap'), cam=$('#cam'), camToggle=$('#camToggle');
-
 const calSet=$('#calSet'), calClear=$('#calClear');
 
 /* ---------- State ---------- */
 let unit='m';
-let sensorOn=false, lastRaw=null, locked=false;
+let lastRaw=null, locked=false;
 let calOffset=0;        // degrees to subtract from raw pitch
-let mediaStream=null;
 
 /* ---------- Units ---------- */
 function setUnit(u){
@@ -196,12 +170,16 @@ unitM.onclick=()=>setUnit('m');
 unitFt.onclick=()=>setUnit('ft');
 
 /* ---------- Sensor (DeviceOrientation) ---------- */
+function isLandscape(){
+  const so = (screen.orientation && screen.orientation.type) || '';
+  return so.includes('landscape') ||
+         (window.matchMedia && window.matchMedia('(orientation: landscape)').matches) ||
+         (window.innerWidth > window.innerHeight);
+}
 function pitchFromEvent(e){
   const beta = (typeof e.beta==='number') ? e.beta : null;   // front/back tilt
   const gamma= (typeof e.gamma==='number')? e.gamma: null;   // left/right
-  // Portrait = use beta; Landscape = approximate with -gamma
-  const isLandscape = (screen.orientation && screen.orientation.type || '').includes('landscape');
-  let pitch = isLandscape ? -gamma : beta;
+  let pitch = isLandscape() ? -gamma : beta;                 // portrait: beta; landscape: approx with -gamma
   if(!Number.isFinite(pitch)) return null;
   return clamp(pitch, -89, 89);
 }
@@ -210,19 +188,20 @@ async function startSensor(){
     if (typeof DeviceOrientationEvent !== 'undefined' &&
         typeof DeviceOrientationEvent.requestPermission === 'function'){
       const state = await DeviceOrientationEvent.requestPermission();
-      if (state !== 'granted'){ liveMeta.textContent='Sensor: denied • Cal: '+fmt1(calOffset)+'°'; return; }
+      if (state !== 'granted'){ updateMeta('denied'); return; }
     }
     window.addEventListener('deviceorientation', onOrient, true);
-    sensorOn=true;
-    sensorStart.classList.add('active');
-    updateMeta('running');
     lockBig.disabled=false;
+    updateMeta('running');
   }catch(err){
     console.error(err);
     updateMeta('unavailable');
   }
 }
-sensorStart.onclick=startSensor;
+sensorStart.onclick=()=>{
+  sensorStart.classList.add('active');
+  startSensor();
+};
 
 function onOrient(e){
   const raw = pitchFromEvent(e);
@@ -265,7 +244,7 @@ function clearZero(){
 calSet.onclick=setZero;
 calClear.onclick=clearZero;
 
-/* ---------- Lock / Unlock ---------- */
+/* ---------- Lock ---------- */
 function lockAngle(){
   if(lastRaw==null){ updateMeta('running'); return; }
   const adj = clamp(lastRaw - calOffset, -89, 89);
@@ -273,43 +252,13 @@ function lockAngle(){
   angleInp.value = fmt1(adj);
   lockBig.textContent = 'LOCKED';
   liveAngleEl.textContent = fmt1(adj) + '° (locked)';
-}
-function unlockAngle(){
-  locked = false;
-  lockBig.textContent = 'LOCK';
-  if(lastRaw!=null){
-    const adj = clamp(lastRaw - calOffset, -89, 89);
-    liveAngleEl.textContent = fmt1(adj) + '°';
-  } else {
-    liveAngleEl.textContent = '—°';
-  }
+  // Haptic tap (if supported)
+  if (navigator.vibrate) navigator.vibrate(14);
+  // brief visual pulse
+  lockBig.style.transform='scale(0.97)';
+  setTimeout(()=>{ lockBig.style.transform=''; },120);
 }
 lockBig.onclick=lockAngle;
-
-/* ---------- Camera sight ---------- */
-async function startCamera(){
-  try{
-    mediaStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' }, audio:false });
-    cam.srcObject = mediaStream;
-    camWrap.style.display = '';
-    camToggle.classList.add('active');
-    camToggle.textContent = 'Camera sight: On';
-  }catch(err){
-    console.error('Camera error:', err);
-    alert('Could not access camera. You can still use the clinometer without it.');
-  }
-}
-function stopCamera(){
-  if(mediaStream){
-    mediaStream.getTracks().forEach(t=>t.stop());
-    mediaStream = null;
-  }
-  cam.srcObject = null;
-  camWrap.style.display = 'none';
-  camToggle.classList.remove('active');
-  camToggle.textContent = 'Camera sight: Off';
-}
-camToggle.onclick=()=>{ if(mediaStream) stopCamera(); else startCamera(); };
 
 /* ---------- Calculation ---------- */
 function calc(){
@@ -350,34 +299,21 @@ async function copyText(txt,btn){
 copyM.onclick=()=>{ const m = out.textContent.match(/Height ≈ ([\d.]+)/); if(m) copyText(m[1], copyM); };
 
 resetBtn.onclick=()=>{
-  // Stop camera & sensor
-  stopCamera();
   window.removeEventListener('deviceorientation', onOrient, true);
-  sensorOn=false; sensorStart.classList.remove('active');
+  sensorStart.classList.remove('active');
 
-  // Reset state
   lastRaw=null; locked=false; calOffset=0;
   lockBig.textContent='LOCK'; lockBig.disabled=true;
   liveAngleEl.textContent='—°'; updateMeta('idle');
 
-  // Clear fields/results
   angleInp.value=''; distInp.value=''; eyeInp.value='';
   out.textContent='—'; formula.textContent='height = tan(angle°) × distance + eye height';
   copyM.disabled=true;
 
-  // Reset toggle styles
   calSet.classList.remove('active'); calClear.classList.remove('active');
-  camToggle.classList.remove('active'); camToggle.textContent = 'Camera sight: Off';
 };
 
 /* ---------- Boot ---------- */
-function updateMeta(state='idle'){  // override earlier forward ref
-  const label = (state==='running') ? 'Sensor: running'
-               : (state==='unavailable') ? 'Sensor: unavailable'
-               : (state==='denied') ? 'Sensor: denied'
-               : 'Sensor: idle';
-  liveMeta.textContent = `${label} • Cal: ${fmt1(calOffset)}°`;
-}
 updateMeta('idle');
 </script>
 </body>
