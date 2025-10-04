@@ -1007,5 +1007,16 @@ clLock.onclick=lockClino;
 .modal .sheet p{ margin: 6px 0 10px; }
 .modal .sheet .btn-row{ display:flex; gap:8px; justify-content:flex-end; margin-top:10px; }
 </style>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .catch(err => console.warn('SW registration failed:', err));
+    });
+  }
+</script>
+
+  
 </body>
 </html>
