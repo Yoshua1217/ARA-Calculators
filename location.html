@@ -38,16 +38,54 @@
     .value{font-feature-settings:"tnum" 1, "lnum" 1; font-variant-numeric:tabular-nums; font-size:16px}
     .sub{font-size:12px;color:var(--muted)}
 
-    .toolbar{display:flex;gap:8px;margin-top:10px}
+    .toolbar{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .statusIcon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;filter:grayscale(.1);opacity:.9}
+    .footerbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:10px 12px;background:#0f1520;border:1px solid var(--edge);border-radius:14px;position:sticky;bottom:0}
+    .accBig{padding:10px 14px;border-radius:999px;background:var(--pill);border:1px solid var(--edge);font-size:18px;font-weight:700}
+    .accBig.gray{color:#c7d2de}
+    .accBig.amber{color:var(--amber)}
+    .accBig.green{color:var(--green)}
+    #timer{display:none} /* move timer to bottom bar on demo */
+    @media (max-width:640px){
+      .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .toolbar{gap:10px}
+      .toggle{flex:1 1 45%}
+    }
+    @media (max-width:420px){
+      .toggle{flex:1 1 100%}
+      .footerbar{flex-direction:column;align-items:stretch}
+      .accBig{align-self:flex-end}
+    }flex-wrap:wrap}
+    .statusIcon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;filter:grayscale(.1);opacity:.9}
+    .footerbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:10px 12px;background:#0f1520;border:1px solid var(--edge);border-radius:14px;position:sticky;bottom:0}
+    .accBig{padding:10px 14px;border-radius:999px;background:var(--pill);border:1px solid var(--edge);font-size:18px;font-weight:700}
+    .accBig.gray{color:#c7d2de}
+    .accBig.amber{color:var(--amber)}
+    .accBig.green{color:var(--green)}
+    #timer{display:none} /* move timer to bottom bar on demo */
+    @media (max-width:640px){
+      .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .toolbar{gap:10px}
+      .toggle{flex:1 1 45%}
+    }
+    @media (max-width:420px){
+      .toggle{flex:1 1 100%}
+      .footerbar{flex-direction:column;align-items:stretch}
+      .accBig{align-self:flex-end}
+    }
     .tool{background:#0f1520;border:1px solid var(--edge);padding:10px;border-radius:12px;font-size:13px}
 
     details{margin-top:12px}
     summary{cursor:pointer;color:var(--muted)}
     .toggles{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
-    .toggle{display:flex;align-items:center;gap:8px;background:#0f1520;border:1px solid var(--edge);padding:8px 10px;border-radius:12px;font-size:13px}
-    .toggle input{accent-color:var(--accent)}
-
-    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0f1520;border:1px solid var(--edge);padding:10px 14px;border-radius:12px;color:var(--text);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s}
+    .toggle{display:flex;align-items:center;gap:8px;background:#0f1520<div class="row">
+        <div class="chip">Location & Orientation</div>
+        <div class="chip status" id="status">Idle</div>
+        <div class="statusIcon" id="statusIcon" title="status"></div>
+        <div class="acc gray" id="accPill">± — m</div>
+        <div class="spacer"></div>
+        <div class="timer" id="timer">00:00</div>
+      </div>s:12px;color:var(--text);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
 
     .hl{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
@@ -68,6 +106,7 @@
       <div class="row">
         <div class="chip">Location & Orientation</div>
         <div class="chip status" id="status">Idle</div>
+        <div class="statusIcon" id="statusIcon" title="status"></div>
         <div class="acc gray" id="accPill">± — m</div>
         <div class="spacer"></div>
         <div class="timer" id="timer">00:00</div>
@@ -88,7 +127,13 @@
         <div class="cell"><div class="label">Heading</div><div class="value" id="head">—</div></div>
         <div class="cell"><div class="label">Speed</div><div class="value" id="speed">—</div></div>
         <div class="cell"><div class="label">Timestamp</div><div class="value" id="ts">—</div></div>
-        <div class="cell"><div class="label">Form Lat (#lat)</div><div class="value" id="formLat">—</div></div>
+        <div class="cell"><div class="labe</details>
+
+      <div class="footerbar">
+        <div class="timer" id="timerBottom">00:00</div>
+        <div class="accBig gray" id="accBig">± — m</div>
+      </div>
+    </section>div class="value" id="formLat">—</div></div>
         <div class="cell"><div class="label">Form Lon (#lon)</div><div class="value" id="formLon">—</div></div>
       </div>
 
@@ -105,7 +150,10 @@
         <summary>What am I seeing?</summary>
         <p class="muted">Live Track uses the browser's Geolocation API to stream positions. Accuracy updates as fixes improve. Haptics are simulated with <code>navigator.vibrate</code> when available.</p>
       </details>
-    </section>
+
+      <div class="footerbar">
+        <div class="timer" id="timerBottom">00:00</div>
+        <div class="accBig gra
 
     <!-- Simulated ARA form inputs so you can see autofill -->
     <section class="card" style="margin-top:16px">
@@ -123,18 +171,46 @@
   <script>
     // --- Utilities ---
     const $ = (id)=>document.getElementById(id);
-    const fmt = (n, d=6)=> (typeof n === 'number' && isFinite(n)) ? n.toFixed(d) : '—';
+   const timerEl = $('timer');
+    const timerBottomEl = $('timerBottom');
+    const statusIcon = $('statusIcon');
+    const accBig = $('accBig');peof n === 'number' && isFinite(n)) ? n.toFixed(d) : '—';
     const fmtInt = (n)=> (typeof n === 'number' && isFinite(n)) ? Math.round(n).toString() : '—';
     const fmt1 = (n)=> (typeof n === 'number' && isFinite(n)) ? n.toFixed(1) : '—';
     const toastEl = $('toast');
-    function toast(msg){ toastEl.textContent = msg; toastEl.classList.add('show'); setTimeout(()=>toastEl.classList.remove('show'), 1400); }
+    function toast(msg){ toastEl.textContenfunction setAccPill(m){
+      const txt = (isFinite(m)) ? `± ${fmt1(m)} m` : '± — m';
+      accPill.textContent = txt;
+      accPill.classList.remove('green','amber','gray');
+      if(accBig){ accBig.textContent = txt; accBig.classList.remove('green','amber','gray'); }
+      const cls = (!isFinite(m)) ? 'gray' : (m<=5?'green':(m<=20?'amber':'gray'));
+      accPill.classList.add(cls);
+      if(accBig){ accBig.classList.add(cls); }
+    }show'), 1400); }
 
     // Haptics (browser demo): use Vibration API if available
     const H = {
       enabled: true,
       impact(level){ if(!this.enabled) return; if(!('vibrate' in navigator)) return; const m = {light:15, medium:30, heavy:50}; navigator.vibrate(m[level]||20); },
-      success(){ if(!this.enabled) return; if(!('vibrate' in navigator)) return; navigator.vibrate([10,20,10]); },
-      selection(){ if(!this.enabled) return; if(!('vibrate' in navigator)) return; navigator.vibrate(8); }
+      function setStatus(s){
+      statusEl.textContent = s;
+      if(typeof statusIcon !== 'undefined' && statusIcon){
+        const iconMap = { 'Idle':'◻️', 'Fixing…':'⏳', 'Live':'▶️', 'Paused':'⏸️', 'Denied':'⛔' };
+        statusIcon.textContent = iconMap[s] || '';
+      }
+    }' in nfunction updateTimer(){
+      if(!liveStart){
+        timerEl.textContent = '00:00';
+        if(typeof timerBottomEl !== 'undefined' && timerBottomEl) timerBottomEl.textContent = '00:00';
+        return;
+      }
+      const sec = Math.floor((Date.now()-liveStart)/1000);
+      const mm = String(Math.floor(sec/60)).padStart(2,'0');
+      const ss = String(sec%60).padStart(2,'0');
+      const t = `${mm}:${ss}`;
+      timerEl.textContent = t;
+      if(typeof timerBottomEl !== 'undefined' && timerBottomEl) timerBottomEl.textContent = t;
+    }d) return; if(!('vibrate' in navigator)) return; navigator.vibrate(8); }
     };
 
     // State
@@ -223,8 +299,11 @@
       if(!('geolocation' in navigator)){ toast('Geolocation not supported'); return; }
       if(watchId!==null) return; // already running
       setStatus('Live'); bestAcc = Infinity; setAccPill(NaN);
-      H.impact('medium');
-      liveStart = Date.now(); updateTimer(); timerInt = setInterval(updateTimer, 500);
+ $('btnSave').addEventListener('click', ()=>{
+      if(watchId!==null) stopLive(); // Stop live tracking on save
+      setStatus('Paused');
+      H.success(); toast('Saved to form');
+    });nterval(updateTimer, 500);
       $('btnLive').textContent = 'Stop';
       try{
         watchId = navigator.geolocation.watchPosition(
