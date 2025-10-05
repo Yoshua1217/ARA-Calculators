@@ -143,6 +143,9 @@ button:disabled{opacity:.6;cursor:default}
     }
     function paint(pos){
       const now = Date.now(); if(now - lastPaint < 250) return; lastPaint = now;
+      // Reset the timer on each successful position update
+      liveStart = Date.now();
+      if(!timerInt){ updateTimer(); timerInt = setInterval(updateTimer, 500); }
       const { latitude, longitude, accuracy, altitude, heading, speed } = pos.coords;
       out.lat.textContent = fmt(latitude);
       out.lon.textContent = fmt(longitude);
@@ -167,7 +170,7 @@ button:disabled{opacity:.6;cursor:default}
     // Actions
     function getFix(){
       if(!('geolocation' in navigator)) { toast('Geolocation not supported'); return; }
-      setStatus('Fixing…'); H.impact('medium'); bestAcc = Infinity; setAccPill(NaN); $('btnFix').disabled = true;
+      setStatus('Fixing…'); H.impact('medium'); bestAcc = Infinity; setAccPill(NaN); $('btnFix').disabled = true; liveStart = 0; updateTimer();
       navigator.geolocation.getCurrentPosition(
         (pos)=>{ $('btnFix').disabled = false; setStatus('Idle'); paint(pos); H.success(); },
         (err)=>{ $('btnFix').disabled = false; setStatus('Denied'); toast(err.message||'Location failed'); H.impact('heavy'); },
@@ -189,7 +192,8 @@ button:disabled{opacity:.6;cursor:default}
     function stopLive(){
       if(watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
       setStatus('Paused'); $('btnLive').textContent = 'Live Track'; H.impact('medium');
-      clearInterval(timerInt); timerInt=null; updateTimer(); liveStart=0; updateTimer();
+      if(timerInt){ clearInterval(timerInt); timerInt=null; }
+      liveStart=0; updateTimer();
     }
     function copyCurrent(){
       const lat = out.lat.textContent, lon = out.lon.textContent, acc = out.acc.textContent, ts = out.ts.textContent;
