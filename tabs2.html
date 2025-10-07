@@ -70,10 +70,24 @@
   h2{ margin:0 0 8px; font-size:1.2rem; }
   h3{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
   label{ display:block; font-weight:700; margin:10px 0 6px; }
-  input[type="text"],input[type="number"],select,textarea{
-    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
-    background:var(--panel-2); color:var(--text); font-size:1rem;
-  }
+ /* Use the same monospace font for all form fields */
+input[type="text"], input[type="number"], select, textarea{
+  width:100%;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--panel-2);
+  color:var(--text);
+  font-size:1rem;
+  font-family: "JetBrains Mono","SFMono-Regular","Consolas","Courier New",monospace;
+  letter-spacing: .01em;
+}
+
+/* Make placeholders inherit the same font */
+input::placeholder,
+textarea::placeholder{
+  font-family: inherit;
+}
   textarea{ min-height:88px; resize:none; overflow:hidden; }
   .row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); }
   @media (max-width:780px){ .row{ grid-template-columns:1fr } }
