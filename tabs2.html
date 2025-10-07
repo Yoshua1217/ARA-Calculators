@@ -37,14 +37,7 @@
   }
   .topbar .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; }
-  .tree-name{
-    flex:1; min-width:220px;
-    background:var(--panel); color:var(--text);
-    border:1px solid var(--border); border-radius:10px;
-    padding:10px 12px; font-size:1rem;
-  }
 
-  /* Unit toggle / mode toggle inline in header */
   .inline-controls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .toggle-btn{
     padding:8px 12px; border:1px solid var(--border); border-radius:999px;
@@ -109,30 +102,27 @@
   .hint{font-size:.86rem;color:#ffc0c0;display:none}
   .hint.show{display:block}
 
-  /* Clinometer */
+  /* Bulk textarea monospace for consistency */
+  .mono{ font-family: "JetBrains Mono","SFMono-Regular","Courier New",monospace; }
+
+  /* Clinometer (grid removed, angle top-right) */
+  .clino-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .clino-wrap{
-    position:relative; height:160px; border:1px solid var(--border);
+    position:relative; height:180px; border:1px solid var(--border);
     border-radius:12px; background:#0b1a2f; margin:10px 0; overflow:hidden;
-  }
-  .clino-crosshair{
-    position:absolute; inset:0;
-    background:
-      linear-gradient(to right, transparent 49.5%, rgba(255,255,255,.2) 50%, transparent 50.5%),
-      linear-gradient(to bottom, transparent 49.5%, rgba(255,255,255,.2) 50%, transparent 50.5%);
-    pointer-events:none;
+    display:flex; align-items:center; justify-content:center;
   }
   .clino-angle{
-    position:absolute; left:12px; bottom:10px;
+    position:absolute; right:10px; top:10px;
     font-weight:800; font-size:1.2rem; color:#001528;
     background:#cfe0ff; padding:6px 10px; border-radius:8px; border:1px solid var(--border);
   }
-  .clino-controls{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   .clino-lock{
-    width:120px; height:120px; border-radius:999px; border:0; cursor:pointer;
-    background:#cfe0ff; color:#001528; font-weight:900; font-size:1.1rem;
+    width:140px; height:140px; border-radius:999px; border:0; cursor:pointer;
+    background:#cfe0ff; color:#001528; font-weight:900; font-size:1.15rem;
   }
   .clino-lock:active{ transform:scale(.98); }
-  .toggle-btn.small{ padding:6px 10px; }
+  .clino-controls{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 
   /* Results */
   .results{
@@ -151,11 +141,10 @@
 </head>
 <body>
 
-<!-- Top bar -->
+<!-- Top bar (tree name removed) -->
 <div class="topbar">
   <div class="row">
     <div class="brand">ARA Field Tools</div>
-    <input id="treeName" class="tree-name" type="text" placeholder="Tree name (e.g., Rossdale Poplar)">
     <div class="inline-controls" aria-label="Global controls">
       <span class="toggle-label">Units:</span>
       <button type="button" id="unit-m"  class="toggle-btn active" aria-pressed="true">m</button>
@@ -187,7 +176,11 @@
     <div class="card">
       <div class="block">
         <h2>General</h2>
-        <div class="row">
+
+        <label for="treeName">Tree name</label>
+        <input id="treeName" type="text" placeholder="Tree name (e.g., Rossdale Poplar)">
+
+        <div class="row" style="margin-top:8px;">
           <div>
             <label for="species">Species</label>
             <input id="species" type="text" placeholder="e.g., Populus balsamifera">
@@ -238,6 +231,9 @@
         <div id="single-circ-block" style="display:none;margin-top:10px;">
           <label for="singleC">Circumference (<span class="unit-tag">m</span>)</label>
           <input id="singleC" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 3.10">
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="single-update" class="btn-dim">Update circumference</button>
+          </div>
           <div class="tiny">Diameter is calculated automatically (D = C / π).</div>
         </div>
 
@@ -255,7 +251,7 @@
           </div>
 
           <label for="mt-bulk" style="margin-top:12px;">Bulk paste (numbers + repeaters)</label>
-          <textarea id="mt-bulk" placeholder="Examples:
+          <textarea id="mt-bulk" class="mono" placeholder="Examples:
 1.72, 0.98 1.10
 12x0.78   (12 repeats of 0.78)
 3×1.50    (× also works)"></textarea>
@@ -278,7 +274,11 @@
   <section id="pane-height" class="tabpane">
     <div class="card">
       <div class="block">
-        <h2>Height</h2>
+        <div class="clino-head">
+          <h2>Height</h2>
+          <div id="clino-angle" class="clino-angle">—°</div>
+        </div>
+
         <label for="h-angle">Angle to top of the tree (degrees)</label>
         <input id="h-angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5">
 
@@ -300,21 +300,19 @@
         <!-- Clinometer -->
         <div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
           <div class="block">
-            <h3>Clinometer</h3>
             <div class="btn-row" aria-label="Clinometer power">
               <button type="button" id="clino-enable" class="toggle-btn small">Start</button>
               <button type="button" id="clino-disable" class="toggle-btn small">Stop</button>
             </div>
+
             <div class="clino-wrap">
-              <div class="clino-crosshair"></div>
-              <div class="clino-angle" id="clino-angle">—°</div>
-            </div>
-            <div class="clino-controls">
+              <!-- angle readout lives top-right; lock fills the space -->
               <button type="button" id="clino-lock" class="clino-lock">Lock</button>
-              <div class="btn-row">
-                <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
-                <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
-              </div>
+            </div>
+
+            <div class="clino-controls">
+              <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
+              <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
             </div>
             <div class="tiny" id="clino-status">Sensor: idle</div>
           </div>
@@ -411,7 +409,6 @@ function setUnit(u){
   unitM.classList.toggle('active',isM); unitFt.classList.toggle('active',!isM);
   unitM.setAttribute('aria-pressed',String(isM)); unitFt.setAttribute('aria-pressed',String(!isM));
   unitTags.forEach(t=>t.textContent=isM?'m':'ft');
-  // Recalculate if auto
   if(calcMode==='auto'){ if($('#treeType').value==='Single trunk tree') recomputeSingle(); if($('#treeType').value==='Multi trunked tree') calcMulti(); calcHeight(); calcSpread(); }
   updateResultsPanel(); updateCopyButtons();
 }
@@ -427,11 +424,10 @@ modeManualBtn.onclick=()=>setCalcMode('manual'); modeAutoBtn.onclick=()=>setCalc
 $$('.tab').forEach(tab=>{
   tab.addEventListener('click', ()=>{
     $$('.tab').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
+    tab.addClass?.('active') ?? tab.classList.add('active');
     const id = tab.dataset.tab;
     $$('.tabpane').forEach(p=>p.classList.remove('active'));
     $('#pane-' + id).classList.add('active');
-    // optional: scroll to top of content
     window.scrollTo({top:0,behavior:'smooth'});
   });
 });
@@ -443,6 +439,8 @@ notesEl.addEventListener('input',()=>autoGrow(notesEl));
 
 /* ====== Circumference: single vs multi ====== */
 const treeType=$('#treeType'), singleBlock=$('#single-circ-block'), singleC=$('#singleC');
+const singleUpdateBtn = $('#single-update');
+
 const mtBlock=$('#multi-block'), mtList=$('#mt-list'), mtAdd=$('#mt-add'), mtRemove=$('#mt-remove'),
       mtSort=$('#mt-sort'), mtCalc=$('#mt-calc'), mtBulk=$('#mt-bulk'), mtFill=$('#mt-fill'),
       mtClear=$('#mt-clear'), mtResult=$('#mt-result');
@@ -464,6 +462,7 @@ function recomputeSingle(){
   updateResultsPanel(); updateCopyButtons();
 }
 singleC.addEventListener('input',()=>{ if(calcMode==='auto') recomputeSingle(); });
+singleUpdateBtn.addEventListener('click',recomputeSingle);
 
 /* Multi-trunk block (batch) */
 let mtCount=0; const MT_MAX=60;
@@ -479,7 +478,7 @@ function addMtRow(val=''){
   top.appendChild(lab); top.appendChild(badge);
   row.appendChild(top); row.appendChild(inp); row.appendChild(hint);
   mtList.appendChild(row);
-  inp.addEventListener('input',()=>{inp.classList.remove('error'); hint.classList.remove('show'); if(calcMode==='auto') calcMulti();});
+  inp.addEventListener('input',()=>{hint.classList.remove('show'); if(calcMode==='auto') calcMulti();});
   inp.addEventListener('blur',()=>maybeMtOutlierHint(parseFloat(inp.value),hint));
 }
 function maybeMtOutlierHint(val,h){
@@ -569,7 +568,16 @@ function stopClinometer(){
   if(!clinoOn) return; clinoOn=false; elEnable.classList.remove('active'); elDisable.classList.add('active');
   elStatus.textContent='Sensor: stopped'; if(onOrientation){ window.removeEventListener('deviceorientation', onOrientation); onOrientation=null; }
 }
-function lockAngle(){ if(!locked){ locked=true; elLock.textContent='Locked'; elLock.classList.add('active'); buzz(40); } else { locked=false; elLock.textContent='Lock'; elLock.classList.remove('active'); } }
+function lockAngle(){
+  // Toggle lock; when locking, write current angle to the input field
+  if(!locked){
+    locked=true; elLock.textContent='Locked'; elLock.classList.add('active'); buzz(40);
+    const txt=elAngle.textContent.replace('°',''); const current=parseFloat(txt);
+    if(Number.isFinite(current)){ hAngle.value=current.toFixed(1); if(calcMode==='auto') calcHeight(); }
+  } else {
+    locked=false; elLock.textContent='Lock'; elLock.classList.remove('active');
+  }
+}
 function zeroCalibrate(){ const txt=elAngle.textContent.replace('°',''); const current=parseFloat(txt); if(!Number.isFinite(current)) return; zeroOffsetRad += (current*Math.PI/180); elStatus.textContent='Zeroed at current angle'; buzz(20); }
 function resetSensor(){ locked=false; elLock.textContent='Lock'; elLock.classList.remove('active'); zeroOffsetRad=0; elAngle.textContent='—°'; elStatus.textContent='Sensor: idle'; buzz(10); }
 elEnable?.addEventListener('click', startClinometer);
@@ -631,6 +639,7 @@ copySpread.onclick=()=>{ if(lastSpread) copyText(fmt2(lastSpread.meanM),copySpre
 /* ====== Description / Email / Share ====== */
 const treeNameInput=$('#treeName'), species=$('#species'), condition=$('#condition');
 const descBox=$('#desc'), genDesc=$('#genDesc'), copyDesc=$('#copyDesc'), shareBtn=$('#shareLink'), emailBtn=$('#emailBtn');
+
 function ensureOnDemand(){
   if(treeType.value==='Multi trunked tree'){ const any=$$('#mt-list input').some(i=>Number.isFinite(parseFloat(i.value))); if(any && !lastMulti) calcMulti(); }
   const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value); if(Number.isFinite(a)&&Number.isFinite(d)&&Number.isFinite(e)&&!lastHeight) calcHeight();
@@ -721,25 +730,25 @@ function generateDescription(){
   ensureOnDemand();
   const html=buildDescription(); descBox.innerHTML=html||'—'; copyDesc.disabled=!html; shareBtn.disabled=!html;
   if(html){
-    const text=extractPlainText(descBox); const nm=treeNameInput.value?.trim();
+    const text=extractPlainText(descBox); const nm=$('#treeName').value?.trim();
     const subject=`ARA Field Nomination${nm?' – '+nm:''}`;
     emailBtn.href=`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
     emailBtn.removeAttribute('aria-disabled');
   } else { emailBtn.setAttribute('aria-disabled','true'); emailBtn.href='#'; }
 }
-genDesc.onclick=generateDescription;
+$('#genDesc').onclick=generateDescription;
 
-copyDesc.onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html||html==='—') return; const text=extractPlainText(descBox);
+$('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html||html==='—') return; const text=extractPlainText(descBox);
   if(navigator.clipboard && window.ClipboardItem){ try{
     await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]);
-    const o=copyDesc.textContent; copyDesc.textContent='Copied ✓'; setTimeout(()=>copyDesc.textContent=o,1200); return;
+    const o=$('#copyDesc').textContent; $('#copyDesc').textContent='Copied ✓'; setTimeout(()=>$('#copyDesc').textContent=o,1200); return;
   }catch{} }
   const tmp=document.createElement('div'); tmp.contentEditable='true'; tmp.style.position='fixed'; tmp.style.left='-9999px'; tmp.innerHTML=html; document.body.appendChild(tmp);
   const r=document.createRange(); r.selectNodeContents(tmp); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); s.removeAllRanges(); tmp.remove();
-  const o=copyDesc.textContent; copyDesc.textContent='Copied ✓'; setTimeout(()=>copyDesc.textContent=o,1200);
+  const o=$('#copyDesc').textContent; $('#copyDesc').textContent='Copied ✓'; setTimeout(()=>$('#copyDesc').textContent=o,1200);
 };
 
-/* Share link: encode current form */
+/* Share link for the current form */
 function getFormState(){
   return {
     inputUnit, calcMode,
@@ -754,7 +763,7 @@ function getFormState(){
 }
 function encodeShare(state){ const json=JSON.stringify(state); const b64=btoa(unescape(encodeURIComponent(json))); return location.origin+location.pathname+'#data='+b64; }
 function decodeShare(hash){ try{ const b64=hash.replace(/^#?data=/,''); const json=decodeURIComponent(escape(atob(b64))); return JSON.parse(json);}catch{ return null; } }
-shareBtn.onclick=async ()=>{ const url=encodeShare(getFormState()); if(url.length>2000) alert('Heads up: long link. Some apps may truncate it.'); await navigator.clipboard.writeText(url); const o=shareBtn.textContent; shareBtn.textContent='Link copied ✓'; setTimeout(()=>shareBtn.textContent=o,1200); };
+$('#shareLink').onclick=async ()=>{ const url=encodeShare(getFormState()); if(url.length>2000) alert('Heads up: long link. Some apps may truncate it.'); await navigator.clipboard.writeText(url); const o=$('#shareLink').textContent; $('#shareLink').textContent='Link copied ✓'; setTimeout(()=>$('#shareLink').textContent=o,1200); };
 
 /* Load from link on boot */
 (function boot(){
@@ -769,13 +778,8 @@ shareBtn.onclick=async ()=>{ const url=encodeShare(getFormState()); if(url.lengt
       $('#h-angle').value=hashData.height?.angle??''; $('#h-dist').value=hashData.height?.dist??''; $('#h-eye').value=hashData.height?.eye??'';
       $('#spreadMajor').value=hashData.spread?.major??''; $('#spreadMinor').value=hashData.spread?.minor??'';
       $('#notes').value=hashData.notes??''; autoGrow($('#notes'));
-      // multi
       mtList.innerHTML=''; mtCount=0; const arr=Array.isArray(hashData.multi?.values)?hashData.multi.values:[]; if(arr.length>0) arr.forEach(v=>addMtRow(v)); else { if($('#treeType').value==='Multi trunked tree'){ addMtRow(); addMtRow(); } }
-      // restore description if present
-      if(hashData.desc){ descBox.innerHTML=hashData.desc; copyDesc.disabled=false; shareBtn.disabled=false; }
-    } else {
-      // Defaults
-      addEventListener('load', ()=>{ /* start with nothing; multi adds rows when selected */ });
+      if(hashData.desc){ descBox.innerHTML=hashData.desc; $('#copyDesc').disabled=false; $('#shareLink').disabled=false; }
     }
   }catch(e){ console.warn('Init issue', e); }
 })();
