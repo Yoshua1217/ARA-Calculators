@@ -71,16 +71,17 @@
   h3{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
   label{ display:block; font-weight:700; margin:10px 0 6px; }
  /* Use the same monospace font for all form fields */
-input[type="text"], input[type="number"], select, textarea{
-  width:100%;
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  background:var(--panel-2);
-  color:var(--text);
-  font-size:1rem;
-  font-family: "JetBrains Mono","SFMono-Regular","Consolas","Courier New",monospace;
-  letter-spacing: .01em;
+/* Consistent system font for all entry fields */
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 1rem;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  letter-spacing: 0.01em;
 }
 
 /* Make placeholders inherit the same font */
@@ -116,8 +117,12 @@ textarea::placeholder{
   .hint{font-size:.86rem;color:#ffc0c0;display:none}
   .hint.show{display:block}
 
-  /* Bulk textarea monospace for consistency */
-  .mono{ font-family: "JetBrains Mono","SFMono-Regular","Courier New",monospace; }
+  input::placeholder,
+textarea::placeholder {
+  font-family: inherit;
+  color: #99a5b8;
+}
+
 
   /* Clinometer (grid removed, angle top-right) */
   .clino-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
