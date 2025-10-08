@@ -38,7 +38,12 @@
   .topbar .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; }
 
-  .inline-controls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .inline-controls{
+    display:flex; 
+    align-items:center; /* ensures all controls align */
+    gap:8px;
+    flex-wrap: wrap; 
+  }
   .toggle-btn{
     padding:8px 12px; border:1px solid var(--border); border-radius:999px;
     background:var(--panel); color:var(--text); cursor:pointer;
@@ -201,7 +206,10 @@
   /* Location accuracy chips */
   .acc-chip{ display:inline-block; padding:2px 8px; border-radius:999px; font-weight:600; }
   .acc-grey { background:#404957; color:#d7dee8; }
-  .acc-amber{ background:#7a5a15; color:#ffe2a8; }
+ .acc-amber{
+  background:#ffb300;    /* bright golden yellow */
+  color:#2b1a00;         /* dark text for contrast */
+}
   .acc-green{ background:#1b5e2b; color:#c6f1cf; }
 
   /* Running state for the Start/Stop toggle */
@@ -246,6 +254,19 @@
 .acc-pill.acc-amber { background:#7a5a15; color:#ffe2a8; }
 .acc-pill.acc-green { background:#1b5e2b; color:#c6f1cf; }
 .acc-pill.acc-red   { background:#7a2020; color:#ffdede; }
+
+  .acc-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  line-height: 1;
+  margin-left: 8px;
+  vertical-align: middle;
+}
 
 /* Tiny status dot next to the Location tab */
 .acc-dot{
