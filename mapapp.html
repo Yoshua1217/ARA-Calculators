@@ -452,25 +452,29 @@
         </div>
 
         <!-- Clinometer -->
-      <div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
+<div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
   <div class="block">
-
-    <!-- NEW: live angle + status box -->
-    <div class="clino-readout">
-      <div id="clino-live-angle" class="angle">—°</div>
-      <div id="clino-live-status" class="status">Sensor: idle · Cal: 0.0°</div>
+    <!-- Live angle/status header box -->
+    <div class="results" id="clino-readout" style="background:#10253f;border-color:#28466e;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <strong>Live angle</strong>
+        <span id="clino-live-angle" style="font-weight:800;">—°</span>
+      </div>
+      <div id="clino-live-status" class="tiny" style="margin-top:4px;">Sensor: idle · Cal: 0.0°</div>
     </div>
 
     <div class="clino-wrap">
-      <!-- degree pill (top-right) stays -->
-      <button type="button" id="clino-lock" class="clino-lock">Lock</button>
+      <!-- angle pill stays top-right -->
+      <div id="clino-angle" class="clino-angle">—°</div>
+      <!-- BIG button now starts + locks/unlocks -->
+      <button type="button" id="clino-lock" class="clino-lock">Start Clinometer</button>
     </div>
 
     <div class="clino-controls">
       <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
       <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
     </div>
-    <div class="tiny" id="clino-status">Sensor: idle</div>
+    <!-- (removed the old tiny #clino-status line) -->
   </div>
 </div>
       </div>
@@ -802,118 +806,126 @@ if(hCalc) hCalc.onclick=calcHeight;
 [hAngle,hDist,hEye].forEach(function(inp){ if(inp) inp.addEventListener('input',function(){ if(calcMode==='auto') calcHeight(); }); });
 
 /* ---------------- Clinometer ---------------- */
+/* ---------------- Clinometer ---------------- */
 let clinoOn = false, zeroOffsetRad = 0, locked = false;
-const elLock = document.getElementById('clino-lock');
-const elAngle = document.getElementById('clino-angle');
-const elZero = document.getElementById('clino-zero');
-const elReset = document.getElementById('clino-reset');
-const elStatus = document.getElementById('clino-status');
-const elReadAngle = document.getElementById('clino-live-angle');
+
+const elLock       = document.getElementById('clino-lock');
+const elAngle      = document.getElementById('clino-angle');
+const elZero       = document.getElementById('clino-zero');
+const elReset      = document.getElementById('clino-reset');
+const elReadAngle  = document.getElementById('clino-live-angle');
 const elReadStatus = document.getElementById('clino-live-status');
 
 const toDeg = rad => rad * 180 / Math.PI;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
-function buzz(ms = 30) { if (navigator.vibrate) try { navigator.vibrate(ms); } catch {} }
+function buzz(ms = 30){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch{} }
 
-async function requestIOSPermissionIfNeeded() {
+async function requestIOSPermissionIfNeeded(){
   const any = window.DeviceOrientationEvent;
-  if (!any) return true;
-  if (typeof any.requestPermission === 'function') {
-    try { const res = await any.requestPermission(); return res === 'granted'; }
-    catch { return false; }
+  if(!any) return true;
+  if(typeof any.requestPermission === 'function'){
+    try { return (await any.requestPermission()) === 'granted'; } catch { return false; }
   }
   return true;
 }
 
-function computePitchFromEvent(ev) {
+function computePitchFromEvent(ev){
   const beta = typeof ev.beta === 'number' ? ev.beta : 0;
-  const rad = (beta * Math.PI / 180) - zeroOffsetRad;
+  const rad  = (beta * Math.PI/180) - zeroOffsetRad;
   return clamp(toDeg(rad), -89.9, 89.9);
 }
 
-function renderClinoReadout(deg) {
+function renderClinoReadout(deg){
   const txt = Number.isFinite(deg) ? fmt1(deg) + '°' : '—°';
-  if (locked) elReadAngle.textContent = txt + ' (locked)';
-  else elReadAngle.textContent = txt;
+  elReadAngle.textContent = locked ? `${txt} (locked)` : txt;
 }
-function renderClinoStatus(state) {
-  const label = (state === 'running' ? 'Sensor: running' :
-    (state === 'stopped' ? 'Sensor: stopped' :
-    (state === 'permission' ? 'Sensor: permission denied' : 'Sensor: idle')));
-  const cal = fmt1(toDeg(zeroOffsetRad)) + '°';
-  elReadStatus.textContent = label + ' · Cal: ' + cal;
-  renderClinoReadout(parseFloat(elAngle.textContent.replace('°', '')));
+
+function renderClinoStatus(state){
+  const label = state === 'running'   ? 'Sensor: running'
+              : state === 'stopped'   ? 'Sensor: stopped'
+              : state === 'permission'? 'Sensor: permission denied'
+              :                         'Sensor: idle';
+  const cal   = fmt1(toDeg(zeroOffsetRad)) + '°';
+  elReadStatus.textContent = `${label} · Cal: ${cal}`;
 }
 
 let onOrientation = null;
-function startClinometer() {
+
+function startClinometer(){
   if (clinoOn) return;
   clinoOn = true;
   renderClinoStatus('running');
-  requestIOSPermissionIfNeeded().then(ok => {
-    if (!ok) {
-      elStatus.textContent = 'Sensor: permission denied';
-      renderClinoStatus('permission');
+  // After start, button should say "Lock" (running & unlocked)
+  elLock.textContent = 'Lock';
+
+  requestIOSPermissionIfNeeded().then(ok=>{
+    if(!ok){
       clinoOn = false;
+      renderClinoStatus('permission');
+      // Revert button so user can try again
+      elLock.textContent = 'Start Clinometer';
       return;
     }
     onOrientation = ev => {
-      if (!clinoOn || locked) return;
+      if(!clinoOn || locked) return;
       const deg = computePitchFromEvent(ev);
       elAngle.textContent = fmt1(deg) + '°';
       renderClinoReadout(deg);
     };
-    window.addEventListener('deviceorientation', onOrientation, { passive: true });
-    elStatus.textContent = 'Sensor: running';
+    window.addEventListener('deviceorientation', onOrientation, {passive:true});
   });
 }
 
-function stopClinometer() {
-  if (!clinoOn) return;
+function stopClinometer(){
+  if(!clinoOn) return;
   clinoOn = false;
-  if (onOrientation) window.removeEventListener('deviceorientation', onOrientation);
+  if(onOrientation) window.removeEventListener('deviceorientation', onOrientation);
   onOrientation = null;
   renderClinoStatus('stopped');
-  elStatus.textContent = 'Sensor: stopped';
+  // Back to initial label
+  elLock.textContent = 'Start Clinometer';
 }
 
-function zeroCalibrate() {
-  const txt = elAngle.textContent.replace('°', '');
-  const current = parseFloat(txt);
-  if (!Number.isFinite(current)) return;
-  zeroOffsetRad += (current * Math.PI / 180);
-  elStatus.textContent = 'Zeroed at current angle';
-  renderClinoStatus('running');
+function zeroCalibrate(){
+  const current = parseFloat(elAngle.textContent.replace('°',''));
+  if(!Number.isFinite(current)) return;
+  zeroOffsetRad += (current * Math.PI/180);
+  renderClinoStatus(clinoOn ? 'running' : 'idle');
   buzz(20);
 }
 
-function resetSensor() {
+function resetSensor(){
   locked = false;
   zeroOffsetRad = 0;
-  elLock.textContent = 'Lock';
-  elLock.classList.remove('active');
   elAngle.textContent = '—°';
-  elStatus.textContent = 'Sensor: idle';
-  renderClinoStatus('idle');
   renderClinoReadout(NaN);
+  if (clinoOn){
+    // keep it running but unlocked
+    elLock.classList.remove('active');
+    elLock.textContent = 'Lock';
+    renderClinoStatus('running');
+  } else {
+    // fully idle/reset state
+    elLock.classList.remove('active');
+    elLock.textContent = 'Start Clinometer';
+    renderClinoStatus('idle');
+  }
   buzz(10);
 }
 
-function toggleLock() {
-  // First click ever → start clinometer
-  if (!clinoOn) {
+function toggleLock(){
+  // First-ever click: start the clinometer
+  if(!clinoOn){
     startClinometer();
     buzz(50);
     return;
   }
-
-  // After it’s running → toggle lock/unlock
-  if (!locked) {
+  // Running → toggle lock/unlock
+  if(!locked){
     locked = true;
-    elLock.textContent = 'Locked';
+    elLock.textContent = 'Unlock';
     elLock.classList.add('active');
-    const txt = elAngle.textContent.replace('°', '');
-    const current = parseFloat(txt);
+    const current = parseFloat(elAngle.textContent.replace('°',''));
     if (Number.isFinite(current)) {
       document.getElementById('h-angle').value = current.toFixed(1);
       if (calcMode === 'auto') calcHeight();
@@ -924,33 +936,20 @@ function toggleLock() {
     locked = false;
     elLock.textContent = 'Lock';
     elLock.classList.remove('active');
-    renderClinoReadout(parseFloat(elAngle.textContent.replace('°', '')));
+    renderClinoReadout(parseFloat(elAngle.textContent.replace('°','')));
   }
 }
 
 elLock.addEventListener('click', toggleLock);
 elZero.addEventListener('click', zeroCalibrate);
 elReset.addEventListener('click', resetSensor);
-document.addEventListener('visibilitychange', () => { if (document.hidden) stopClinometer(); });
 
+// Stop sensor when tab goes to background
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stopClinometer(); });
+
+// Initialize live box so it isn’t blank
 renderClinoStatus('idle');
 renderClinoReadout(NaN);
-
-
-/* ---------------- Canopy ---------------- */
-var spreadMajor=byId('spreadMajor'), spreadMinor=byId('spreadMinor'), spreadCalc=byId('spread-calc');
-function calcSpread(){
-  var maj=parseFloat(spreadMajor && spreadMajor.value), min=parseFloat(spreadMinor && spreadMinor.value);
-  var haveMaj=Number.isFinite(maj), haveMin=Number.isFinite(min);
-  if(!haveMaj && !haveMin){ lastSpread=null; updateResultsPanel(); updateCopyButtons(); return; }
-  var mMaj=haveMaj?toM(maj,inputUnit):null, mMin=haveMin?toM(min,inputUnit):null;
-  var meanM=((mMaj||0)+(mMin||0))/((haveMaj?1:0)+(haveMin?1:0));
-  lastSpread={majorM:mMaj,minorM:mMin,meanM:meanM,meanFt:mToFt(meanM)};
-  updateResultsPanel(); updateCopyButtons();
-  if(spreadCalc){ spreadCalc.classList.add('active'); setTimeout(function(){ spreadCalc.classList.remove('active'); },900); }
-}
-if(spreadCalc) spreadCalc.onclick=calcSpread;
-[spreadMajor,spreadMinor].forEach(function(inp){ if(inp) inp.addEventListener('input',function(){ if(calcMode==='auto') calcSpread(); }); });
 
 /* ---------------- Results & Quick Copy ---------------- */
 var resHeight=byId('res-height'), resEqCirc=byId('res-eqcirc'), resAvgCirc=byId('res-avgcirc'), resSpread=byId('res-spread');
