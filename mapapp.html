@@ -37,9 +37,9 @@
   }
   .topbar .row {
     display:flex;
-    flex-direction:column;
-    align-items:flex-start;
-    gap:6px;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
    }
 
   /* On wider screens, keep them side-by-side like before */
@@ -50,8 +50,10 @@
     justify-content:space-between;
   }
 }
-  .brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; }
+  .brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; line-height:1.1; }
 
+html, body { overflow-x: hidden; }
+  
   .inline-controls{
     display:flex; 
     align-items:center; /* ensures all controls align */
@@ -1538,6 +1540,15 @@ function start() {
     ? navigator.geolocation.watchPosition(handlePosition, handleError, opts)
     : null;
   setRunningUI(true);
+  // Reflect that we're now running; show best if we already had one
+if (typeof paintGlobalAcc === 'function') {
+  if (best && Number.isFinite(best.acc)) {
+    paintGlobalAcc(best.acc, { state: 'ok' });
+  } else {
+    paintGlobalAcc(NaN, { state: 'nofix' });
+  }
+}
+
 }
 
 
@@ -1597,28 +1608,29 @@ if(tHiAcc)  tHiAcc.addEventListener('click',  function(){
     }
   }
 });
- if(tHiAcc)  tHiAcc.addEventListener('click',  function(){
-  hiacc=!hiacc;
-  tHiAcc.classList.toggle('active',hiacc);
-  tHiAcc.setAttribute('aria-pressed',String(hiacc));
 
-  if (watchId!=null){ 
-    stop(); 
-    start(); 
+  if (tSaver) tSaver.addEventListener('click', function () {
+  saver = !saver;
+  tSaver.classList.toggle('active', saver);
+  tSaver.setAttribute('aria-pressed', String(saver));
+
+  if (watchId != null) {
+    stop();
+    start();
   }
 
-  // NEW: immediately reflect the best-known accuracy in the header pill
+  // keep the pill/dot reflecting the best we know
   if (typeof paintGlobalAcc === 'function') {
     if (best && Number.isFinite(best.acc)) {
       paintGlobalAcc(best.acc, { state: 'ok' });
     } else if (recent && Number.isFinite(recent.acc)) {
       paintGlobalAcc(recent.acc, { state: 'ok' });
     } else {
-      paintGlobalAcc(NaN, { state: 'off' }); // nothing saved yet
+      // running but no fix yet (after restart)
+      paintGlobalAcc(NaN, { state: 'nofix' });
     }
   }
 });
-
 
   if(bUseRecent) bUseRecent.addEventListener('click', function(){ applyFixToHidden(recent); setSaveChoice('recent'); });
   if(bUseBest)   bUseBest  .addEventListener('click', function(){ applyFixToHidden(best);   setSaveChoice('best'); });
