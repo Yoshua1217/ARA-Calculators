@@ -141,28 +141,35 @@
     display:flex; align-items:center; justify-content:center;
   }
   
-  /* Clinometer visuals (light blue accents) */
+  /* Degree pill (always visible, on top) */
 .clino-angle{
   position:absolute; right:10px; top:10px;
+  z-index:10;                      /* ← sit above anything */
+  display:inline-flex;             /* ← force visible layout */
+  align-items:center;
   font-weight:800; font-size:1.2rem;
-  color:#0b2250;                    /* dark navy text */
-  background:#cfe0ff;               /* light blue pill */
+  color:#0b2250;
+  background:#cfe0ff;
   padding:6px 10px; border-radius:10px;
-  border:2px solid #5aa0ff;         /* clearer border so it never "disappears" */
+  border:2px solid #5aa0ff;
   box-shadow:0 1px 0 rgba(0,0,0,.2) inset;
 }
 
+
+/* Clinometer lock button (no border when idle) */
 .clino-lock{
   width:140px; height:140px;
-  border-radius:999px; border:2px solid #5aa0ff; /* light blue ring */
-  background:#cfe0ff;               /* light blue button */
+  border:0;                         /* ← no border when not locked */
+  border-radius:999px;
+  background:#cfe0ff;               /* light blue */
   color:#0b2250;                    /* dark navy text */
   font-weight:900; font-size:1.15rem; cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.25) inset;
 }
 .clino-lock.active{
   background:#5aa0ff;               /* darker when locked */
   color:#001a3d;
-  border-color:#2b7fe6;
+  border:2px solid #2b7fe6;         /* only show border when locked */
 }
 .clino-lock:active{ transform:scale(.98); }
 
@@ -189,25 +196,24 @@
   /* Running state for the Start/Stop toggle */
   #loc-toggle.running{ background:#0b3b82; color:#fff; }
 
-  /* Reset Form Button — clearer dark-red outline + states */
+/* Reset Form Button — bright red fill by default */
 #resetFormResults{
-  background:#0e1f3f;           /* dark blue idle bg */
+  background:#e53935;               /* bright red default fill */
   color:#fff;
-  border:3px solid #6b0e0e;     /* thicker dark red border */
+  border:3px solid #6b0e0e;         /* thick dark-red border */
   border-radius:10px;
-  transition:background .2s, transform .1s, border-color .2s;
+  transition:background .15s, transform .1s, border-color .15s;
 }
 #resetFormResults:hover{
-  background:#c62828;           /* red on hover */
-  border-color:#8e0000;         /* deeper red outline */
+  background:#d32f2f;               /* slightly darker on hover */
+  border-color:#8e0000;
   transform:scale(1.02);
 }
 #resetFormResults:active{
-  background:#8e0000;           /* dark red on press */
+  background:#8e0000;               /* dark red when pressed */
   border-color:#5c0000;
   transform:scale(.98);
 }
-
 
   /* Map space (+ small gap above) */
   #loc-map { height: 300px; border-radius: 12px; overflow: hidden; margin-top:12px; }
@@ -738,7 +744,9 @@ async function requestIOSPermissionIfNeeded(){
 function computePitchFromEvent(ev){ const beta=typeof ev.beta==='number'?ev.beta:0; const rad=(beta*Math.PI/180)-zeroOffsetRad; return clamp(toDeg(rad),-89.9,89.9); }
 let onOrientation=null;
 function startClinometer(){
-  if(clinoOn) return; clinoOn=true; elStatus.textContent='Sensor: running';
+  if(clinoOn) return; clinoOn=true; 
+    elAngle && (elAngle.style.display = 'inline-flex');  // ← add this line
+  elStatus.textContent='Sensor: running';
   elEnable.classList.add('active'); elDisable.classList.remove('active');
   requestIOSPermissionIfNeeded().then(ok=>{
     if(!ok){ elStatus.textContent='Sensor: permission denied'; clinoOn=false; return; }
