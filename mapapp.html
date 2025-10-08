@@ -51,15 +51,29 @@
   gap:8px;
 }
 
-.brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; line-height:1.1; }
-
-.inline-controls{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;             /* wrap nicely on small screens */
-  white-space:nowrap;
+.brand {
+  font-weight: 800;
+  letter-spacing: .2px;
+  font-size: 1.05rem;
+  color: #eaf3ff;
+  line-height: 1.1;
+  padding-left: 2px; /* alignment fix */
 }
+.inline-controls {
+  margin-left: 0;
+  padding-left: 2px;        /* aligns with .brand text */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;        /* keep everything on one line */
+  overflow-x: auto;         /* allows gentle horizontal scroll on narrow screens */
+  white-space: nowrap;
+  scrollbar-width: none;    /* hide scrollbar on Firefox */
+}
+.inline-controls::-webkit-scrollbar {
+  display: none;            /* hide scrollbar on Chrome/Safari */
+}
+
 
 
   /* small-screen fit: slightly tighter paddings/fonts */
