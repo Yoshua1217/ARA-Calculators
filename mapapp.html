@@ -140,21 +140,31 @@
     border-radius:12px; background:#0b1a2f; margin:10px 0; overflow:hidden;
     display:flex; align-items:center; justify-content:center;
   }
-  .clino-angle{
-    position:absolute; right:10px; top:10px;
-    font-weight:800; font-size:1.2rem;
-    color:#0a2540;
-    background:#cfe8ff;
-    padding:6px 10px; border-radius:8px;
-    border:1px solid #8fbaf0;
-  }
-  .clino-lock{
-    width:140px; height:140px; border-radius:999px; border:1px solid #8fbaf0;
-    cursor:pointer;
-    background:#cfe8ff; color:#0a2540; font-weight:900; font-size:1.15rem;
-    transition:transform .06s ease, filter .15s ease;
-  }
-  .clino-lock:active{ transform:scale(.98); filter: brightness(.95); }
+  
+  /* Clinometer visuals (light blue accents) */
+.clino-angle{
+  position:absolute; right:10px; top:10px;
+  font-weight:800; font-size:1.2rem;
+  color:#0b2250;                    /* dark navy text */
+  background:#cfe0ff;               /* light blue pill */
+  padding:6px 10px; border-radius:10px;
+  border:2px solid #5aa0ff;         /* clearer border so it never "disappears" */
+  box-shadow:0 1px 0 rgba(0,0,0,.2) inset;
+}
+
+.clino-lock{
+  width:140px; height:140px;
+  border-radius:999px; border:2px solid #5aa0ff; /* light blue ring */
+  background:#cfe0ff;               /* light blue button */
+  color:#0b2250;                    /* dark navy text */
+  font-weight:900; font-size:1.15rem; cursor:pointer;
+}
+.clino-lock.active{
+  background:#5aa0ff;               /* darker when locked */
+  color:#001a3d;
+  border-color:#2b7fe6;
+}
+.clino-lock:active{ transform:scale(.98); }
 
   /* Results */
   .results{
@@ -179,23 +189,25 @@
   /* Running state for the Start/Stop toggle */
   #loc-toggle.running{ background:#0b3b82; color:#fff; }
 
-  /* Reset Form – red theme */
-  #resetFormResults{
-    background:#b71c1c;     /* red default */
-    color:#fff;
-    border:1px solid #7a1111;  /* dark red border */
-    transition: background .15s ease, transform .06s ease, border-color .15s ease;
-  }
-  #resetFormResults:hover{
-    background:#a01818;
-    border-color:#680e0e;
-    transform:scale(1.02);
-  }
-  #resetFormResults:active{
-    background:#790f0f;
-    border-color:#4f0a0a;
-    transform:scale(.98);
-  }
+  /* Reset Form Button — clearer dark-red outline + states */
+#resetFormResults{
+  background:#0e1f3f;           /* dark blue idle bg */
+  color:#fff;
+  border:3px solid #6b0e0e;     /* thicker dark red border */
+  border-radius:10px;
+  transition:background .2s, transform .1s, border-color .2s;
+}
+#resetFormResults:hover{
+  background:#c62828;           /* red on hover */
+  border-color:#8e0000;         /* deeper red outline */
+  transform:scale(1.02);
+}
+#resetFormResults:active{
+  background:#8e0000;           /* dark red on press */
+  border-color:#5c0000;
+  transform:scale(.98);
+}
+
 
   /* Map space (+ small gap above) */
   #loc-map { height: 300px; border-radius: 12px; overflow: hidden; margin-top:12px; }
@@ -384,10 +396,11 @@
   <section id="pane-height" class="tabpane">
     <div class="card">
       <div class="block">
-        <div class="clino-head">
-          <h2>Height</h2>
-          <div id="clino-angle" class="clino-angle">—°</div>
-        </div>
+
+<div class="clino-head">
+  <h2>Height</h2>
+  <div id="clino-angle" class="clino-angle">—°</div>
+</div>
 
         <label for="h-angle">Angle to top of the tree (degrees)</label>
         <input id="h-angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5">
