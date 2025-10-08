@@ -1280,6 +1280,77 @@ if (resetFormResults){
     location.replace(location.href);
   };
 }
+// === ARA safe autosave + reset shim (drop-in, non-destructive) ===
+(function(){
+  // Keep existing flag if present
+  window.ARA_RESETTING = !!window.ARA_RESETTING;
+
+  // Fallback for $ if not already defined
+  const $ = window.$ || (s => document.querySelector(s));
+
+  // Use existing SAVE_KEY if defined
+  const SAVE_KEY = window.SAVE_KEY || 'ara_field_v1';
+
+  // Install autosave listeners once (guarded)
+  if (!window.__ARA_AUTOSAVE_INSTALLED__) {
+    window.__ARA_AUTOSAVE_INSTALLED__ = true;
+
+    let _asTimer = null;
+    function autoSaveSoon(){
+      if (_asTimer) clearTimeout(_asTimer);
+      _asTimer = setTimeout(() => {
+        if (!window.ARA_RESETTING && typeof window.saveState === 'function') {
+          try { window.saveState(); } catch {}
+        }
+      }, 250);
+    }
+
+    // Global input/change autosave
+    document.addEventListener('input',  autoSaveSoon, {capture:true});
+    document.addEventListener('change', autoSaveSoon, {capture:true});
+
+    // Save on navigate away (unless resetting)
+    window.addEventListener('beforeunload', () => {
+      if (!window.ARA_RESETTING && typeof window.saveState === 'function') {
+        try { window.saveState(); } catch {}
+      }
+    });
+
+    // Hydrate on load if you have loadState()
+    if (typeof window.loadState === 'function') {
+      try { window.loadState(); } catch {}
+    }
+
+    // Expose timer so reset can cancel it
+    window.__ARA_AS_TIMER__ = _asTimer;
+  }
+
+  // Wire Reset Form button safely (once)
+  const resetBtn = $('#resetFormResults');
+  if (resetBtn && !resetBtn.__wired) {
+    resetBtn.__wired = true;
+    resetBtn.addEventListener('click', () => {
+      // 1) Tell autosave to back off
+      window.ARA_RESETTING = true;
+
+      // 2) Kill any pending debounced save
+      if (window.__ARA_AS_TIMER__) {
+        clearTimeout(window.__ARA_AS_TIMER__);
+        window.__ARA_AS_TIMER__ = null;
+      }
+
+      // 3) Preserve unit/mode if available
+      try {
+        const unit = window.inputUnit || 'm';
+        const mode = window.calcMode || 'manual';
+        localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit: unit, calcMode: mode }));
+      } catch {}
+
+      // 4) Hard reload without bfcache history restore
+      location.replace(location.href);
+    });
+  }
+})();
 
 </script>
 </body>
