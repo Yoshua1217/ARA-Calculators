@@ -35,7 +35,21 @@
     border-bottom:1px solid var(--border);
     padding:10px 14px;
   }
-  .topbar .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .topbar .row {
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:6px;
+   }
+
+  /* On wider screens, keep them side-by-side like before */
+@media (min-width: 720px){
+  .topbar .row{
+    flex-direction:row;
+    align-items:center;
+    justify-content:space-between;
+  }
+}
   .brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; }
 
   .inline-controls{
@@ -213,19 +227,19 @@
 
   /* Location accuracy chips */
   .acc-chip{ display:inline-block; padding:2px 8px; border-radius:999px; font-weight:600; }
- .acc-grey, .acc-pill.acc-grey {
+ .acc-grey, .acc-pill.acc-grey, .acc-dot.acc-grey {
   background:#46505e;      /* neutral grey */
   color:#e2e8f0;
   }
-  .acc-amber, .acc-pill.acc-amber {
+  .acc-amber, .acc-pill.acc-amber, .acc-dot.acc-amber {
     background:#ffb300;      /* bright golden yellow */
     color:#2b1a00;           /* dark text for contrast */
   }
-  .acc-green, .acc-pill.acc-green {
+  .acc-green, .acc-pill.acc-green, .acc-dot.acc-green {
     background:#1b5e2b; 
     color:#e6fff2; 
   }
-  .acc-red, .acc-pill.acc-red {
+  .acc-red, .acc-pill.acc-red, .acc-dot.acc-red {
     background:#7a2020; 
     color:#ffdede; 
   }
@@ -286,11 +300,11 @@
   border:1px solid rgba(0,0,0,.25);
   vertical-align:middle;
 }
-/* Dot colors re-use the same classes */
+/* Dot colors re-use the same classes
 .acc-dot.acc-grey  { background:#404957; }
 .acc-dot.acc-amber { background:#7a5a15; }
 .acc-dot.acc-green { background:#1b5e2b; }
-.acc-dot.acc-red   { background:#7a2020; }
+.acc-dot.acc-red   { background:#7a2020; } */
 
 </style>
 
@@ -307,7 +321,7 @@
       <span class="toggle-label">Units:</span>
       <button type="button" id="unit-m"  class="toggle-btn active" aria-pressed="true">m</button>
       <button type="button" id="unit-ft" class="toggle-btn" aria-pressed="false">ft</button>
-      <span class="toggle-label">Calc:</span>
+      <span class="toggle-label">Mode:</span>
       <button type="button" id="mode-manual" class="toggle-btn active" aria-pressed="true">Manual</button>
       <button type="button" id="mode-auto"   class="toggle-btn" aria-pressed="false">Auto</button>
 
@@ -1512,18 +1526,20 @@ if (best && Number.isFinite(best.acc)){
 
   function handleError(err) { console.warn('Geolocation error', err); }
 
-  function start() {
-    if (watchId != null) return;
-    var opts = { enableHighAccuracy: hiacc, maximumAge: 0, timeout: 20000 };
-    watchId = (navigator.geolocation && navigator.geolocation.watchPosition)
-      ? navigator.geolocation.watchPosition(handlePosition, handleError, opts)
-      : null;
-    setRunningUI(true);
+function start() {
+  if (watchId != null) return;
+  // Saver = allow cached fixes a bit & be more patient
+  var opts = {
+    enableHighAccuracy: hiacc,
+    maximumAge: saver ? 15000 : 0,     // up to 15s old when saving battery
+    timeout:    saver ? 30000 : 20000  // a little longer timeout
+  };
+  watchId = (navigator.geolocation && navigator.geolocation.watchPosition)
+    ? navigator.geolocation.watchPosition(handlePosition, handleError, opts)
+    : null;
+  setRunningUI(true);
+}
 
-    // running, but no fix yet
-paintGlobalAcc(NaN, { state: 'nofix' });
-
-  }
 
   function stop() {
     if (watchId != null && navigator.geolocation && navigator.geolocation.clearWatch) {
@@ -1560,8 +1576,49 @@ if (best && Number.isFinite(best.acc)){
   }
 
   if(bToggle) bToggle.addEventListener('click', function(){ if (watchId == null) start(); else stop(); });
-  if(tSaver)  tSaver.addEventListener('click',  function(){ saver=!saver; tSaver.classList.toggle('active',saver); tSaver.setAttribute('aria-pressed',String(saver)); });
-  if(tHiAcc)  tHiAcc.addEventListener('click',  function(){ hiacc=!hiacc; tHiAcc.classList.toggle('active',hiacc); tHiAcc.setAttribute('aria-pressed',String(hiacc)); if (watchId!=null){ stop(); start(); }});
+if(tHiAcc)  tHiAcc.addEventListener('click',  function(){
+  hiacc=!hiacc;
+  tHiAcc.classList.toggle('active',hiacc);
+  tHiAcc.setAttribute('aria-pressed',String(hiacc));
+
+  if (watchId!=null){ 
+    stop(); 
+    start(); 
+  }
+
+  // NEW: immediately reflect the best-known accuracy in the header pill
+  if (typeof paintGlobalAcc === 'function') {
+    if (best && Number.isFinite(best.acc)) {
+      paintGlobalAcc(best.acc, { state: 'ok' });
+    } else if (recent && Number.isFinite(recent.acc)) {
+      paintGlobalAcc(recent.acc, { state: 'ok' });
+    } else {
+      paintGlobalAcc(NaN, { state: 'off' }); // nothing saved yet
+    }
+  }
+});
+ if(tHiAcc)  tHiAcc.addEventListener('click',  function(){
+  hiacc=!hiacc;
+  tHiAcc.classList.toggle('active',hiacc);
+  tHiAcc.setAttribute('aria-pressed',String(hiacc));
+
+  if (watchId!=null){ 
+    stop(); 
+    start(); 
+  }
+
+  // NEW: immediately reflect the best-known accuracy in the header pill
+  if (typeof paintGlobalAcc === 'function') {
+    if (best && Number.isFinite(best.acc)) {
+      paintGlobalAcc(best.acc, { state: 'ok' });
+    } else if (recent && Number.isFinite(recent.acc)) {
+      paintGlobalAcc(recent.acc, { state: 'ok' });
+    } else {
+      paintGlobalAcc(NaN, { state: 'off' }); // nothing saved yet
+    }
+  }
+});
+
 
   if(bUseRecent) bUseRecent.addEventListener('click', function(){ applyFixToHidden(recent); setSaveChoice('recent'); });
   if(bUseBest)   bUseBest  .addEventListener('click', function(){ applyFixToHidden(best);   setSaveChoice('best'); });
