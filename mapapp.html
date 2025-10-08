@@ -42,8 +42,16 @@
     display:flex; 
     align-items:center; /* ensures all controls align */
     gap:8px;
-    flex-wrap: wrap; 
+    flex-wrap: nowrap;
+    white-space: nowrap;
   }
+
+  /* small-screen fit: slightly tighter paddings/fonts */
+@media (max-width: 420px){
+  .inline-controls{ gap:6px; }
+  .toggle-btn{ padding:6px 10px; }        /* was 8px 12px */
+  .acc-pill{ font-size:.85rem; padding:3px 8px; }
+}
   .toggle-btn{
     padding:8px 12px; border:1px solid var(--border); border-radius:999px;
     background:var(--panel); color:var(--text); cursor:pointer;
@@ -205,13 +213,35 @@
 
   /* Location accuracy chips */
   .acc-chip{ display:inline-block; padding:2px 8px; border-radius:999px; font-weight:600; }
-  .acc-grey { background:#404957; color:#d7dee8; }
- .acc-amber{
-  background:#ffb300;    /* bright golden yellow */
-  color:#2b1a00;         /* dark text for contrast */
-}
-  .acc-green{ background:#1b5e2b; color:#c6f1cf; }
+ .acc-grey, .acc-pill.acc-grey {
+  background:#46505e;      /* neutral grey */
+  color:#e2e8f0;
+  }
+  .acc-amber, .acc-pill.acc-amber {
+    background:#ffb300;      /* bright golden yellow */
+    color:#2b1a00;           /* dark text for contrast */
+  }
+  .acc-green, .acc-pill.acc-green {
+    background:#1b5e2b; 
+    color:#e6fff2; 
+  }
+  .acc-red, .acc-pill.acc-red {
+    background:#7a2020; 
+    color:#ffdede; 
+  }
 
+ .acc-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    line-height: 1;
+    margin-left: 8px;
+    vertical-align: middle;
+}
   /* Running state for the Start/Stop toggle */
   #loc-toggle.running{ background:#0b3b82; color:#fff; }
 
@@ -238,9 +268,6 @@
   #loc-map { height: 300px; border-radius: 12px; overflow: hidden; margin-top:12px; }
   .map-actions { display:flex; gap:8px; margin:8px 0 0; flex-wrap:wrap; }
 
-  /* Color we already use: grey/amber/green. Add red for "off". */
-.acc-red   { background:#7a2020; color:#ffdede; }
-
 /* Global small pill in the header */
 .acc-pill{
   display:inline-flex; align-items:center; justify-content:center;
@@ -249,24 +276,8 @@
   border:1px solid var(--border);
   background:#404957; color:#d7dee8;  /* default (grey) */
 }
-/* Let the color classes override base */
-.acc-pill.acc-grey  { background:#404957; color:#d7dee8; }
-.acc-pill.acc-amber { background:#7a5a15; color:#ffe2a8; }
-.acc-pill.acc-green { background:#1b5e2b; color:#c6f1cf; }
-.acc-pill.acc-red   { background:#7a2020; color:#ffdede; }
 
-  .acc-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.9rem;
-  padding: 4px 10px;
-  border-radius: 999px;
-  line-height: 1;
-  margin-left: 8px;
-  vertical-align: middle;
-}
+
 
 /* Tiny status dot next to the Location tab */
 .acc-dot{
