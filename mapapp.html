@@ -172,6 +172,28 @@
   }
   .clino-lock:active{ transform:scale(.98); }
 
+  /* Readout box (above the lock) */
+.clino-readout{
+  background:#cfe0ff;
+  color:#0b2250;
+  border:1px solid #5aa0ff;
+  border-radius:12px;
+  padding:10px 12px;
+  margin:10px 0 12px;
+}
+.clino-readout .angle{
+  font-weight:900;
+  font-size:2rem;
+  line-height:1.1;
+}
+.clino-readout .status{
+  color:#38507a;
+  font-size:.92rem;
+  margin-top:4px;
+}
+
+/* (keep your existing .clino-angle + .clino-lock styles as-is) */
+
   /* Results */
   .results{
     background:#0b1a2f; border:1px solid var(--border);
@@ -426,25 +448,31 @@
         </div>
 
         <!-- Clinometer -->
-        <div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
-          <div class="block">
-            <div class="btn-row" aria-label="Clinometer power">
-              <button type="button" id="clino-enable" class="toggle-btn small">Start</button>
-              <button type="button" id="clino-disable" class="toggle-btn small">Stop</button>
-            </div>
+      <div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
+  <div class="block">
+    <div class="btn-row" aria-label="Clinometer power">
+      <button type="button" id="clino-enable" class="toggle-btn small">Start</button>
+      <button type="button" id="clino-disable" class="toggle-btn small">Stop</button>
+    </div>
 
-            <div class="clino-wrap">
-              <!-- angle readout lives top-right; lock fills the space -->
-              <button type="button" id="clino-lock" class="clino-lock">Lock</button>
-            </div>
+    <!-- NEW: live angle + status box -->
+    <div class="clino-readout">
+      <div id="clino-live-angle" class="angle">—°</div>
+      <div id="clino-live-status" class="status">Sensor: idle · Cal: 0.0°</div>
+    </div>
 
-            <div class="clino-controls">
-              <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
-              <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
-            </div>
-            <div class="tiny" id="clino-status">Sensor: idle</div>
-          </div>
-        </div>
+    <div class="clino-wrap">
+      <!-- degree pill (top-right) stays -->
+      <button type="button" id="clino-lock" class="clino-lock">Lock</button>
+    </div>
+
+    <div class="clino-controls">
+      <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
+      <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
+    </div>
+    <div class="tiny" id="clino-status">Sensor: idle</div>
+  </div>
+</div>
       </div>
     </div>
 
@@ -777,6 +805,8 @@ if(hCalc) hCalc.onclick=calcHeight;
 var clinoOn=false, zeroOffsetRad=0, locked=false;
 var elEnable=byId('clino-enable'), elDisable=byId('clino-disable'), elAngle=byId('clino-angle');
 var elLock=byId('clino-lock'), elZero=byId('clino-zero'), elReset=byId('clino-reset'), elStatus=byId('clino-status');
+  var elReadAngle = byId('clino-live-angle');
+var elReadStatus = byId('clino-live-status');
 var toDeg=function(rad){ return rad*180/Math.PI; }, clamp=function(x,a,b){ return Math.min(b,Math.max(a,x)); };
 function buzz(ms){ if(ms===void 0) ms=30; if(navigator.vibrate){ try{navigator.vibrate(ms);}catch(e){} } }
 function requestIOSPermissionIfNeeded(){
@@ -791,43 +821,88 @@ var onOrientation=null;
 function startClinometer(){
   if(clinoOn) return; clinoOn=true;
   if(elAngle){ elAngle.style.display='inline-flex'; }
-  if(elStatus) elStatus.textContent='Sensor: running';
+  renderClinoStatus('running');            // ← NEW
   if(elEnable) elEnable.classList.add('active'); if(elDisable) elDisable.classList.remove('active');
   requestIOSPermissionIfNeeded().then(function(ok){
-    if(!ok){ if(elStatus) elStatus.textContent='Sensor: permission denied'; clinoOn=false; return; }
-    onOrientation=function(ev){ if(!clinoOn||locked) return; var deg=computePitchFromEvent(ev); if(elAngle) elAngle.textContent=fmt1(deg)+'°'; };
+    if(!ok){
+      clinoOn=false;
+      if(elStatus) elStatus.textContent='Sensor: permission denied';
+      renderClinoStatus('permission');     // ← NEW
+      return;
+    }
+    onOrientation=function(ev){
+      if(!clinoOn||locked) return;
+      var deg=computePitchFromEvent(ev);
+      if(elAngle) elAngle.textContent=fmt1(deg)+'°';
+      renderClinoReadout(deg);             // ← NEW
+    };
     window.addEventListener('deviceorientation', onOrientation, {passive:true});
   });
 }
 function stopClinometer(){
-  if(!clinoOn) return; clinoOn=false; if(elEnable) elEnable.classList.remove('active'); if(elDisable) elDisable.classList.add('active');
-  if(elStatus) elStatus.textContent='Sensor: stopped'; if(onOrientation){ window.removeEventListener('deviceorientation', onOrientation); onOrientation=null; }
+  if(!clinoOn) return; clinoOn=false;
+  if(elEnable) elEnable.classList.remove('active'); if(elDisable) elDisable.classList.add('active');
+  if(elStatus) elStatus.textContent='Sensor: stopped';
+  renderClinoStatus('stopped');            // ← NEW
+  if(onOrientation){ window.removeEventListener('deviceorientation', onOrientation); onOrientation=null; }
 }
+
 function lockAngle(){
   if(!locked){
-    locked=true; if(elLock) { elLock.textContent='Locked'; elLock.classList.add('active'); } buzz(40);
+    locked=true; if(elLock){ elLock.textContent='Locked'; elLock.classList.add('active'); } buzz(40);
     var txt=elAngle ? elAngle.textContent.replace('°','') : ''; var current=parseFloat(txt);
+    renderClinoReadout(current);           // ← NEW shows "(locked)"
     if(Number.isFinite(current) && hAngle){ hAngle.value=current.toFixed(1); if(calcMode==='auto') calcHeight(); }
   } else {
     locked=false; if(elLock){ elLock.textContent='Lock'; elLock.classList.remove('active'); }
+    var txt2=elAngle ? elAngle.textContent.replace('°','') : ''; var cur=parseFloat(txt2);
+    renderClinoReadout(cur);               // ← NEW removes "(locked)"
   }
 }
 function zeroCalibrate(){
   var txt=elAngle ? elAngle.textContent.replace('°','') : ''; var current=parseFloat(txt);
   if(!Number.isFinite(current)) return;
   zeroOffsetRad += (current*Math.PI/180);
-  if(elStatus) elStatus.textContent='Zeroed at current angle'; buzz(20);
+  if(elStatus) elStatus.textContent='Zeroed at current angle';
+  renderClinoStatus('running');            // ← NEW (refresh Cal:)
+  buzz(20);
 }
+
 function resetSensor(){
   locked=false; if(elLock){ elLock.textContent='Lock'; elLock.classList.remove('active'); }
-  zeroOffsetRad=0; if(elAngle) elAngle.textContent='—°'; if(elStatus) elStatus.textContent='Sensor: idle'; buzz(10);
+  zeroOffsetRad=0;
+  if(elAngle) elAngle.textContent='—°';
+  renderClinoReadout(NaN);                 // ← NEW
+  if(elStatus) elStatus.textContent='Sensor: idle';
+  renderClinoStatus('idle');               // ← NEW
+  buzz(10);
 }
+
+  function renderClinoReadout(deg){
+  var txt = Number.isFinite(deg) ? fmt1(deg)+'°' : '—°';
+  if (locked) txt += ' (locked)';
+  if (elReadAngle) elReadAngle.textContent = txt;
+}
+function renderClinoStatus(state){
+  // state: 'idle' | 'running' | 'stopped' | 'permission'
+  var label = (state==='running' ? 'Sensor: running' :
+              (state==='stopped' ? 'Sensor: stopped' :
+              (state==='permission' ? 'Sensor: permission denied' : 'Sensor: idle')));
+  var cal = fmt1(toDeg(zeroOffsetRad))+'°';
+  if (elReadStatus) elReadStatus.textContent = label+' · Cal: '+cal;
+  var angleText = elAngle ? elAngle.textContent.replace('°','') : '';
+  renderClinoReadout(parseFloat(angleText));
+}
+
 if(elEnable) elEnable.addEventListener('click', startClinometer);
 if(elDisable) elDisable.addEventListener('click', stopClinometer);
 if(elLock)   elLock.addEventListener('click', lockAngle);
 if(elZero)   elZero.addEventListener('click', zeroCalibrate);
 if(elReset)  elReset.addEventListener('click', resetSensor);
 document.addEventListener('visibilitychange', function(){ if(document.hidden) stopClinometer(); });
+  renderClinoStatus('idle');
+renderClinoReadout(NaN);
+
 
 /* ---------------- Canopy ---------------- */
 var spreadMajor=byId('spreadMajor'), spreadMinor=byId('spreadMinor'), spreadCalc=byId('spread-calc');
