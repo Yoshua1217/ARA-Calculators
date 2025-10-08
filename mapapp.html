@@ -4,98 +4,210 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ARA Field Tools</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root{
-    --bg:#0d1b2a; --bg-elev:#0f2236; --panel:#14253d; --panel-2:#172a47;
-    --text:#e8eef6; --muted:#a9b7c7; --accent:#2ea3ff; --accent-2:#4db2ff;
-    --ok:#1fa37a; --danger:#d93c3c; --border:#1f3553; --radius:14px; --gap:14px;
+    /* Dark blue palette */
+    --bg:#0d1b2a;
+    --bg-elev:#0f2236;
+    --panel:#14253d;
+    --panel-2:#172a47;
+    --text:#e8eef6;
+    --muted:#a9b7c7;
+    --accent:#2ea3ff;
+    --accent-2:#4db2ff;
+    --ok:#1fa37a;
+    --danger:#d93c3c;
+    --border:#1f3553;
+    --radius:14px;
+    --gap:14px;
   }
-  *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-
-  .topbar{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#0d1b2a,#0f2236);border-bottom:1px solid var(--border);padding:10px 14px}
-  .topbar .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .brand{font-weight:800;letter-spacing:.2px;font-size:1.05rem;color:#eaf3ff}
-  .inline-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .toggle-btn{padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:var(--panel);color:var(--text);cursor:pointer}
-  .toggle-btn.active{background:var(--accent);color:#001528;border-color:transparent;font-weight:700}
-  .toggle-label{color:var(--muted);font-size:.9rem;margin-left:6px}
-
-  .tabs{position:sticky;top:56px;z-index:45;background:var(--bg-elev);border-bottom:1px solid var(--border);overflow:auto;white-space:nowrap}
-  .tabs-inner{display:flex;gap:8px;padding:8px 12px}
-  .tab{padding:10px 14px;border-radius:999px;background:var(--panel);border:1px solid var(--border);color:var(--text);cursor:pointer;user-select:none}
-  .tab.active{background:var(--accent-2);color:#001528;border-color:transparent;font-weight:800}
-
-  .content{padding:14px;max-width:1000px;margin:0 auto}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:var(--gap)}
-  .card .block{padding:16px 18px}
-  h2{margin:0 0 8px;font-size:1.2rem}
-  h3{margin:0 0 8px;font-size:1.05rem;color:#d6e6ff}
-  label{display:block;font-weight:700;margin:10px 0 6px}
-
-  input[type="text"],input[type="number"],select,textarea{
-    width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);
-    background:var(--panel-2);color:var(--text);font-size:1rem;
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;letter-spacing:.01em;
+  *{ box-sizing:border-box }
+  html,body{ height:100% }
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text);
   }
-  input::placeholder,textarea::placeholder{font-family:inherit;color:#99a5b8}
-  textarea{min-height:88px;resize:none;overflow:hidden}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
-  @media (max-width:780px){.row{grid-template-columns:1fr}}
 
-  .note{background:#0b1a2f;border:1px solid #1f3553;color:#cfe0ff;border-radius:12px;padding:10px 12px}
+  /* Fixed header */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(180deg, #0d1b2a, #0f2236);
+    border-bottom:1px solid var(--border);
+    padding:10px 14px;
+  }
+  .topbar .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; }
 
-  .btn-row{display:flex;flex-wrap:wrap;gap:10px}
-  button,.btn{padding:10px 14px;border:0;border-radius:10px;cursor:pointer;color:#001528;background:var(--accent-2);font-weight:700}
-  .btn-ghost{background:var(--panel-2);color:var(--text);border:1px solid var(--border)}
-  .btn-dim{background:#0e1f3f;color:#cfe0ff;border:1px solid #1c366b}
-  .btn-danger{background:var(--danger);color:#fff}
-  .btn-ok{background:var(--ok);color:#00180f}
-  button[disabled]{opacity:.6;cursor:not-allowed}
+  .inline-controls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .toggle-btn{
+    padding:8px 12px; border:1px solid var(--border); border-radius:999px;
+    background:var(--panel); color:var(--text); cursor:pointer;
+  }
+  .toggle-btn.active{ background:var(--accent); color:#001528; border-color:transparent; font-weight:700; }
+  .toggle-label{ color:var(--muted); font-size:.9rem; margin-left:6px; }
 
-  /* universal calc-button behavior (light until calculated → dark) */
-  .calc-btn{background:var(--panel-2);color:var(--text);border:1px solid var(--border)}
-  .calc-btn.calculated{background:#0e1f3f;color:#cfe0ff;border-color:#1c366b}
+  /* Tabs */
+  .tabs{
+    position:sticky; top:56px; z-index:45;
+    background:var(--bg-elev); border-bottom:1px solid var(--border);
+    overflow:auto; white-space:nowrap;
+  }
+  .tabs-inner{ display:flex; gap:8px; padding:8px 12px; }
+  .tab{
+    padding:10px 14px; border-radius:999px;
+    background:var(--panel); border:1px solid var(--border); color:var(--text);
+    cursor:pointer; user-select:none;
+  }
+  .tab.active{ background:var(--accent-2); color:#001528; border-color:transparent; font-weight:800; }
 
+  /* Main content */
+  .content{ padding:14px; max-width:1000px; margin:0 auto; }
+  .card{
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:var(--radius); margin-bottom:var(--gap);
+  }
+  .card .block{ padding:16px 18px; }
+  h2{ margin:0 0 8px; font-size:1.2rem; }
+  h3{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
+  label{ display:block; font-weight:700; margin:10px 0 6px; }
+
+  /* Consistent system font for all entry fields */
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 1rem;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    letter-spacing: 0.01em;
+  }
+  input::placeholder, textarea::placeholder{ font-family:inherit; color:#99a5b8; }
+  textarea{ min-height:88px; resize:none; overflow:hidden; }
+
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); }
+  @media (max-width:780px){ .row{ grid-template-columns:1fr } }
+
+  .note{
+    background:#0b1a2f; border:1px solid #1f3553; color:#cfe0ff;
+    border-radius:12px; padding:10px 12px;
+  }
+
+  /* Buttons */
+  .btn-row{ display:flex; flex-wrap:wrap; gap:10px; }
+  button,.btn{
+    padding:10px 14px; border:0; border-radius:10px; cursor:pointer; color:#001528;
+    background:var(--accent-2); font-weight:700;
+  }
+  .btn-ghost{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
+  .btn-dim{ background:#113158; color:#bcd8ff; border:1px solid var(--border); }
+  .btn-danger{ background:var(--danger); color:#fff; }
+  .btn-ok{ background:var(--ok); color:#00180f; }
+  button[disabled]{ opacity:.6; cursor:not-allowed; }
+
+  /* “Selectable” (light by default, dark when chosen) */
+  .btn-select{
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-select.active{
+    background: var(--accent-2);
+    color: #001528;
+    border-color: transparent;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.06) inset;
+  }
+
+  /* Allow ghost buttons to darken when we set .active in JS */
+  .btn-ghost.active{
+    background: var(--accent-2);
+    color:#001528;
+    border-color: transparent;
+  }
+
+  /* Multi-trunk minor styles */
   .mt-label{font-weight:700}
   .badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#1b6cff;color:#001528;font-size:.75rem;vertical-align:middle}
   .badge.hide{display:none}
   .hint{font-size:.86rem;color:#ffc0c0;display:none}
   .hint.show{display:block}
 
-  .clino-wrap{position:relative;height:180px;border:1px solid var(--border);border-radius:12px;background:#0b1a2f;margin:10px 0;overflow:hidden;display:flex;align-items:center;justify-content:center}
-  .clino-lock{width:140px;height:140px;border-radius:999px;border:0;cursor:pointer;background:#cfe0ff;color:#001528;font-weight:900;font-size:1.15rem}
-  .clino-lock:active{transform:scale(.98)}
-  .clino-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
-  .clino-angle-chip{font-weight:800;font-size:1.05rem;color:#001528;background:#cfe0ff;padding:6px 10px;border-radius:8px;border:1px solid var(--border);min-width:68px;text-align:center}
+  /* Clinometer (angle pill + lock in light blue) */
+  .clino-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .clino-wrap{
+    position:relative; height:180px; border:1px solid var(--border);
+    border-radius:12px; background:#0b1a2f; margin:10px 0; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .clino-angle{
+    position:absolute; right:10px; top:10px;
+    font-weight:800; font-size:1.2rem;
+    color:#0a2540;
+    background:#cfe8ff;
+    padding:6px 10px; border-radius:8px;
+    border:1px solid #8fbaf0;
+  }
+  .clino-lock{
+    width:140px; height:140px; border-radius:999px; border:1px solid #8fbaf0;
+    cursor:pointer;
+    background:#cfe8ff; color:#0a2540; font-weight:900; font-size:1.15rem;
+    transition:transform .06s ease, filter .15s ease;
+  }
+  .clino-lock:active{ transform:scale(.98); filter: brightness(.95); }
 
-  .results{background:#0b1a2f;border:1px solid var(--border);border-radius:12px;padding:12px}
-  .results p{margin:6px 0}
-  .muted{color:var(--muted)} .tiny{font-size:.86rem;color:var(--muted)} .unit-tag{color:#cfe0ff;font-weight:800}
+  /* Results */
+  .results{
+    background:#0b1a2f; border:1px solid var(--border);
+    border-radius:12px; padding:12px;
+  }
+  .results p{ margin:6px 0 }
+  .muted{ color:var(--muted) }
+  .tiny{ font-size:.86rem; color:var(--muted) }
+  .unit-tag{ color:#cfe0ff; font-weight:800 }
 
-  .tabpane{display:none} .tabpane.active{display:block}
+  /* Tabs content visibility */
+  .tabpane{ display:none }
+  .tabpane.active{ display:block }
 
-  .acc-chip{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:600}
-  .acc-grey{background:#404957;color:#d7dee8}
-  .acc-amber{background:#7a5a15;color:#ffe2a8}
-  .acc-green{background:#1b5e2b;color:#c6f1cf}
+  /* Location accuracy chips */
+  .acc-chip{ display:inline-block; padding:2px 8px; border-radius:999px; font-weight:600; }
+  .acc-grey { background:#404957; color:#d7dee8; }
+  .acc-amber{ background:#7a5a15; color:#ffe2a8; }
+  .acc-green{ background:#1b5e2b; color:#c6f1cf; }
 
-  /* Start/Stop toggle visual */
-  #clino-toggle{background:var(--panel);color:var(--text);border:1px solid var(--border)}
-  #clino-toggle.running{background:#0b3b82;color:#fff;border-color:#0b3b82}
+  /* Running state for the Start/Stop toggle */
+  #loc-toggle.running{ background:#0b3b82; color:#fff; }
 
-  #resetFormResults{background:#0e1f3f;color:#fff;border:1px solid #1c366b;transition:background .2s,transform .1s}
-  #resetFormResults:hover{background:#c62828;border-color:#b71c1c;transform:scale(1.02)}
-  #resetFormResults:active{background:#8e0000;transform:scale(.98)}
+  /* Reset Form – red theme */
+  #resetFormResults{
+    background:#b71c1c;     /* red default */
+    color:#fff;
+    border:1px solid #7a1111;  /* dark red border */
+    transition: background .15s ease, transform .06s ease, border-color .15s ease;
+  }
+  #resetFormResults:hover{
+    background:#a01818;
+    border-color:#680e0e;
+    transform:scale(1.02);
+  }
+  #resetFormResults:active{
+    background:#790f0f;
+    border-color:#4f0a0a;
+    transform:scale(.98);
+  }
 
-  #loc-map{height:300px;border-radius:12px;overflow:hidden; margin-top:12px;} /* gap above the map */
-  .map-actions{display:flex;gap:8px;margin:8px 0 0;flex-wrap:wrap}
+  /* Map space (+ small gap above) */
+  #loc-map { height: 300px; border-radius: 12px; overflow: hidden; margin-top:12px; }
+  .map-actions { display:flex; gap:8px; margin:8px 0 0; flex-wrap:wrap; }
 </style>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
+<!-- Top bar -->
 <div class="topbar">
   <div class="row">
     <div class="brand">ARA Field Tools</div>
@@ -110,6 +222,7 @@
   </div>
 </div>
 
+<!-- Tabs -->
 <div class="tabs">
   <div class="tabs-inner">
     <div class="tab active" data-tab="gen">General</div>
@@ -121,190 +234,232 @@
   </div>
 </div>
 
+<!-- Content -->
 <div class="content">
+
   <!-- General -->
   <section id="pane-gen" class="tabpane active">
-    <div class="card"><div class="block">
-      <h2>General</h2>
-      <label for="treeName">Tree name</label>
-      <input id="treeName" type="text" placeholder="Tree name (e.g., Rossdale Poplar)">
-      <div class="row" style="margin-top:8px;">
-        <div>
-          <label for="species">Species</label>
-          <input id="species" type="text" placeholder="e.g., Populus balsamifera">
+    <div class="card">
+      <div class="block">
+        <h2>General</h2>
+
+        <label for="treeName">Tree name</label>
+        <input id="treeName" type="text" placeholder="Tree name (e.g., Rossdale Poplar)">
+
+        <div class="row" style="margin-top:8px;">
+          <div>
+            <label for="species">Species</label>
+            <input id="species" type="text" placeholder="e.g., Populus balsamifera">
+          </div>
+          <div>
+            <label for="condition">Condition</label>
+            <select id="condition">
+              <option value="">— optional —</option>
+              <option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option><option>Dead</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label for="condition">Condition</label>
-          <select id="condition">
-            <option value="">— optional —</option>
-            <option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option><option>Dead</option>
-          </select>
-        </div>
+
+        <label for="notes" style="margin-top:10px;">Notes</label>
+        <textarea id="notes" placeholder="Observations, access notes, landmarks, hazards…"></textarea>
+        <div class="tiny">Notes appear in the generated description.</div>
       </div>
-      <label for="notes" style="margin-top:10px;">Notes</label>
-      <textarea id="notes" placeholder="Observations, access notes, landmarks, hazards…"></textarea>
-      <div class="tiny">Notes appear in the generated description.</div>
-    </div></div>
+    </div>
   </section>
 
   <!-- Location -->
   <section id="pane-loc" class="tabpane">
-    <div class="card"><div class="block">
-      <h2>Location</h2>
+    <div class="card">
+      <div class="block">
+        <h2>Location</h2>
 
-      <div class="unit-toggle" style="flex-wrap:wrap;gap:8px;">
-        <button type="button" id="loc-toggle" class="btn-primary">Start tracking</button>
-        <button type="button" id="loc-hiacc"  class="toggle-btn" aria-pressed="false" title="Request highest accuracy">High accuracy</button>
-        <button type="button" id="loc-saver"  class="toggle-btn" aria-pressed="false" title="Reduce update rate to save battery">Battery saver</button>
+        <!-- Controls row -->
+        <div class="unit-toggle" style="flex-wrap:wrap; gap:8px;">
+          <button type="button" id="loc-toggle" class="btn-primary">Start tracking</button>
+          <button type="button" id="loc-hiacc"  class="toggle-btn" aria-pressed="false" title="Request highest accuracy">High accuracy</button>
+          <button type="button" id="loc-saver"  class="toggle-btn" aria-pressed="false" title="Reduce update rate to save battery">Battery saver</button>
+        </div>
+
+        <!-- Recent fix -->
+        <div class="results" style="margin-top:10px;">
+          <h3 style="margin:0 0 6px;">Recent fix</h3>
+          <p id="loc-recent-dd">DD: —</p>
+          <p>Altitude: <span id="loc-recent-alt">—</span></p>
+          <p>Accuracy: <span id="loc-recent-acc" class="acc-chip acc-grey">—</span></p>
+          <p>Age: <span id="loc-recent-age">—</span></p>
+          <p class="tiny" style="margin-top:6px;">Samples: <span id="loc-samples">0</span></p>
+        </div>
+
+        <!-- Best fix -->
+        <div class="results" style="margin-top:10px;">
+          <h3 style="margin:0 0 6px;">Best so far <span id="loc-best-badge" class="badge" style="display:none;">new</span></h3>
+          <p id="loc-best-dd">DD: —</p>
+          <p>Altitude: <span id="loc-best-alt">—</span></p>
+          <p>Accuracy: <span id="loc-best-acc" class="acc-chip acc-grey">—</span></p>
+          <p>Time: <span id="loc-best-time">—</span></p>
+        </div>
+
+        <!-- Action buttons BELOW the best panel -->
+        <div class="unit-toggle" style="margin-top:10px;">
+          <button type="button" id="loc-use-recent" class="btn-ghost btn-select" disabled>Save recent</button>
+          <button type="button" id="loc-use-best"   class="btn-ghost btn-select" disabled>Save best</button>
+          <button type="button" id="loc-reset"      class="btn-ghost danger">Reset location</button>
+        </div>
+
+        <!-- Hidden storage used by description -->
+        <input type="hidden" id="lat"><input type="hidden" id="lng"><input type="hidden" id="acc">
+        <span id="loc-saved-alt" data-val="" style="display:none;"></span>
+        <span id="loc-saved-ts" data-ts="" style="display:none;"></span>
+
+        <!-- Map + actions -->
+        <div id="loc-map"></div>
+        <div class="map-actions">
+          <button type="button" id="map-to-recent" class="btn-ghost">Recenter to recent</button>
+          <button type="button" id="map-to-best"   class="btn-ghost">Recenter to best</button>
+        </div>
       </div>
-
-      <div class="results" style="margin-top:10px;">
-        <h3 style="margin:0 0 6px;">Recent fix</h3>
-        <p id="loc-recent-dd">DD: —</p>
-        <p>Altitude: <span id="loc-recent-alt">—</span></p>
-        <p>Accuracy: <span id="loc-recent-acc" class="acc-chip acc-grey">—</span></p>
-        <p>Age: <span id="loc-recent-age">—</span></p>
-        <p class="tiny" style="margin-top:6px;">Samples: <span id="loc-samples">0</span></p>
-      </div>
-
-      <div class="results" style="margin-top:10px;">
-        <h3 style="margin:0 0 6px;">Best so far <span id="loc-best-badge" class="badge" style="display:none;">new</span></h3>
-        <p id="loc-best-dd">DD: —</p>
-        <p>Altitude: <span id="loc-best-alt">—</span></p>
-        <p>Accuracy: <span id="loc-best-acc" class="acc-chip acc-grey">—</span></p>
-        <p>Time: <span id="loc-best-time">—</span></p>
-      </div>
-
-      <div class="unit-toggle" style="margin-top:10px; margin-bottom:10px;">
-        <button type="button" id="loc-use-recent" class="btn-ghost" disabled>Save recent</button>
-        <button type="button" id="loc-use-best"   class="btn-ghost" disabled>Save best</button>
-        <button type="button" id="loc-reset"      class="btn-ghost btn-danger">Reset location</button>
-      </div>
-
-      <!-- hidden storage for description -->
-      <input type="hidden" id="lat"><input type="hidden" id="lng"><input type="hidden" id="acc">
-      <span id="loc-saved-alt" data-val="" style="display:none;"></span>
-      <span id="loc-saved-ts" data-ts="" style="display:none;"></span>
-
-      <div id="loc-map"></div>
-      <div class="map-actions">
-        <button type="button" id="map-to-recent" class="btn-ghost">Recenter to recent</button>
-        <button type="button" id="map-to-best"   class="btn-ghost">Recenter to best</button>
-      </div>
-    </div></div>
+    </div>
   </section>
 
   <!-- Circumference -->
   <section id="pane-circ" class="tabpane">
-    <div class="card"><div class="block">
-      <h2>Circumference</h2>
-      <label for="treeType">Tree type</label>
-      <select id="treeType">
-        <option value="">— select —</option>
-        <option>Single trunk tree</option>
-        <option>Multi trunked tree</option>
-        <option>Grove</option>
-        <option>Forest</option>
-        <option>Clonal aspen</option>
-      </select>
+    <div class="card">
+      <div class="block">
+        <h2>Circumference</h2>
 
-      <div id="single-circ-block" style="display:none;margin-top:10px;">
-        <label for="singleC">Circumference (<span class="unit-tag">m</span>)</label>
-        <input id="singleC" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 3.10">
-        <div class="btn-row" style="margin-top:8px;">
-          <button type="button" id="single-update" class="calc-btn">Update circumference</button>
-        </div>
-        <div class="tiny">Diameter is calculated automatically (D = C / π).</div>
-      </div>
+        <label for="treeType">Tree type</label>
+        <select id="treeType">
+          <option value="">— select —</option>
+          <option>Single trunk tree</option>
+          <option>Multi trunked tree</option>
+          <option>Grove</option>
+          <option>Forest</option>
+          <option>Clonal aspen</option>
+        </select>
 
-      <div id="multi-block" style="display:none;margin-top:10px;">
-        <div class="note" style="margin-bottom:10px;">
-          <strong>Multi-trunk entry:</strong> add each trunk’s <em>circumference</em>. * Largest trunk counts 100%, others 50%.
-        </div>
-        <div id="mt-list" style="display:flex;flex-direction:column;gap:10px;"></div>
-        <div class="btn-row" style="margin-top:8px;">
-          <button type="button" id="mt-add" class="btn-dim">Add trunk</button>
-          <button type="button" id="mt-remove" class="btn-dim">Remove last</button>
-          <button type="button" id="mt-sort" class="btn-ghost" title="Sort by diameter (desc)">Sort by diameter</button>
-          <button type="button" id="mt-calc" class="calc-btn">Calculate multi-trunk</button>
+        <!-- Single trunk -->
+        <div id="single-circ-block" style="display:none;margin-top:10px;">
+          <label for="singleC">Circumference (<span class="unit-tag">m</span>)</label>
+          <input id="singleC" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 3.10">
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="single-update" class="btn-dim">Update circumference</button>
+          </div>
+          <div class="tiny">Diameter is calculated automatically (D = C / π).</div>
         </div>
 
-        <label for="mt-bulk" style="margin-top:12px;">Bulk paste (numbers + repeaters)</label>
-        <textarea id="mt-bulk" placeholder="Examples:
+        <!-- Multi-trunk -->
+        <div id="multi-block" style="display:none;margin-top:10px;">
+          <div class="note" style="margin-bottom:10px;">
+            <strong>Multi-trunk entry:</strong> add each trunk’s <em>circumference</em>. * Largest trunk counts 100%, others 50%.
+          </div>
+          <div id="mt-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="mt-add"    class="btn-dim">Add trunk</button>
+            <button type="button" id="mt-remove" class="btn-dim">Remove last</button>
+            <button type="button" id="mt-sort"   class="btn-ghost" title="Sort by diameter (desc)">Sort by diameter</button>
+            <button type="button" id="mt-calc"   class="btn-dim">Calculate multi-trunk</button>
+          </div>
+
+          <label for="mt-bulk" style="margin-top:12px;">Bulk paste (numbers + repeaters)</label>
+          <textarea id="mt-bulk" class="mono" placeholder="Examples:
 1.72, 0.98 1.10
 12x0.78   (12 repeats of 0.78)
 3×1.50    (× also works)"></textarea>
-        <div class="tiny">
-          Uses current unit (<span class="unit-tag">m</span>). Ignores text; keeps positive numbers only.
-          Supports <strong>NxVALUE</strong> like <strong>12x0.78</strong> or <strong>3×1.5</strong>.
+          <div class="tiny">
+            Uses current unit (<span class="unit-tag">m</span>). Ignores text; keeps positive numbers only.
+            Supports <strong>NxVALUE</strong> like <strong>12x0.78</strong> or <strong>3×1.5</strong>.
+          </div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="mt-fill"  class="btn-ghost">Fill from bulk</button>
+            <button type="button" id="mt-clear" class="btn-ghost">Clear bulk</button>
+          </div>
+
+          <div id="mt-result" class="tiny" style="margin-top:8px;color:#cfe0ff;">—</div>
         </div>
-        <div class="btn-row" style="margin-top:8px;">
-          <button type="button" id="mt-fill" class="btn-ghost">Fill from bulk</button>
-          <button type="button" id="mt-clear" class="btn-ghost">Clear bulk</button>
-        </div>
-        <div id="mt-result" class="tiny" style="margin-top:8px;color:#cfe0ff;">—</div>
       </div>
-    </div></div>
+    </div>
   </section>
 
   <!-- Height -->
   <section id="pane-height" class="tabpane">
-    <div class="card"><div class="block">
-      <h2>Height</h2>
-      <label for="h-angle">Angle to top of the tree (degrees)</label>
-      <input id="h-angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5">
-      <div class="row">
-        <div><label for="h-dist">Distance to trunk (<span class="unit-tag">m</span>)</label>
-          <input id="h-dist" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 23.40"></div>
-        <div><label for="h-eye">Eye height (<span class="unit-tag">m</span>)</label>
-          <input id="h-eye" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 1.62"></div>
-      </div>
-      <div class="btn-row" style="margin-top:10px;">
-        <button type="button" id="h-calc" class="calc-btn">Calculate height</button>
-      </div>
+    <div class="card">
+      <div class="block">
+        <div class="clino-head">
+          <h2>Height</h2>
+          <div id="clino-angle" class="clino-angle">—°</div>
+        </div>
 
-      <div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
-        <div class="block">
-          <!-- merged toggle + angle chip -->
-          <div class="clino-header">
-            <button type="button" id="clino-toggle" class="toggle-btn">Start clinometer</button>
-            <div id="clino-angle" class="clino-angle-chip">—°</div>
-          </div>
+        <label for="h-angle">Angle to top of the tree (degrees)</label>
+        <input id="h-angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5">
 
-          <div class="clino-wrap">
-            <button type="button" id="clino-lock" class="clino-lock">Lock</button>
+        <div class="row">
+          <div>
+            <label for="h-dist">Distance to trunk (<span class="unit-tag">m</span>)</label>
+            <input id="h-dist" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 23.40">
           </div>
+          <div>
+            <label for="h-eye">Eye height (<span class="unit-tag">m</span>)</label>
+            <input id="h-eye" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 1.62">
+          </div>
+        </div>
 
-          <div class="clino-controls">
-            <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
-            <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
+        <div class="btn-row" style="margin-top:10px;">
+          <button type="button" id="h-calc" class="btn-dim">Calculate height</button>
+        </div>
+
+        <!-- Clinometer -->
+        <div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
+          <div class="block">
+            <div class="btn-row" aria-label="Clinometer power">
+              <button type="button" id="clino-enable" class="toggle-btn small">Start</button>
+              <button type="button" id="clino-disable" class="toggle-btn small">Stop</button>
+            </div>
+
+            <div class="clino-wrap">
+              <!-- angle readout lives top-right; lock fills the space -->
+              <button type="button" id="clino-lock" class="clino-lock">Lock</button>
+            </div>
+
+            <div class="clino-controls">
+              <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
+              <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
+            </div>
+            <div class="tiny" id="clino-status">Sensor: idle</div>
           </div>
-          <div class="tiny" id="clino-status">Sensor: idle</div>
         </div>
       </div>
+    </div>
 
-      <!-- live formula -->
-      <div class="results" id="height-formula" style="margin-top:12px;">
-        height = tan(—°) × — + — = —
+    <!-- Height formula shown under the clinometer card -->
+    <div class="card">
+      <div class="block">
+        <div class="tiny">
+          Height formula: <strong>height = tan(angle) × distance + eye height</strong>
+        </div>
       </div>
-
-    </div></div>
+    </div>
   </section>
 
   <!-- Canopy -->
   <section id="pane-canopy" class="tabpane">
-    <div class="card"><div class="block">
-      <h2>Canopy</h2>
-      <div class="row">
-        <div><label for="spreadMajor">Major axis (<span class="unit-tag">m</span>)</label>
-          <input id="spreadMajor" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 30.00"></div>
-        <div><label for="spreadMinor">Minor axis (<span class="unit-tag">m</span>)</label>
-          <input id="spreadMinor" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 20.00"></div>
+    <div class="card">
+      <div class="block">
+        <h2>Canopy</h2>
+        <div class="row">
+          <div>
+            <label for="spreadMajor">Major axis (<span class="unit-tag">m</span>)</label>
+            <input id="spreadMajor" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 30.00">
+          </div>
+          <div>
+            <label for="spreadMinor">Minor axis (<span class="unit-tag">m</span>)</label>
+            <input id="spreadMinor" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 20.00">
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:10px;">
+          <button type="button" id="spread-calc" class="btn-dim">Calculate canopy spread</button>
+        </div>
       </div>
-      <div class="btn-row" style="margin-top:10px;">
-        <button type="button" id="spread-calc" class="calc-btn">Calculate canopy spread</button>
-      </div>
-    </div></div>
+    </div>
   </section>
 
   <!-- Results -->
@@ -338,16 +493,19 @@
         </div>
         <div id="desc" class="results" style="margin-top:10px;">—</div>
         <div class="tiny" style="margin-top:6px;">Timestamp uses local 24-hour time.</div>
-        <button type="button" id="resetFormResults" class="btn-ghost btn-danger" title="Reset the form (does not clear the log)">Reset form</button>
+      </div>
+      <div class="block">
+        <button type="button" id="resetFormResults" class="btn-ghost danger" title="Reset the form (does not clear the log)">Reset form</button>
       </div>
     </div>
   </section>
+
 </div>
 
 <script>
+/* ---------------- Core helpers ---------------- */
 window.ARA_RESETTING = false;
 
-/* ===== helpers ===== */
 const PI=Math.PI, FT_PER_M=3.28084, M_PER_FT=0.3048;
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const tanDeg=d=>Math.tan(d*Math.PI/180);
@@ -355,19 +513,22 @@ const fmt2=x=>Number.isFinite(x)?x.toFixed(2):'—', fmt1=x=>Number.isFinite(x)?
 const toM=(v,u)=>u==='m'?v:v*M_PER_FT, mToFt=m=>m*FT_PER_M;
 const nowLocal24=()=>{const d=new Date();const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`};
 const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function toDMS(dec,isLat){ if(!Number.isFinite(dec))return'—'; const hemi=dec>=0?(isLat?'N':'E'):(isLat?'S':'W'); let v=Math.abs(dec); const d=Math.floor(v); v=(v-d)*60; const m=Math.floor(v); const s=(v-m)*60; return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`; }
 
-/* ===== state ===== */
+/* DMS helper for description */
+function toDMS(dec, isLat){
+  if (!Number.isFinite(dec)) return '—';
+  const hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
+  let v = Math.abs(dec);
+  const d = Math.floor(v); v = (v - d) * 60;
+  const m = Math.floor(v); const s = (v - m) * 60;
+  return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
+}
+
+/* ---------------- State ---------------- */
 let inputUnit='m', calcMode='manual';
 let lastSingle=null, lastMulti=null, lastHeight=null, lastSpread=null;
 
-/* calc buttons: helper to flip light↔dark */
-function setCalcState(btnEl, calculated){
-  if(!btnEl) return;
-  btnEl.classList.toggle('calculated', !!calculated);
-}
-
-/* ===== header ===== */
+/* ---------------- Header controls ---------------- */
 const unitM=$('#unit-m'), unitFt=$('#unit-ft');
 const modeManualBtn=$('#mode-manual'), modeAutoBtn=$('#mode-auto');
 const unitTags=$$('.unit-tag');
@@ -394,7 +555,7 @@ function setCalcMode(m){ calcMode=m; const man=m==='manual';
 }
 modeManualBtn.onclick=()=>setCalcMode('manual'); modeAutoBtn.onclick=()=>setCalcMode('auto');
 
-/* ===== tabs ===== */
+/* ---------------- Tabs ---------------- */
 $$('.tab').forEach(tab=>{
   tab.addEventListener('click', ()=>{
     $$('.tab').forEach(t=>t.classList.remove('active'));
@@ -403,18 +564,18 @@ $$('.tab').forEach(tab=>{
     $$('.tabpane').forEach(p=>p.classList.remove('active'));
     $('#pane-' + id).classList.add('active');
     window.scrollTo({top:0,behavior:'smooth'});
-    if(id==='loc') ensureMap(); // lazy-init map when Location tab opens
   });
 });
 
-/* ===== general ===== */
-const notesEl=$('#notes');
+/* ---------------- General ---------------- */
+const notesEl = $('#notes');
 function autoGrow(el){ el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
 notesEl.addEventListener('input',()=>autoGrow(notesEl));
 
-/* ===== circumference ===== */
+/* ---------------- Circumference ---------------- */
 const treeType=$('#treeType'), singleBlock=$('#single-circ-block'), singleC=$('#singleC');
-const singleUpdateBtn=$('#single-update');
+const singleUpdateBtn = $('#single-update');
+
 const mtBlock=$('#multi-block'), mtList=$('#mt-list'), mtAdd=$('#mt-add'), mtRemove=$('#mt-remove'),
       mtSort=$('#mt-sort'), mtCalc=$('#mt-calc'), mtBulk=$('#mt-bulk'), mtFill=$('#mt-fill'),
       mtClear=$('#mt-clear'), mtResult=$('#mt-result');
@@ -423,42 +584,57 @@ function updateTypeVisibility(){
   const t=treeType.value;
   singleBlock.style.display=(t==='Single trunk tree')?'':'none';
   mtBlock.style.display=(t==='Multi trunked tree')?'':'none';
-  if(t==='Multi trunked tree'&&mtList.children.length===0){ addMtRow(); addMtRow(); }
+  if (t==='Multi trunked tree' && mtList.children.length===0){ addMtRow(); addMtRow(); }
   updateResultsPanel(); updateCopyButtons();
 }
 treeType.onchange=updateTypeVisibility;
 
+/* Single trunk */
 function recomputeSingle(){
   const v=parseFloat(singleC.value);
-  if(Number.isFinite(v)&&v>0){ const cM=toM(v,inputUnit); const dM=cM/PI; lastSingle={cM,cFt:mToFt(cM),dM,dFt:mToFt(dM)}; setCalcState(singleUpdateBtn,true); }
-  else { lastSingle=null; setCalcState(singleUpdateBtn,false); }
+  if(Number.isFinite(v)&&v>0){ const cM=toM(v,inputUnit); const dM=cM/PI; lastSingle={cM,cFt:mToFt(cM),dM,dFt:mToFt(dM)}; }
+  else lastSingle=null;
   updateResultsPanel(); updateCopyButtons();
 }
-singleC.addEventListener('input',()=>{ setCalcState(singleUpdateBtn,false); if(calcMode==='auto') recomputeSingle(); });
+singleC.addEventListener('input',()=>{ if(calcMode==='auto') recomputeSingle(); });
 singleUpdateBtn.addEventListener('click',recomputeSingle);
 
+/* Multi-trunk block */
 const MT_MAX=60;
 function getMtRows(){ return Array.from(mtList.querySelectorAll('.mt-row')); }
 function renumberTrunks(){
-  const rows=getMtRows();
-  rows.forEach((row,i)=>{
-    const idx=i+1; row.dataset.index=String(idx);
-    const lab=row.querySelector('.mt-label'); const inp=row.querySelector('input[type="number"]');
-    if(inp) inp.id=`mt-${idx}`;
-    if(lab){ lab.htmlFor=`mt-${idx}`; lab.textContent=`Trunk ${idx} circumference (${inputUnit})`; }
+  const rows = getMtRows();
+  rows.forEach((row, i) => {
+    const idx = i + 1;
+    row.dataset.index = String(idx);
+    const lab = row.querySelector('.mt-label');
+    const inp = row.querySelector('input[type="number"]');
+    if (inp) inp.id = `mt-${idx}`;
+    if (lab) { lab.htmlFor = `mt-${idx}`; lab.textContent = `Trunk ${idx} circumference (${inputUnit})`; }
   });
 }
 function addMtRow(val=''){
-  if(getMtRows().length>=MT_MAX) return;
-  const row=document.createElement('div'); row.className='row mt-row'; row.style.gridTemplateColumns='1fr';
-  const top=document.createElement('div'); top.style.display='flex'; top.style.alignItems='center';
-  const lab=document.createElement('label'); lab.className='mt-label';
-  const badge=document.createElement('span'); badge.className='badge hide'; badge.textContent='Largest';
-  const inp=document.createElement('input'); inp.type='number'; inp.step='0.01'; inp.inputMode='decimal'; if(val!=='') inp.value=val;
+  if (getMtRows().length >= MT_MAX) return;
+  const row = document.createElement('div');
+  row.className = 'row mt-row';
+  row.style.gridTemplateColumns = '1fr';
+  const top = document.createElement('div');
+  top.style.display = 'flex'; top.style.alignItems = 'center';
+  const lab = document.createElement('label'); lab.className='mt-label';
+  const badge = document.createElement('span'); badge.className='badge hide'; badge.textContent='Largest';
+  const inp = document.createElement('input'); inp.type='number'; inp.step='0.01'; inp.inputMode='decimal'; if(val!=='') inp.value=val;
   const hint=document.createElement('div'); hint.className='hint';
-  top.appendChild(lab); top.appendChild(badge); row.appendChild(top); row.appendChild(inp); row.appendChild(hint); mtList.appendChild(row);
-  inp.addEventListener('input',()=>{ setCalcState(mtCalc,false); hint.classList.remove('show'); if(calcMode==='auto') calcMulti();});
+  top.appendChild(lab); top.appendChild(badge);
+  row.appendChild(top); row.appendChild(inp); row.appendChild(hint);
+  mtList.appendChild(row);
+  inp.addEventListener('input',()=>{hint.classList.remove('show'); if(calcMode==='auto') calcMulti();});
+  inp.addEventListener('blur',()=>maybeMtOutlierHint(parseFloat(inp.value),hint));
   renumberTrunks();
+}
+function removeMtRow(){
+  const rows=getMtRows(); if(rows.length<=1) return;
+  rows[rows.length-1].remove(); clearMtLargest(); renumberTrunks();
+  if(calcMode==='auto') calcMulti();
 }
 function maybeMtOutlierHint(val,h){
   if(!Number.isFinite(val)||val<=0){h.classList.remove('show');return}
@@ -467,23 +643,36 @@ function maybeMtOutlierHint(val,h){
   else{ if(val<0.66){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
     else if(val>40){h.textContent='Unusually large — check units?';h.classList.add('show');} else h.classList.remove('show');}
 }
-function removeMtRow(){ const rows=getMtRows(); if(rows.length<=1) return; rows[rows.length-1].remove(); clearMtLargest(); renumberTrunks(); setCalcState(mtCalc,false); if(calcMode==='auto') calcMulti(); }
 function parseMtBulk(text,limit=MT_MAX){
   const vals=[]; if(!text) return vals; let s=String(text).replace(/[×X]/g,'x');
   const repRE=/(\d+)\s*x\s*([-+]?\d*\.?\d+)/g;
   s=s.replace(repRE,(_,nStr,vStr)=>{const n=parseInt(nStr,10), v=parseFloat(vStr); if(Number.isFinite(n)&&n>0&&Number.isFinite(v)&&v>0){for(let i=0;i<n&&vals.length<limit;i++) vals.push(v);} return ' ';});
-  const singles=s.match(/[-+]?\d*\.?\d+/g)||[]; for(const m of singles){ if(vals.length>=limit) break; const v=parseFloat(m); if(Number.isFinite(v)&&v>0) vals.push(v); }
+  const singles=s.match(/[-+]?\d*\.?\d+/g)||[];
+  for(const m of singles){ if(vals.length>=limit) break; const v=parseFloat(m); if(Number.isFinite(v)&&v>0) vals.push(v); }
   return vals;
 }
-function mtFillFromBulk(){ const vals=parseMtBulk(mtBulk.value,MT_MAX); if(vals.length===0)return; mtList.innerHTML=''; vals.forEach(v=>addMtRow(v.toFixed(2))); mtResult.textContent='—'; setCalcState(mtCalc,false); if(calcMode==='auto') calcMulti(); renumberTrunks(); }
+function mtFillFromBulk(){
+  mtFill.classList.add('active');
+  const vals=parseMtBulk(mtBulk.value,MT_MAX);
+  if(vals.length===0){ setTimeout(()=>mtFill.classList.remove('active'), 500); return; }
+  mtList.innerHTML='';
+  vals.forEach(v=>addMtRow(v.toFixed(2)));
+  mtResult.textContent='—';
+  if(calcMode==='auto') calcMulti();
+  renumberTrunks();
+  setTimeout(()=>mtFill.classList.remove('active'), 900);
+}
 function mtSortByDiameter(){
   const rows=Array.from(mtList.children); const valid=[], invalid=[];
   rows.forEach(row=>{ const inp=row.querySelector('input[type="number"]'); const v=parseFloat(inp?.value);
-    if(Number.isFinite(v)&&v>0){ const cM=toM(v,inputUnit), dM=cM/PI; valid.push({row,dM}); } else invalid.push(row);});
+    if(Number.isFinite(v)&&v>0){const cM=toM(v,inputUnit), dM=cM/PI; valid.push({row,dM});} else invalid.push(row);
+  });
   if(valid.length<2){ renumberTrunks(); return; }
   valid.sort((a,b)=>b.dM-a.dM);
   const frag=document.createDocumentFragment(); valid.forEach(v=>frag.appendChild(v.row)); invalid.forEach(r=>frag.appendChild(r));
-  mtList.innerHTML=''; mtList.appendChild(frag); clearMtLargest(); renumberTrunks(); setCalcState(mtCalc,false); if(calcMode==='auto') calcMulti();
+  mtList.innerHTML=''; mtList.appendChild(frag);
+  clearMtLargest(); renumberTrunks();
+  if(calcMode==='auto') calcMulti();
 }
 function clearMtLargest(){ mtList.querySelectorAll('.mt-label').forEach(el=>el.classList.remove('largest-label')); mtList.querySelectorAll('.badge').forEach(b=>{b.classList.add('hide'); b.textContent='Largest';}); }
 function calcMulti(){
@@ -498,87 +687,92 @@ function calcMulti(){
   maxRows.forEach(r=>{const lab=r.row.querySelector('.mt-label'); const badge=r.row.querySelector('.badge'); lab?.classList.add('largest-label'); if(badge){badge.textContent=badgeText; badge.classList.remove('hide');}});
   lastMulti={ trunks:withD.map(t=>({index:t.idx,cM:t.cM,cFt:mToFt(t.cM),dM:t.dM,dFt:mToFt(t.dM),isLargest:Math.abs(t.dM-dmax)<eps})), dEqM,cEqM,dEqFt:mToFt(dEqM),cEqFt:mToFt(cEqM), cAvgM,cAvgFt:mToFt(cAvgM), tie:maxRows.length>1 };
   mtResult.textContent=`Calculated ${withD.length} trunk${withD.length>1?'s':''}.`;
-  setCalcState(mtCalc,true);
   updateResultsPanel(); updateCopyButtons();
 }
-mtAdd.onclick=()=>addMtRow(); mtRemove.onclick=()=>removeMtRow(); mtSort.onclick=mtSortByDiameter; mtCalc.onclick=calcMulti; mtFill.onclick=mtFillFromBulk; mtClear.onclick=()=>{ mtBulk.value=''; };
+mtAdd.onclick=()=>addMtRow();
+mtRemove.onclick=()=>removeMtRow();
+mtSort.onclick=mtSortByDiameter;
+mtCalc.onclick=calcMulti;
+mtFill.onclick=mtFillFromBulk;
+mtClear.onclick=()=>{ mtBulk.value=''; };
 
-/* ===== height ===== */
+/* ---------------- Height ---------------- */
 const hAngle=$('#h-angle'), hDist=$('#h-dist'), hEye=$('#h-eye'), hCalc=$('#h-calc');
-const heightFormula=$('#height-formula');
-
-function renderHeightFormula(){
-  const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value);
-  const aTxt=Number.isFinite(a)?fmt1(a)+'°':'—°';
-  const dTxt=Number.isFinite(d)?fmt2(toM(d,inputUnit))+' m':'—';
-  const eTxt=Number.isFinite(e)?fmt2(toM(e,inputUnit))+' m':'—';
-  const hTxt=(Number.isFinite(a)&&Number.isFinite(d)&&Number.isFinite(e))?fmt2(tanDeg(a)*toM(d,inputUnit)+toM(e,inputUnit))+' m':'—';
-  heightFormula.textContent = `height = tan(${aTxt}) × ${dTxt} + ${eTxt} = ${hTxt}`;
-}
-
 function calcHeight(){
   const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value);
-  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null; setCalcState(hCalc,false); updateResultsPanel(); updateCopyButtons(); renderHeightFormula(); return; }
+  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null; updateResultsPanel(); updateCopyButtons(); return; }
   const dM=toM(d,inputUnit), eM=toM(e,inputUnit); const hM=tanDeg(a)*dM+eM;
   lastHeight={hM,hFt:mToFt(hM),angleDeg:Number(a.toFixed(1)),dM,eM};
-  setCalcState(hCalc,true);
-  updateResultsPanel(); updateCopyButtons(); renderHeightFormula();
+  updateResultsPanel(); updateCopyButtons();
+  // Button feedback: dark after calculation
+  hCalc.classList.add('active');
+  setTimeout(()=>hCalc.classList.remove('active'), 900);
 }
 hCalc.onclick=calcHeight;
-[hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input',()=>{ setCalcState(hCalc,false); renderHeightFormula(); if(calcMode==='auto') calcHeight();}));
-renderHeightFormula();
+[hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input',()=>{ if(calcMode==='auto') calcHeight();}));
 
-/* ===== clinometer (merged toggle) ===== */
-let clinoOn=false, zeroOffsetRad=0, locked=false;
-const elToggle=$('#clino-toggle'), elAngle=$('#clino-angle'), elLock=$('#clino-lock'), elZero=$('#clino-zero'), elReset=$('#clino-reset'), elStatus=$('#clino-status');
+/* ---------------- Clinometer ---------------- */
+let clinoOn = false, zeroOffsetRad = 0, locked=false;
+const elEnable=$('#clino-enable'), elDisable=$('#clino-disable'), elAngle=$('#clino-angle');
+const elLock=$('#clino-lock'), elZero=$('#clino-zero'), elReset=$('#clino-reset'), elStatus=$('#clino-status');
 const toDeg=rad=>rad*180/Math.PI, clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 function buzz(ms=30){ if(navigator.vibrate) try{navigator.vibrate(ms);}catch{} }
-async function requestIOSPermissionIfNeeded(){ const any=window.DeviceOrientationEvent; if(!any) return true; if(typeof any.requestPermission==='function'){ try{const res=await any.requestPermission(); return res==='granted';}catch{return false;} } return true; }
+async function requestIOSPermissionIfNeeded(){
+  const any=window.DeviceOrientationEvent; if(!any) return true;
+  if(typeof any.requestPermission==='function'){ try{ const res=await any.requestPermission(); return res==='granted'; }catch{ return false; } }
+  return true;
+}
 function computePitchFromEvent(ev){ const beta=typeof ev.beta==='number'?ev.beta:0; const rad=(beta*Math.PI/180)-zeroOffsetRad; return clamp(toDeg(rad),-89.9,89.9); }
 let onOrientation=null;
-function setRunningUI(run){ if(run){ elToggle.textContent='Stop clinometer'; elToggle.classList.add('running'); elStatus.textContent='Sensor: running'; } else { elToggle.textContent='Start clinometer'; elToggle.classList.remove('running'); elStatus.textContent='Sensor: idle'; } }
 function startClinometer(){
-  if(clinoOn) return; clinoOn=true; setRunningUI(true);
+  if(clinoOn) return; clinoOn=true; elStatus.textContent='Sensor: running';
+  elEnable.classList.add('active'); elDisable.classList.remove('active');
   requestIOSPermissionIfNeeded().then(ok=>{
-    if(!ok){ elStatus.textContent='Sensor: permission denied'; clinoOn=false; setRunningUI(false); return; }
+    if(!ok){ elStatus.textContent='Sensor: permission denied'; clinoOn=false; return; }
     onOrientation=(ev)=>{ if(!clinoOn||locked) return; const deg=computePitchFromEvent(ev); elAngle.textContent=`${fmt1(deg)}°`; };
     window.addEventListener('deviceorientation', onOrientation, {passive:true});
   });
 }
 function stopClinometer(){
-  if(!clinoOn) return; clinoOn=false; setRunningUI(false);
-  if(onOrientation){ window.removeEventListener('deviceorientation', onOrientation); onOrientation=null; }
+  if(!clinoOn) return; clinoOn=false; elEnable.classList.remove('active'); elDisable.classList.add('active');
+  elStatus.textContent='Sensor: stopped'; if(onOrientation){ window.removeEventListener('deviceorientation', onOrientation); onOrientation=null; }
 }
-elToggle.addEventListener('click',()=>{ if(clinoOn) stopClinometer(); else startClinometer(); });
 function lockAngle(){
   if(!locked){
     locked=true; elLock.textContent='Locked'; elLock.classList.add('active'); buzz(40);
-    const current=parseFloat(elAngle.textContent.replace('°','')); if(Number.isFinite(current)){ hAngle.value=current.toFixed(1); setCalcState(hCalc,false); renderHeightFormula(); if(calcMode==='auto') calcHeight(); }
-  } else { locked=false; elLock.textContent='Lock'; elLock.classList.remove('active'); }
+    const txt=elAngle.textContent.replace('°',''); const current=parseFloat(txt);
+    if(Number.isFinite(current)){ hAngle.value=current.toFixed(1); if(calcMode==='auto') calcHeight(); }
+  } else {
+    locked=false; elLock.textContent='Lock'; elLock.classList.remove('active');
+  }
 }
-function zeroCalibrate(){ const current=parseFloat(elAngle.textContent.replace('°','')); if(!Number.isFinite(current)) return; zeroOffsetRad += (current*Math.PI/180); elStatus.textContent='Zeroed at current angle'; buzz(20); }
+function zeroCalibrate(){ const txt=elAngle.textContent.replace('°',''); const current=parseFloat(txt); if(!Number.isFinite(current)) return; zeroOffsetRad += (current*Math.PI/180); elStatus.textContent='Zeroed at current angle'; buzz(20); }
 function resetSensor(){ locked=false; elLock.textContent='Lock'; elLock.classList.remove('active'); zeroOffsetRad=0; elAngle.textContent='—°'; elStatus.textContent='Sensor: idle'; buzz(10); }
+elEnable?.addEventListener('click', startClinometer);
+elDisable?.addEventListener('click', stopClinometer);
 elLock?.addEventListener('click', lockAngle);
 elZero?.addEventListener('click', zeroCalibrate);
 elReset?.addEventListener('click', resetSensor);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stopClinometer(); });
 
-/* ===== canopy ===== */
+/* ---------------- Canopy ---------------- */
 const spreadMajor=$('#spreadMajor'), spreadMinor=$('#spreadMinor'), spreadCalc=$('#spread-calc');
 function calcSpread(){
   const maj=parseFloat(spreadMajor.value), min=parseFloat(spreadMinor.value);
   const haveMaj=Number.isFinite(maj), haveMin=Number.isFinite(min);
-  if(!haveMaj && !haveMin){ lastSpread=null; setCalcState(spreadCalc,false); updateResultsPanel(); updateCopyButtons(); return; }
+  if(!haveMaj && !haveMin){ lastSpread=null; updateResultsPanel(); updateCopyButtons(); return; }
   const mMaj=haveMaj?toM(maj,inputUnit):null, mMin=haveMin?toM(min,inputUnit):null;
   const meanM=((mMaj??0)+(mMin??0))/((haveMaj?1:0)+(haveMin?1:0));
   lastSpread={majorM:mMaj,minorM:mMin,meanM,meanFt:mToFt(meanM)};
-  setCalcState(spreadCalc,true);
   updateResultsPanel(); updateCopyButtons();
+  // Button feedback
+  spreadCalc.classList.add('active');
+  setTimeout(()=>spreadCalc.classList.remove('active'), 900);
 }
 spreadCalc.onclick=calcSpread;
-[spreadMajor,spreadMinor].forEach(inp=>inp.addEventListener('input',()=>{ setCalcState(spreadCalc,false); if(calcMode==='auto') calcSpread(); }));
+[spreadMajor,spreadMinor].forEach(inp=>inp.addEventListener('input',()=>{ if(calcMode==='auto') calcSpread(); }));
 
-/* ===== results & copy ===== */
+/* ---------------- Results & Quick Copy ---------------- */
 const resHeight=$('#res-height'), resEqCirc=$('#res-eqcirc'), resAvgCirc=$('#res-avgcirc'), resSpread=$('#res-spread');
 function updateResultsPanel(){
   resHeight.textContent = lastHeight ? `Height: ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)` : 'Height: —';
@@ -604,13 +798,16 @@ function updateCopyButtons(){
   else { copyEqCirc.disabled=true; copyAvgCirc.disabled=true; }
   copySpread.disabled=!(lastSpread&&Number.isFinite(lastSpread.meanM));
 }
-async function copyText(txt,btn){ try{ await navigator.clipboard.writeText(txt); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200);}catch{ const t=document.createElement('input'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200);} }
+async function copyText(txt,btn){
+  try{ await navigator.clipboard.writeText(txt); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200); }
+  catch{ const t=document.createElement('input'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200); }
+}
 copyHeight.onclick=()=>{ if(lastHeight) copyText(fmt2(lastHeight.hM),copyHeight); };
 copyEqCirc.onclick=()=>{ const t=treeType.value; if(t==='Multi trunked tree'&&lastMulti) copyText(fmt2(lastMulti.cEqM),copyEqCirc); if(t==='Single trunk tree'&&lastSingle) copyText(fmt2(lastSingle.cM),copyEqCirc); };
 copyAvgCirc.onclick=()=>{ if(lastMulti) copyText(fmt2(lastMulti.cAvgM),copyAvgCirc); };
 copySpread.onclick=()=>{ if(lastSpread) copyText(fmt2(lastSpread.meanM),copySpread); };
 
-/* ===== description ===== */
+/* ---------------- Description / Share ---------------- */
 const treeNameInput=$('#treeName'), species=$('#species'), condition=$('#condition');
 const descBox=$('#desc'), genDesc=$('#genDesc'), copyDesc=$('#copyDesc'), shareBtn=$('#shareLink'), emailBtn=$('#emailBtn');
 
@@ -690,20 +887,25 @@ function buildDescription(){
   }
 
   // Location (if saved)
-  const latIn=parseFloat($('#lat')?.value), lngIn=parseFloat($('#lng')?.value);
-  if(Number.isFinite(latIn)&&Number.isFinite(lngIn)){
-    const accIn=parseFloat($('#acc')?.value);
-    const altSaved=$('#loc-saved-alt')?.dataset?.val ? parseFloat($('#loc-saved-alt').dataset.val) : NaN;
-    const tsSaved =$('#loc-saved-ts') ?.dataset?.ts  ? parseInt($('#loc-saved-ts').dataset.ts,10) : NaN;
-    const locWhen=Number.isFinite(tsSaved)? new Date(tsSaved).toLocaleString() : nowLocal24();
+  const latIn = parseFloat($('#lat')?.value), lngIn = parseFloat($('#lng')?.value);
+  if (Number.isFinite(latIn) && Number.isFinite(lngIn)) {
+    const accIn = parseFloat($('#acc')?.value);
+    const altSaved = $('#loc-saved-alt')?.dataset?.val ? parseFloat($('#loc-saved-alt').dataset.val) : NaN;
+    const tsSaved  = $('#loc-saved-ts')?.dataset?.ts ? parseInt($('#loc-saved-ts').dataset.ts, 10) : NaN;
+    const locWhen = Number.isFinite(tsSaved) ? new Date(tsSaved).toLocaleString() : nowLocal24();
 
-    const loc=document.createElement('div'); loc.innerHTML='<p><strong>Location</strong></p>'; const ul=document.createElement('ul');
-    const li1=document.createElement('li'); li1.textContent=`DD: ${latIn.toFixed(6)}, ${lngIn.toFixed(6)}`; ul.appendChild(li1);
-    const li2=document.createElement('li'); li2.textContent=`DMS: ${toDMS(latIn,true)}  |  ${toDMS(lngIn,false)}`; ul.appendChild(li2);
-    const li3=document.createElement('li'); li3.textContent=`Altitude: ${Number.isFinite(altSaved)?altSaved.toFixed(1)+' m':'—'}`; ul.appendChild(li3);
-    const li4=document.createElement('li'); li4.textContent=`Accuracy: ${Number.isFinite(accIn)?'±'+accIn.toFixed(1)+' m':'±—'}`; ul.appendChild(li4);
-    const li5=document.createElement('li'); li5.textContent=`Recorded: ${locWhen}`; ul.appendChild(li5);
-    loc.appendChild(ul); parts.push(loc);
+    const loc = document.createElement('div');
+    loc.innerHTML = '<p><strong>Location</strong></p>';
+    const ul = document.createElement('ul');
+
+    const li1 = document.createElement('li'); li1.textContent = `DD: ${latIn.toFixed(6)}, ${lngIn.toFixed(6)}`; ul.appendChild(li1);
+    const li2 = document.createElement('li'); li2.textContent = `DMS: ${toDMS(latIn, true)}  |  ${toDMS(lngIn, false)}`; ul.appendChild(li2);
+    const li3 = document.createElement('li'); li3.textContent = `Altitude: ${Number.isFinite(altSaved) ? altSaved.toFixed(1) + ' m' : '—'}`; ul.appendChild(li3);
+    const li4 = document.createElement('li'); li4.textContent = `Accuracy: ${Number.isFinite(accIn) ? '±' + accIn.toFixed(1) + ' m' : '±—'}`; ul.appendChild(li4);
+    const li5 = document.createElement('li'); li5.textContent = `Recorded: ${locWhen}`; ul.appendChild(li5);
+
+    loc.appendChild(ul);
+    parts.push(loc);
   }
 
   const obs=document.createElement('div');
@@ -712,13 +914,11 @@ function buildDescription(){
 
   const out=document.createElement('div'); parts.forEach(p=>out.appendChild(p)); return out.innerHTML;
 }
-
 function extractPlainText(container){
   const items=Array.from(container.querySelectorAll('li')).map(li=>`- ${li.innerText}`);
   const paras=Array.from(container.querySelectorAll('p')).map(p=>p.innerText);
   return [...paras,...items].join('\n').trim();
 }
-
 function generateDescription(){
   ensureOnDemand();
   const html=buildDescription(); descBox.innerHTML=html||'—'; copyDesc.disabled=!html; shareBtn.disabled=!html;
@@ -741,7 +941,7 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
   const o=$('#copyDesc').textContent; $('#copyDesc').textContent='Copied ✓'; setTimeout(()=>$('#copyDesc').textContent=o,1200);
 };
 
-/* ===== Location tracker + Leaflet map ===== */
+/* ---------------- Location tracker + map (scoped) ---------------- */
 (() => {
   const el = s => document.querySelector(s);
 
@@ -751,187 +951,328 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
   const tSaver  = el('#loc-saver');
 
   // Recent readouts
-  const outDD = el('#loc-recent-dd'), outAcc=el('#loc-recent-acc'), outAlt=el('#loc-recent-alt'),
-        outAge=el('#loc-recent-age'), outCnt=el('#loc-samples');
+  const outDD   = el('#loc-recent-dd');
+  const outAcc  = el('#loc-recent-acc');
+  const outAlt  = el('#loc-recent-alt');
+  const outAge  = el('#loc-recent-age');
+  const outCnt  = el('#loc-samples');
 
   // Best readouts
-  const bestDD=el('#loc-best-dd'), bestAcc=el('#loc-best-acc'), bestAlt=el('#loc-best-alt'),
-        bestTime=el('#loc-best-time'), bestBadge=el('#loc-best-badge');
+  const bestDD    = el('#loc-best-dd');
+  const bestAcc   = el('#loc-best-acc');
+  const bestAlt   = el('#loc-best-alt');
+  const bestTime  = el('#loc-best-time');
+  const bestBadge = el('#loc-best-badge');
 
   // Action buttons
-  const bUseRecent=el('#loc-use-recent'), bUseBest=el('#loc-use-best'), bReset=el('#loc-reset');
+  const bUseRecent = el('#loc-use-recent');
+  const bUseBest   = el('#loc-use-best');
+  const bReset     = el('#loc-reset');
 
-  // Hidden for description
-  const latEl=el('#lat'), lngEl=el('#lng'), accEl=el('#acc'), savedAlt=el('#loc-saved-alt'), savedTs=el('#loc-saved-ts');
+  // Hidden storage for description
+  const latEl = el('#lat'), lngEl = el('#lng'), accEl = el('#acc');
+  const savedAlt = el('#loc-saved-alt');
+  const savedTs  = el('#loc-saved-ts');
 
-  // State
-  let watchId=null, saver=false, hiacc=false, lastTick=0, samples=0;
-  window.recent=null; window.best=null; // expose for map handlers below
-  let ageTimer=null;
+  // Map refs (scoped here so they can see recent/best)
+  let map, tiles, recentMarker, bestMarker, accCircle;
 
-  // Map state
-  let map=null, tiles=null, recentMarker=null, bestMarker=null, accCircle=null;
-
-  function ensureMap(){
-    const elMap=document.getElementById('loc-map'); if(!elMap) return null;
-    if(!elMap.style.height) elMap.style.height='300px';
-    if(map) { setTimeout(()=>map.invalidateSize(),0); return map; }
-    if(!window.L) return null;
-    map=L.map('loc-map',{zoomControl:true,attributionControl:false}).setView([53.5444,-113.4909],11);
-    tiles=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-    map.whenReady(()=>map.invalidateSize());
-    return map;
+  function ensureMap() {
+    if (map || !window.L) return;
+    map = L.map('loc-map', { zoomControl:true, attributionControl:false }).setView([53.5444, -113.4909], 11);
+    tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
   }
-  window.ensureMap = ensureMap; // used by other handlers
-
-  const fmt6=v=>Number.isFinite(v)?v.toFixed(6):'—';
-  const fmt1=v=>Number.isFinite(v)?v.toFixed(1):'—';
-  const accClass=m=>!Number.isFinite(m)?'acc-grey':(m>=20?'acc-grey':(m>5?'acc-amber':'acc-green'));
-
-  function setRunningUI(run){ if(run){ bToggle.textContent='Stop tracking'; bToggle.classList.add('running'); }else{ bToggle.textContent='Start tracking'; bToggle.classList.remove('running'); } }
-
-  function updateRecentOnMap(){
-    if(!map) return;
-    if(!window.recent){ if(recentMarker){map.removeLayer(recentMarker);recentMarker=null;} if(accCircle){map.removeLayer(accCircle);accCircle=null;} return; }
-    const latlng=[window.recent.lat,window.recent.lng];
-    if(!recentMarker){ recentMarker=L.marker(latlng,{title:'Recent fix'}).addTo(map); } else { recentMarker.setLatLng(latlng); }
-    if(Number.isFinite(window.recent.acc)){
-      if(!accCircle){ accCircle=L.circle(latlng,{radius:window.recent.acc,color:'#5aa0ff',fillColor:'#5aa0ff',fillOpacity:.15,weight:1}).addTo(map); }
-      else { accCircle.setLatLng(latlng).setRadius(window.recent.acc); }
-    } else if(accCircle){ map.removeLayer(accCircle); accCircle=null; }
+  function updateRecentOnMap() {
+    if (!map) return;
+    if (!recent) {
+      if (recentMarker) { map.removeLayer(recentMarker); recentMarker=null; }
+      if (accCircle)    { map.removeLayer(accCircle);    accCircle=null; }
+      return;
+    }
+    const latlng=[recent.lat,recent.lng];
+    if (!recentMarker) { recentMarker=L.marker(latlng,{title:'Recent fix'}).addTo(map); }
+    else { recentMarker.setLatLng(latlng); }
+    if (Number.isFinite(recent.acc)) {
+      if (!accCircle) {
+        accCircle=L.circle(latlng,{radius:recent.acc,color:'#5aa0ff',fillColor:'#5aa0ff',fillOpacity:0.15,weight:1}).addTo(map);
+      } else { accCircle.setLatLng(latlng).setRadius(recent.acc); }
+    } else if (accCircle) { map.removeLayer(accCircle); accCircle=null; }
   }
-  function updateBestOnMap(){
-    if(!map) return;
-    if(!window.best){ if(bestMarker){map.removeLayer(bestMarker); bestMarker=null;} return; }
-    const latlng=[window.best.lat,window.best.lng];
-    if(!bestMarker){ bestMarker=L.marker(latlng,{title:'Best fix'}).addTo(map); } else { bestMarker.setLatLng(latlng); }
+  function updateBestOnMap() {
+    if (!map) return;
+    if (!best) { if (bestMarker){ map.removeLayer(bestMarker); bestMarker=null; } return; }
+    const latlng=[best.lat,best.lng];
+    if (!bestMarker) { bestMarker=L.marker(latlng,{title:'Best fix'}).addTo(map); }
+    else { bestMarker.setLatLng(latlng); }
   }
   function fitToAny(){
     if(!map) return;
-    const pts=[]; if(window.recent) pts.push([window.recent.lat,window.recent.lng]); if(window.best) pts.push([window.best.lat,window.best.lng]);
-    if(!pts.length) return; if(pts.length===1) map.setView(pts[0],16); else map.fitBounds(pts,{padding:[24,24]});
+    const pts=[]; if(recent) pts.push([recent.lat,recent.lng]); if(best) pts.push([best.lat,best.lng]);
+    if(!pts.length) return;
+    if(pts.length===1) map.setView(pts[0],16); else map.fitBounds(pts,{padding:[24,24]});
   }
 
-  function updateRecentUI(){
-    if(window.recent){
-      outDD.textContent=`DD: ${fmt6(window.recent.lat)}, ${fmt6(window.recent.lng)}`;
-      outAcc.textContent=`${fmt1(window.recent.acc)} m`; outAcc.className=`acc-chip ${accClass(window.recent.acc)}`;
-      outAlt.textContent=Number.isFinite(window.recent.alt)?`${fmt1(window.recent.alt)} m`:'—';
-      if(ageTimer) clearInterval(ageTimer);
-      ageTimer=setInterval(()=>{ const secs=Math.max(0,(Date.now()-window.recent.ts)/1000); outAge.textContent=`${secs.toFixed(1)} s`; },200);
-      bUseRecent.disabled=false;
-    }else{
-      outDD.textContent='DD: —'; outAcc.textContent='—'; outAcc.className='acc-chip acc-grey'; outAlt.textContent='—'; outAge.textContent='—'; bUseRecent.disabled=true;
+  // State
+  let watchId = null;
+  let saver = false;
+  let hiacc = false;
+  let lastTick = 0;
+  let samples = 0;
+  let recent = null;         // {lat,lng,acc,alt,ts}
+  let best = null;           // minimal acc
+  let ageTimer = null;
+
+  // Utilities
+  const fmt6 = v => Number.isFinite(v) ? v.toFixed(6) : '—';
+  const fmt1 = v => Number.isFinite(v) ? v.toFixed(1) : '—';
+  const accClass = m =>
+    !Number.isFinite(m) ? 'acc-grey' :
+    m >= 20 ? 'acc-grey' : (m > 5 ? 'acc-amber' : 'acc-green');
+
+  function setRunningUI(running){
+    if (running){
+      bToggle.textContent = 'Stop tracking';
+      bToggle.classList.add('running');
+    } else {
+      bToggle.textContent = 'Start tracking';
+      bToggle.classList.remove('running');
     }
-    outCnt.textContent=String(samples);
-    ensureMap(); updateRecentOnMap(); fitToAny();
   }
 
-  function updateBestUI(isNew=false){
-    if(window.best){
-      bestDD.textContent=`DD: ${fmt6(window.best.lat)}, ${fmt6(window.best.lng)}`;
-      bestAcc.textContent=`${fmt1(window.best.acc)} m`; bestAcc.className=`acc-chip ${accClass(window.best.acc)}`;
-      bestAlt.textContent=Number.isFinite(window.best.alt)?`${fmt1(window.best.alt)} m`:'—'; bestAlt.dataset.val=Number.isFinite(window.best.alt)?String(window.best.alt):'';
-      bestTime.textContent=new Date(window.best.ts).toLocaleString(); bestTime.dataset.ts=String(window.best.ts);
-      bUseBest.disabled=false;
-    }else{
-      bestDD.textContent='DD: —'; bestAcc.textContent='—'; bestAcc.className='acc-chip acc-grey';
-      bestAlt.textContent='—'; bestAlt.dataset.val=''; bestTime.textContent='—'; bestTime.dataset.ts=''; bUseBest.disabled=true;
+  function setSaveChoice(which){ // 'recent' | 'best' | null
+    if (!bUseRecent || !bUseBest) return;
+    bUseRecent.classList.toggle('active', which==='recent');
+    bUseBest.classList.toggle('active', which==='best');
+  }
+
+  function updateRecentUI() {
+    if (recent){
+      outDD.textContent  = `DD: ${fmt6(recent.lat)}, ${fmt6(recent.lng)}`;
+      outAcc.textContent = `${fmt1(recent.acc)} m`;
+      outAcc.className   = `acc-chip ${accClass(recent.acc)}`;
+      outAlt.textContent = Number.isFinite(recent.alt) ? `${fmt1(recent.alt)} m` : '—';
+
+      if (ageTimer) clearInterval(ageTimer);
+      ageTimer = setInterval(() => {
+        const secs = Math.max(0, (Date.now() - recent.ts)/1000);
+        outAge.textContent = `${secs.toFixed(1)} s`;
+      }, 200);
+
+      bUseRecent.disabled = false;
+    } else {
+      outDD.textContent  = 'DD: —';
+      outAcc.textContent = '—';
+      outAcc.className   = 'acc-chip acc-grey';
+      outAlt.textContent = '—';
+      outAge.textContent = '—';
+      bUseRecent.disabled = true;
     }
-    const badge=bestBadge; if(badge){ badge.style.display=isNew?'':'none'; if(isNew) setTimeout(()=>badge.style.display='none',1200); }
-    ensureMap(); updateBestOnMap(); fitToAny();
+    outCnt.textContent = String(samples);
+
+    ensureMap();
+    updateRecentOnMap();
+    fitToAny();
   }
 
-  function handlePosition(pos){
-    const c=pos.coords; const now=Date.now(); if(saver && now-lastTick<1500) return; lastTick=now;
-    const fix={lat:c.latitude,lng:c.longitude,acc:c.accuracy,alt:Number.isFinite(c.altitude)?c.altitude:null,ts:now};
-    samples++; window.recent=fix; updateRecentUI();
-    if(!window.best || (Number.isFinite(fix.acc)&&fix.acc<window.best.acc)){ window.best={...fix}; updateBestUI(true); }
+  function updateBestUI(isNew=false) {
+    if (best){
+      bestDD.textContent  = `DD: ${fmt6(best.lat)}, ${fmt6(best.lng)}`;
+      bestAcc.textContent = `${fmt1(best.acc)} m`;
+      bestAcc.className   = `acc-chip ${accClass(best.acc)}`;
+      bestAlt.textContent = Number.isFinite(best.alt) ? `${fmt1(best.alt)} m` : '—';
+      bestAlt.dataset.val = Number.isFinite(best.alt) ? String(best.alt) : '';
+      bestTime.textContent= new Date(best.ts).toLocaleString();
+      bestTime.dataset.ts = String(best.ts);
+      bUseBest.disabled = false;
+    } else {
+      bestDD.textContent  = 'DD: —';
+      bestAcc.textContent = '—';
+      bestAcc.className   = 'acc-chip acc-grey';
+      bestAlt.textContent = '—';
+      bestAlt.dataset.val = '';
+      bestTime.textContent= '—';
+      bestTime.dataset.ts = '';
+      bUseBest.disabled = true;
+    }
+    bestBadge.style.display = isNew ? '' : 'none';
+    if (isNew) setTimeout(()=>bestBadge.style.display='none', 1200);
+
+    ensureMap();
+    updateBestOnMap();
+    fitToAny();
   }
-  function handleError(err){ console.warn('Geolocation error',err); }
 
-  function start(){ if(watchId!=null) return; const opts={enableHighAccuracy:hiacc,maximumAge:0,timeout:20000};
-    watchId=(navigator.geolocation&&navigator.geolocation.watchPosition)?navigator.geolocation.watchPosition(handlePosition,handleError,opts):null; setRunningUI(true); }
-  function stop(){ if(watchId!=null&&navigator.geolocation&&navigator.geolocation.clearWatch){ navigator.geolocation.clearWatch(watchId);} watchId=null; setRunningUI(false); }
-  function resetAll(){ stop(); samples=0; window.recent=null; window.best=null; if(ageTimer){clearInterval(ageTimer);ageTimer=null;} updateRecentUI(); updateBestUI(false); }
+  function handlePosition(pos) {
+    const c = pos.coords;
+    const now = Date.now();
+    if (saver && now - lastTick < 1500) return; // throttle in saver mode
+    lastTick = now;
 
-  function applyFixToHidden(fix){ if(!fix) return; $('#lat').value=fix.lat.toFixed(6); $('#lng').value=fix.lng.toFixed(6);
-    $('#acc').value=Number.isFinite(fix.acc)?fix.acc.toFixed(1):''; $('#loc-saved-alt').dataset.val=Number.isFinite(fix.alt)?String(fix.alt):''; $('#loc-saved-ts').dataset.ts=String(fix.ts||Date.now());
-    if(typeof saveState==='function') saveState(); }
+    const fix = {
+      lat: c.latitude,
+      lng: c.longitude,
+      acc: c.accuracy,
+      alt: Number.isFinite(c.altitude) ? c.altitude : null,
+      ts: now
+    };
+    samples++;
+    recent = fix;
+    updateRecentUI();
 
-  bToggle.addEventListener('click',()=>{ if(watchId==null) start(); else stop(); });
-  tSaver.addEventListener('click',()=>{ saver=!saver; tSaver.classList.toggle('active',saver); tSaver.setAttribute('aria-pressed',String(saver)); });
-  tHiAcc.addEventListener('click',()=>{ hiacc=!hiacc; tHiAcc.classList.toggle('active',hiacc); tHiAcc.setAttribute('aria-pressed',String(hiacc)); if(watchId!=null){ stop(); start(); } });
-  bUseRecent.addEventListener('click',()=>applyFixToHidden(window.recent));
-  bUseBest  .addEventListener('click',()=>applyFixToHidden(window.best));
-  bReset    .addEventListener('click',resetAll);
+    if (!best || (Number.isFinite(fix.acc) && fix.acc < best.acc)) {
+      best = {...fix};
+      updateBestUI(true);
+    }
+  }
 
-  // Initial UI
-  setRunningUI(false); updateRecentUI(); updateBestUI(false);
+  function handleError(err) { console.warn('Geolocation error', err); }
 
-  // Recenter buttons
-  document.querySelector('#map-to-recent')?.addEventListener('click',()=>{ ensureMap(); if(window.recent) map.setView([window.recent.lat,window.recent.lng],18); });
-  document.querySelector('#map-to-best')  ?.addEventListener('click',()=>{ ensureMap(); if(window.best)   map.setView([window.best.lat,window.best.lng],18); });
+  function start() {
+    if (watchId != null) return;
+    const opts = { enableHighAccuracy: hiacc, maximumAge: 0, timeout: 20000 };
+    watchId = (navigator.geolocation && navigator.geolocation.watchPosition)
+      ? navigator.geolocation.watchPosition(handlePosition, handleError, opts)
+      : null;
+    setRunningUI(true);
+  }
+
+  function stop() {
+    if (watchId != null && navigator.geolocation && navigator.geolocation.clearWatch) {
+      navigator.geolocation.clearWatch(watchId);
+    }
+    watchId = null;
+    setRunningUI(false);
+  }
+
+  function resetAll() {
+    stop();
+    samples = 0;
+    recent = null; best = null;
+    if (ageTimer) { clearInterval(ageTimer); ageTimer=null; }
+    updateRecentUI(); updateBestUI(false);
+  }
+
+  function applyFixToHidden(fix){
+    if (!fix) return;
+    latEl.value = fix.lat.toFixed(6);
+    lngEl.value = fix.lng.toFixed(6);
+    accEl.value = Number.isFinite(fix.acc) ? fix.acc.toFixed(1) : '';
+    savedAlt.dataset.val = Number.isFinite(fix.alt) ? String(fix.alt) : '';
+    savedTs.dataset.ts   = String(fix.ts || Date.now());
+    if (typeof saveState === 'function') saveState();
+  }
+
+  // Wire up controls
+  bToggle.addEventListener('click', () => { if (watchId == null) start(); else stop(); });
+  tSaver.addEventListener('click', () => { saver=!saver; tSaver.classList.toggle('active',saver); tSaver.setAttribute('aria-pressed',String(saver)); });
+  tHiAcc.addEventListener('click', () => { hiacc=!hiacc; tHiAcc.classList.toggle('active',hiacc); tHiAcc.setAttribute('aria-pressed',String(hiacc)); if (watchId!=null){ stop(); start(); }});
+
+  bUseRecent.addEventListener('click', () => { applyFixToHidden(recent); setSaveChoice('recent'); });
+  bUseBest  .addEventListener('click', () => { applyFixToHidden(best);   setSaveChoice('best'); });
+  bReset    .addEventListener('click', () => { resetAll(); setSaveChoice(null); });
+
+  // Map recenter buttons
+  $('#map-to-recent')?.addEventListener('click', ()=>{ ensureMap(); if (recent) map.setView([recent.lat, recent.lng], 18); });
+  $('#map-to-best')  ?.addEventListener('click', ()=>{ ensureMap(); if (best)   map.setView([best.lat, best.lng], 18); });
+
+  // Lazy init map on tab open
+  document.querySelector('[data-tab="loc"]')?.addEventListener('click', ensureMap);
+
+  // Initialize UI
+  setRunningUI(false);
+  updateRecentUI();
+  updateBestUI(false);
 })();
 
-/* ===== autosave ===== */
-const SAVE_KEY='ara_field_v1';
-function getFormState(){ return {
-  inputUnit, calcMode,
-  basics:{ name:$('#treeName')?.value||'', species:$('#species')?.value||'', condition:$('#condition')?.value||'', type:$('#treeType')?.value||'' },
-  singleC:$('#singleC')?.value||'',
-  multi:{ values: $$('#mt-list input[type="number"]').map(i=>i.value||'') },
-  height:{ angle:$('#h-angle')?.value||'', dist:$('#h-dist')?.value||'', eye:$('#h-eye')?.value||'' },
-  spread:{ major:$('#spreadMajor')?.value||'', minor:$('#spreadMinor')?.value||'' },
-  notes:$('#notes')?.value||'',
-  location:{ lat:$('#lat')?.value||'', lng:$('#lng')?.value||'', acc:$('#acc')?.value||'', alt:$('#loc-saved-alt')?.dataset?.val||'', ts:$('#loc-saved-ts')?.dataset?.ts||'' },
-  desc:($('#desc')?.innerHTML && $('#desc').innerHTML!=='—')?$('#desc').innerHTML:''
-};}
+/* ---------------- Autosave (core) ---------------- */
+const SAVE_KEY = 'ara_field_v1';
+
+function getFormState(){
+  return {
+    inputUnit, calcMode,
+    basics: {
+      name:      $('#treeName')?.value || '',
+      species:   $('#species')?.value || '',
+      condition: $('#condition')?.value || '',
+      type:      $('#treeType')?.value || ''
+    },
+    singleC: $('#singleC')?.value || '',
+    multi:   { values: $$('#mt-list input[type="number"]').map(i=>i.value || '') },
+    height:  { angle: $('#h-angle')?.value || '', dist:$('#h-dist')?.value || '', eye:$('#h-eye')?.value || '' },
+    spread:  { major: $('#spreadMajor')?.value || '', minor: $('#spreadMinor')?.value || '' },
+    notes:   $('#notes')?.value || '',
+    location: {
+      lat: $('#lat')?.value || '',
+      lng: $('#lng')?.value || '',
+      acc: $('#acc')?.value || '',
+      alt: $('#loc-saved-alt')?.dataset?.val || '',
+      ts:  $('#loc-saved-ts')?.dataset?.ts  || ''
+    },
+    desc: ($('#desc')?.innerHTML && $('#desc').innerHTML !== '—') ? $('#desc').innerHTML : ''
+  };
+}
 function setFormState(st){
   if(!st) return;
-  if(st.inputUnit && st.inputUnit!==inputUnit) setUnit(st.inputUnit);
-  if(st.calcMode  && st.calcMode !==calcMode)  setCalcMode(st.calcMode);
-  if($('#treeName'))$('#treeName').value=st.basics?.name??''; if($('#species'))$('#species').value=st.basics?.species??''; if($('#condition'))$('#condition').value=st.basics?.condition??''; if($('#treeType'))$('#treeType').value=st.basics?.type??'';
-  updateTypeVisibility();
-  if($('#singleC')) $('#singleC').value=st.singleC??'';
-  if($('#mt-list')){ const list=$('#mt-list'); list.innerHTML=''; const vals=Array.isArray(st.multi?.values)?st.multi.values:[]; if(vals.length){ vals.forEach(v=>addMtRow(v)); } else { addMtRow(); addMtRow(); } }
-  if($('#h-angle'))$('#h-angle').value=st.height?.angle??''; if($('#h-dist'))$('#h-dist').value=st.height?.dist??''; if($('#h-eye'))$('#h-eye').value=st.height?.eye??'';
-  if($('#spreadMajor'))$('#spreadMajor').value=st.spread?.major??''; if($('#spreadMinor'))$('#spreadMinor').value=st.spread?.minor??'';
-  if($('#notes')){ $('#notes').value=st.notes??''; autoGrow($('#notes')); }
-  if(st.location){ $('#lat').value=st.location.lat||''; $('#lng').value=st.location.lng||''; $('#acc').value=st.location.acc||''; $('#loc-saved-alt').dataset.val=st.location.alt||''; $('#loc-saved-ts').dataset.ts=st.location.ts||''; }
-  if($('#desc')){ if(st.desc){ $('#desc').innerHTML=st.desc; $('#copyDesc')?.removeAttribute('disabled'); $('#shareLink')?.removeAttribute('disabled'); } else { $('#desc').innerHTML='—'; $('#copyDesc')?.setAttribute('disabled',''); $('#shareLink')?.setAttribute('disabled',''); } }
-  updateResultsPanel(); updateCopyButtons(); renderHeightFormula();
-}
-function saveState(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(getFormState())); }catch(e){ console.warn('saveState failed',e);} }
-function loadState(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(!raw){ if($('#treeType')?.value==='Multi trunked tree' && $('#mt-list')?.children.length===0){ addMtRow(); addMtRow(); } return; } setFormState(JSON.parse(raw)); }catch(e){ console.warn('loadState failed',e);} }
+  if(st.inputUnit && st.inputUnit !== inputUnit) setUnit(st.inputUnit);
+  if(st.calcMode  && st.calcMode  !== calcMode)  setCalcMode(st.calcMode);
 
-let _asTimer=null;
-function autoSaveSoon(){ if(_asTimer) clearTimeout(_asTimer); _asTimer=setTimeout(()=>{ if(!window.ARA_RESETTING){ try{ saveState(); }catch{} } },250); }
-document.addEventListener('input',autoSaveSoon,{capture:true});
-document.addEventListener('change',autoSaveSoon,{capture:true});
-window.addEventListener('beforeunload',()=>{ if(!window.ARA_RESETTING){ try{ saveState(); }catch{} }});
+  if($('#treeName'))  $('#treeName').value  = st.basics?.name ?? '';
+  if($('#species'))   $('#species').value   = st.basics?.species ?? '';
+  if($('#condition')) $('#condition').value = st.basics?.condition ?? '';
+  if($('#treeType'))  $('#treeType').value  = st.basics?.type ?? '';
+  updateTypeVisibility();
+
+  if($('#singleC')) $('#singleC').value = st.singleC ?? '';
+  if($('#mt-list')){ const list=$('#mt-list'); list.innerHTML=''; const vals=Array.isArray(st.multi?.values)?st.multi.values:[]; if(vals.length){ vals.forEach(v=>addMtRow(v)); } else { addMtRow(); addMtRow(); } }
+
+  if($('#h-angle')) $('#h-angle').value = st.height?.angle ?? '';
+  if($('#h-dist'))  $('#h-dist').value  = st.height?.dist  ?? '';
+  if($('#h-eye'))   $('#h-eye').value   = st.height?.eye   ?? '';
+
+  if($('#spreadMajor')) $('#spreadMajor').value = st.spread?.major ?? '';
+  if($('#spreadMinor')) $('#spreadMinor').value = st.spread?.minor ?? '';
+
+  if($('#notes')) { $('#notes').value = st.notes ?? ''; autoGrow($('#notes')); }
+
+  if(st.location){
+    if($('#lat')) $('#lat').value = st.location.lat || '';
+    if($('#lng')) $('#lng').value = st.location.lng || '';
+    if($('#acc')) $('#acc').value = st.location.acc || '';
+    if($('#loc-saved-alt')) $('#loc-saved-alt').dataset.val = st.location.alt || '';
+    if($('#loc-saved-ts'))  $('#loc-saved-ts').dataset.ts  = st.location.ts  || '';
+  }
+
+  if($('#desc')){
+    if(st.desc){ $('#desc').innerHTML = st.desc; $('#copyDesc')?.removeAttribute('disabled'); $('#shareLink')?.removeAttribute('disabled'); }
+    else { $('#desc').innerHTML = '—'; $('#copyDesc')?.setAttribute('disabled',''); $('#shareLink')?.setAttribute('disabled',''); }
+  }
+
+  updateResultsPanel();
+  updateCopyButtons();
+}
+function saveState(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(getFormState())); }catch(e){ console.warn('saveState failed', e); } }
+function loadState(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(!raw){ if($('#treeType')?.value==='Multi trunked tree' && $('#mt-list')?.children.length===0){ addMtRow(); addMtRow(); } return; } setFormState(JSON.parse(raw)); }catch(e){ console.warn('loadState failed', e); } }
+
+let _asTimer = null;
+function autoSaveSoon(){
+  if (_asTimer) clearTimeout(_asTimer);
+  _asTimer = setTimeout(() => { if (!window.ARA_RESETTING) { try { saveState(); } catch {} } }, 250);
+}
+document.addEventListener('input',  autoSaveSoon, {capture:true});
+document.addEventListener('change', autoSaveSoon, {capture:true});
+window.addEventListener('beforeunload', () => { if (!window.ARA_RESETTING) { try { saveState(); } catch {} } });
 loadState();
 
-/* reset form */
-const resetFormResults=$('#resetFormResults');
-if(resetFormResults){
-  resetFormResults.onclick=()=>{ window.ARA_RESETTING=true; if(_asTimer) clearTimeout(_asTimer);
-    try{ localStorage.setItem(SAVE_KEY, JSON.stringify({inputUnit,calcMode})); }catch{}
+/* ---------------- Reset form (safe) ---------------- */
+const resetFormResults = $('#resetFormResults');
+if (resetFormResults){
+  resetFormResults.onclick = () => {
+    window.ARA_RESETTING = true;
+    if (_asTimer) clearTimeout(_asTimer);
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit, calcMode })); } catch {}
     location.replace(location.href);
   };
 }
-
-/* ===== Leaflet map helpers (global) ===== */
-let map, tiles, recentMarker, bestMarker, accCircle;
-function ensureMap() {
-  if (map || !window.L) return;
-  map = L.map('loc-map', { zoomControl: true, attributionControl: false })
-          .setView([53.5444, -113.4909], 11);
-  tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-}
-function updateRecentOnMap(){}
-function updateBestOnMap(){}
-function fitToAny(){}
 </script>
 </body>
 </html>
