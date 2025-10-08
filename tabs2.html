@@ -157,17 +157,25 @@ textarea::placeholder {
   .tabpane{ display:none }
   .tabpane.active{ display:block }
 
-/* Accuracy pill colors for Location tab */
+  /* Accuracy pill colors for location tab*/
 .acc-chip{
   display:inline-block; padding:2px 8px; border-radius:999px; font-weight:600;
 }
 .acc-grey { background:#404957; color:#d7dee8; }
 .acc-amber{ background:#7a5a15; color:#ffe2a8; }
 .acc-green{ background:#1b5e2b; color:#c6f1cf; }
-  
+
+/* Running state for the Start/Stop toggle */
+#loc-toggle.running{
+  background:#0b3b82; /* dark blue when running */
+  color:#fff;
+}
+
 </style>
 </head>
 <body>
+  
+
 
 <!-- Top bar (tree name removed) -->
 <div class="topbar">
@@ -230,16 +238,14 @@ textarea::placeholder {
   </section>
 
   <!-- Location  -->
-  <section id="pane-loc" class="tabpane">
+ <section id="pane-loc" class="tabpane">
   <div class="card">
     <div class="block">
       <h2>Location</h2>
 
-      <!-- Controls -->
+      <!-- Controls row -->
       <div class="unit-toggle" style="flex-wrap:wrap; gap:8px;">
-        <button type="button" id="loc-start" class="btn-primary">Start tracking</button>
-        <button type="button" id="loc-stop"  class="btn-ghost" disabled>Stop</button>
-
+        <button type="button" id="loc-toggle" class="btn-primary">Start tracking</button>
         <button type="button" id="loc-hiacc"  class="toggle-btn" aria-pressed="false" title="Request highest accuracy">High accuracy</button>
         <button type="button" id="loc-saver"  class="toggle-btn" aria-pressed="false" title="Reduce update rate to save battery">Battery saver</button>
       </div>
@@ -248,56 +254,38 @@ textarea::placeholder {
       <div class="results" style="margin-top:10px;">
         <h3 style="margin:0 0 6px;">Recent fix</h3>
         <p id="loc-recent-dd">DD: —</p>
-        <p id="loc-recent-dms">DMS: —</p>
+        <p>Altitude: <span id="loc-recent-alt">—</span></p>
         <p>
           Accuracy: <span id="loc-recent-acc" class="acc-chip acc-grey">—</span>
-          &nbsp; • &nbsp; Altitude: <span id="loc-recent-alt">—</span>
-          &nbsp; • &nbsp; Age: <span id="loc-recent-age">—</span>
-          &nbsp; • &nbsp; Samples: <span id="loc-samples">0</span>
         </p>
-        <canvas id="loc-spark" height="32" style="width:100%;display:block;"></canvas>
+        <p>Age: <span id="loc-recent-age">—</span></p>
+        <p class="tiny" style="margin-top:6px;">Samples: <span id="loc-samples">0</span></p>
       </div>
 
       <!-- Best fix -->
       <div class="results" style="margin-top:10px;">
         <h3 style="margin:0 0 6px;">Best so far <span id="loc-best-badge" class="badge" style="display:none;">new</span></h3>
         <p id="loc-best-dd">DD: —</p>
-        <p id="loc-best-dms">DMS: —</p>
+        <p>Altitude: <span id="loc-best-alt">—</span></p>
         <p>
           Accuracy: <span id="loc-best-acc" class="acc-chip acc-grey">—</span>
-          &nbsp; • &nbsp; Altitude: <span id="loc-best-alt">—</span>
-          &nbsp; • &nbsp; Time: <span id="loc-best-time">—</span>
         </p>
-
-        <div class="unit-toggle" style="margin-top:8px;">
-          <button type="button" id="loc-use-recent" class="btn-ghost" disabled>Use recent</button>
-          <button type="button" id="loc-use-best"   class="btn-ghost" disabled>Use best</button>
-          <button type="button" id="loc-reset"      class="btn-ghost danger">Reset location</button>
-        </div>
+        <p>Time: <span id="loc-best-time">—</span></p>
       </div>
 
-      <!-- Filled when “Use …” pressed (kept consistent with the rest of your app) -->
-      <div class="row" style="margin-top:10px;">
-        <div>
-          <label for="lat">Latitude (decimal degrees)</label>
-          <input id="lat" type="number" step="0.000001" inputmode="decimal" placeholder="e.g. 53.540900">
-        </div>
-        <div>
-          <label for="lng">Longitude (decimal degrees)</label>
-          <input id="lng" type="number" step="0.000001" inputmode="decimal" placeholder="e.g. -113.493800">
-        </div>
-      </div>
-      <div class="row" style="margin-top:10px;">
-        <div>
-          <label for="acc">Accuracy (m)</label>
-          <input id="acc" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 5">
-        </div>
-        <div>
-          <label for="loc-note">Source / notes (optional)</label>
-          <input id="loc-note" type="text" placeholder="e.g., field fix, WAAS on">
-        </div>
+      <!-- Action buttons BELOW the best panel -->
+      <div class="unit-toggle" style="margin-top:10px;">
+        <button type="button" id="loc-use-recent" class="btn-ghost" disabled>Save recent</button>
+        <button type="button" id="loc-use-best"   class="btn-ghost" disabled>Save best</button>
+        <button type="button" id="loc-reset"      class="btn-ghost danger">Reset location</button>
       </div>
 
+      <!-- Hidden storage for description/builders (keep IDs so existing code works) -->
+      <input type="hidden" id="lat">
+      <input type="hidden" id="lng">
+      <input type="hidden" id="acc">
+      <span id="loc-saved-alt" data-val="" style="display:none;"></span>
+      <span id="loc-saved-ts" data-ts="" style="display:none;"></span>
     </div>
   </div>
 </section>
@@ -438,7 +426,7 @@ textarea::placeholder {
   <section id="pane-results" class="tabpane">
     <div class="card">
       <div class="block">
-        <h2>Results</h2>
+        <h2>Final measurements</h2>
         <div class="results">
           <p id="res-height">Height: —</p>
           <p id="res-eqcirc">Equivalent / Entered circumference: —</p>
@@ -816,28 +804,19 @@ function buildDescription(){
     n.appendChild(ul); parts.push(n);
   }
 
-// ---- Location section (if lat/lng present) ----
+// ---- Location section (if saved) ----
 const latIn = parseFloat(document.querySelector('#lat')?.value);
 const lngIn = parseFloat(document.querySelector('#lng')?.value);
 if (Number.isFinite(latIn) && Number.isFinite(lngIn)) {
-  // Accuracy & altitude come from the form / tracker
   const accIn = parseFloat(document.querySelector('#acc')?.value);
-  // Prefer tracker’s “best” altitude/time if available
-  const bestAltEl  = document.querySelector('#loc-best-alt');
-  const bestTimeEl = document.querySelector('#loc-best-time');
-  const altBestVal = bestAltEl?.dataset?.val ? parseFloat(bestAltEl.dataset.val) : NaN;
-  const tsBestMs   = bestTimeEl?.dataset?.ts ? parseInt(bestTimeEl.dataset.ts, 10) : NaN;
+  const altSavedEl = document.querySelector('#loc-saved-alt');
+  const tsSavedEl  = document.querySelector('#loc-saved-ts');
 
-  const altTxt = Number.isFinite(altBestVal)
-    ? `${altBestVal.toFixed(1)} m`
-    : '—';
-  const accTxt = Number.isFinite(accIn)
-    ? `±${accIn.toFixed(1)} m`
-    : '±—';
+  const altSaved = altSavedEl?.dataset?.val ? parseFloat(altSavedEl.dataset.val) : NaN;
+  const tsSaved  = tsSavedEl?.dataset?.ts ? parseInt(tsSavedEl.dataset.ts, 10) : NaN;
 
-  // Time to display: use best fix time if we have it; otherwise, now
-  const locWhen = Number.isFinite(tsBestMs)
-    ? new Date(tsBestMs).toLocaleString()
+  const locWhen = Number.isFinite(tsSaved)
+    ? new Date(tsSaved).toLocaleString()
     : nowLocal24();
 
   const loc = document.createElement('div');
@@ -853,12 +832,16 @@ if (Number.isFinite(latIn) && Number.isFinite(lngIn)) {
   ul.appendChild(li2);
 
   const li3 = document.createElement('li');
-  li3.textContent = `Altitude: ${altTxt}, Accuracy: ${accTxt}`;
+  li3.textContent = `Altitude: ${Number.isFinite(altSaved) ? altSaved.toFixed(1) + ' m' : '—'}`;
   ul.appendChild(li3);
 
   const li4 = document.createElement('li');
-  li4.textContent = `Recorded: ${locWhen}`;
+  li4.textContent = `Accuracy: ${Number.isFinite(accIn) ? '±' + accIn.toFixed(1) + ' m' : '±—'}`;
   ul.appendChild(li4);
+
+  const li5 = document.createElement('li');
+  li5.textContent = `Recorded: ${locWhen}`;
+  ul.appendChild(li5);
 
   loc.appendChild(ul);
   parts.push(loc);
@@ -934,40 +917,39 @@ $('#shareLink').onclick=async ()=>{ const url=encodeShare(getFormState()); if(ur
   }catch(e){ console.warn('Init issue', e); }
 })();
 
-  // ------- Location Tracker -------
+
+// ------- Location Tracker (compact, no sparkline) -------
 (() => {
   const el = s => document.querySelector(s);
 
   // Controls
-  const bStart = el('#loc-start');
-  const bStop  = el('#loc-stop');
-  const tHiAcc = el('#loc-hiacc');
-  const tSaver = el('#loc-saver');
+  const bToggle = el('#loc-toggle');   // single Start/Stop button
+  const tHiAcc  = el('#loc-hiacc');
+  const tSaver  = el('#loc-saver');
 
   // Recent readouts
   const outDD   = el('#loc-recent-dd');
-  const outDMS  = el('#loc-recent-dms');
   const outAcc  = el('#loc-recent-acc');
   const outAlt  = el('#loc-recent-alt');
   const outAge  = el('#loc-recent-age');
   const outCnt  = el('#loc-samples');
-  const spark   = el('#loc-spark');
-  const ctx     = spark.getContext('2d');
 
   // Best readouts
-  const bestDD  = el('#loc-best-dd');
-  const bestDMS = el('#loc-best-dms');
-  const bestAcc = el('#loc-best-acc');
-  const bestAlt = el('#loc-best-alt');
-  const bestTime= el('#loc-best-time');
+  const bestDD    = el('#loc-best-dd');
+  const bestAcc   = el('#loc-best-acc');
+  const bestAlt   = el('#loc-best-alt');
+  const bestTime  = el('#loc-best-time');
   const bestBadge = el('#loc-best-badge');
 
+  // Action buttons
   const bUseRecent = el('#loc-use-recent');
   const bUseBest   = el('#loc-use-best');
   const bReset     = el('#loc-reset');
 
-  // Form targets to fill (existing inputs in your app)
+  // Hidden storage (keeps your description logic working)
   const latEl = el('#lat'), lngEl = el('#lng'), accEl = el('#acc');
+  const savedAlt = el('#loc-saved-alt');
+  const savedTs  = el('#loc-saved-ts');
 
   // State
   let watchId = null;
@@ -978,106 +960,88 @@ $('#shareLink').onclick=async ()=>{ const url=encodeShare(getFormState()); if(ur
   let recent = null;         // {lat,lng,acc,alt,ts}
   let best = null;           // minimal acc
   let ageTimer = null;
-  const accHistory = [];     // for sparkline (last 60 points)
 
   // Utilities
   const fmt6 = v => Number.isFinite(v) ? v.toFixed(6) : '—';
   const fmt1 = v => Number.isFinite(v) ? v.toFixed(1) : '—';
-  const dms = (dec, isLat) => {
-    const hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
-    let v = Math.abs(dec);
-    const d = Math.floor(v); v = (v-d)*60;
-    const m = Math.floor(v); const s = (v-m)*60;
-    return `${d}°${m}′${s.toFixed(2)}″ ${hemi}`;
-  };
   const accClass = m =>
     !Number.isFinite(m) ? 'acc-grey' :
     m >= 20 ? 'acc-grey' : (m > 5 ? 'acc-amber' : 'acc-green');
 
-  function drawSpark() {
-    const w = spark.clientWidth|0;
-    spark.width = w; // keep crisp
-    const h = spark.height;
-    ctx.clearRect(0,0,w,h);
-    if (accHistory.length < 2) return;
-
-    const max = Math.max(25, ...accHistory); // clamp to 25m for scale
-    const min = 0;
-    ctx.beginPath();
-    accHistory.forEach((a,i)=> {
-      const x = (i/(accHistory.length-1))*w;
-      const y = h - ((a-min)/(max-min))*h;
-      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    });
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#8fb8ff';
-    ctx.stroke();
+  function setRunningUI(running){
+    if (running){
+      bToggle.textContent = 'Stop tracking';
+      bToggle.classList.add('running');
+    } else {
+      bToggle.textContent = 'Start tracking';
+      bToggle.classList.remove('running');
+    }
   }
 
   function updateRecentUI() {
-    outDD.textContent  = recent ? `DD: ${fmt6(recent.lat)}, ${fmt6(recent.lng)}` : 'DD: —';
-    outDMS.textContent = recent ? `DMS: ${dms(recent.lat,true)}  |  ${dms(recent.lng,false)}` : 'DMS: —';
+    if (recent){
+      outDD.textContent  = `DD: ${fmt6(recent.lat)}, ${fmt6(recent.lng)}`;
+      outAcc.textContent = `${fmt1(recent.acc)} m`;
+      outAcc.className   = `acc-chip ${accClass(recent.acc)}`;
+      outAlt.textContent = Number.isFinite(recent.alt) ? `${fmt1(recent.alt)} m` : '—';
 
-    outAcc.textContent = recent ? `${fmt1(recent.acc)} m` : '—';
-    outAcc.className = `acc-chip ${accClass(recent?.acc)}`;
-    outAlt.textContent = recent && Number.isFinite(recent.alt) ? `${fmt1(recent.alt)} m` : '—';
+      if (ageTimer) clearInterval(ageTimer);
+      ageTimer = setInterval(() => {
+        const secs = Math.max(0, (Date.now() - recent.ts)/1000);
+        outAge.textContent = `${secs.toFixed(1)} s`;
+      }, 200);
 
+      bUseRecent.disabled = false;
+    } else {
+      outDD.textContent  = 'DD: —';
+      outAcc.textContent = '—';
+      outAcc.className   = 'acc-chip acc-grey';
+      outAlt.textContent = '—';
+      outAge.textContent = '—';
+      bUseRecent.disabled = true;
+    }
     outCnt.textContent = String(samples);
-
-    // Age timer (update every 0.2s)
-    if (ageTimer) clearInterval(ageTimer);
-    ageTimer = setInterval(() => {
-      if (!recent) { outAge.textContent='—'; return; }
-      const secs = Math.max(0, (Date.now() - recent.ts)/1000);
-      outAge.textContent = `${secs.toFixed(1)} s`;
-    }, 200);
-
-    drawSpark();
-
-    bUseRecent.disabled = !recent;
   }
 
   function updateBestUI(isNew=false) {
-    bestDD.textContent  = best ? `DD: ${fmt6(best.lat)}, ${fmt6(best.lng)}` : 'DD: —';
-    bestDMS.textContent = best ? `DMS: ${dms(best.lat,true)}  |  ${dms(best.lng,false)}` : 'DMS: —';
-    bestAcc.textContent = best ? `${fmt1(best.acc)} m` : '—';
-    bestAcc.className = `acc-chip ${accClass(best?.acc)}`;
-    bestAlt.textContent = best && Number.isFinite(best.alt) ? `${fmt1(best.alt)} m` : '—';
-    bestAlt.dataset.val = (best && Number.isFinite(best.alt)) ? String(best.alt) : '';
-   bestTime.textContent = best ? new Date(best.ts).toLocaleString() : '—';
-bestTime.dataset.ts  = best ? String(best.ts) : '';
-
-
+    if (best){
+      bestDD.textContent  = `DD: ${fmt6(best.lat)}, ${fmt6(best.lng)}`;
+      bestAcc.textContent = `${fmt1(best.acc)} m`;
+      bestAcc.className   = `acc-chip ${accClass(best.acc)}`;
+      bestAlt.textContent = Number.isFinite(best.alt) ? `${fmt1(best.alt)} m` : '—';
+      bestAlt.dataset.val = Number.isFinite(best.alt) ? String(best.alt) : '';
+      bestTime.textContent= new Date(best.ts).toLocaleString();
+      bestTime.dataset.ts = String(best.ts);
+      bUseBest.disabled = false;
+    } else {
+      bestDD.textContent  = 'DD: —';
+      bestAcc.textContent = '—';
+      bestAcc.className   = 'acc-chip acc-grey';
+      bestAlt.textContent = '—';
+      bestAlt.dataset.val = '';
+      bestTime.textContent= '—';
+      bestTime.dataset.ts = '';
+      bUseBest.disabled = true;
+    }
     bestBadge.style.display = isNew ? '' : 'none';
     if (isNew) setTimeout(()=>bestBadge.style.display='none', 1200);
-
-    bUseBest.disabled = !best;
-  }
-
-  function pushHistory(acc) {
-    if (!Number.isFinite(acc)) return;
-    accHistory.push(acc);
-    if (accHistory.length > 60) accHistory.shift();
   }
 
   function handlePosition(pos) {
     const c = pos.coords;
     const now = Date.now();
-
-    // Battery saver: throttle UI updates to 1.5s
-    if (saver && now - lastTick < 1500) return;
+    if (saver && now - lastTick < 1500) return; // throttle in saver mode
     lastTick = now;
 
     const fix = {
       lat: c.latitude,
       lng: c.longitude,
-      acc: c.accuracy,                 // meters
+      acc: c.accuracy,
       alt: Number.isFinite(c.altitude) ? c.altitude : null,
       ts: now
     };
     samples++;
     recent = fix;
-    pushHistory(fix.acc);
     updateRecentUI();
 
     if (!best || (Number.isFinite(fix.acc) && fix.acc < best.acc)) {
@@ -1088,7 +1052,7 @@ bestTime.dataset.ts  = best ? String(best.ts) : '';
 
   function handleError(err) {
     console.warn('Geolocation error', err);
-    // User can try again or type coords manually
+    // User can try again or just save what they have
   }
 
   function start() {
@@ -1097,10 +1061,7 @@ bestTime.dataset.ts  = best ? String(best.ts) : '';
     watchId = (navigator.geolocation && navigator.geolocation.watchPosition)
       ? navigator.geolocation.watchPosition(handlePosition, handleError, opts)
       : null;
-
-    bStart.disabled = true;  bStop.disabled = false;
-    tHiAcc.classList.toggle('active', hiacc);
-    tHiAcc.setAttribute('aria-pressed', String(hiacc));
+    setRunningUI(true);
   }
 
   function stop() {
@@ -1108,51 +1069,55 @@ bestTime.dataset.ts  = best ? String(best.ts) : '';
       navigator.geolocation.clearWatch(watchId);
     }
     watchId = null;
-    bStart.disabled = false; bStop.disabled = true;
+    setRunningUI(false);
   }
 
   function resetAll() {
     stop();
     samples = 0;
     recent = null; best = null;
-    accHistory.length = 0;
     if (ageTimer) { clearInterval(ageTimer); ageTimer=null; }
     updateRecentUI(); updateBestUI(false);
   }
 
-  // Apply to the form (fills your #lat/#lng/#acc)
-  function applyFix(fix) {
+  function applyFixToHidden(fix){
     if (!fix) return;
     latEl.value = fix.lat.toFixed(6);
     lngEl.value = fix.lng.toFixed(6);
     accEl.value = Number.isFinite(fix.acc) ? fix.acc.toFixed(1) : '';
-    if (typeof saveState === 'function') saveState(); // keep your autosave working
+    savedAlt.dataset.val = Number.isFinite(fix.alt) ? String(fix.alt) : '';
+    savedTs.dataset.ts   = String(fix.ts || Date.now());
+    if (typeof saveState === 'function') saveState();
   }
 
   // Wire up controls
-  bStart.addEventListener('click', start);
-  bStop .addEventListener('click', stop);
-  bReset.addEventListener('click', resetAll);
+  bToggle.addEventListener('click', () => {
+    if (watchId == null) start(); else stop();
+  });
 
   tSaver.addEventListener('click', () => {
     saver = !saver;
     tSaver.classList.toggle('active', saver);
     tSaver.setAttribute('aria-pressed', String(saver));
   });
+
   tHiAcc.addEventListener('click', () => {
     hiacc = !hiacc;
     tHiAcc.classList.toggle('active', hiacc);
     tHiAcc.setAttribute('aria-pressed', String(hiacc));
-    // If already running, restart with new option
     if (watchId != null) { stop(); start(); }
   });
 
-  bUseRecent.addEventListener('click', () => applyFix(recent));
-  bUseBest  .addEventListener('click', () => applyFix(best));
+  bUseRecent.addEventListener('click', () => applyFixToHidden(recent));
+  bUseBest  .addEventListener('click', () => applyFixToHidden(best));
+  bReset    .addEventListener('click', resetAll);
 
-  // Resize sparkline on window resize
-  window.addEventListener('resize', drawSpark);
+  // Initialize UI
+  setRunningUI(false);
+  updateRecentUI();
+  updateBestUI(false);
 })();
+
 
 </script>
 </body>
