@@ -454,10 +454,6 @@
         <!-- Clinometer -->
       <div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
   <div class="block">
-    <div class="btn-row" aria-label="Clinometer power">
-      <button type="button" id="clino-enable" class="toggle-btn small">Start</button>
-      <button type="button" id="clino-disable" class="toggle-btn small">Stop</button>
-    </div>
 
     <!-- NEW: live angle + status box -->
     <div class="clino-readout">
@@ -806,105 +802,138 @@ if(hCalc) hCalc.onclick=calcHeight;
 [hAngle,hDist,hEye].forEach(function(inp){ if(inp) inp.addEventListener('input',function(){ if(calcMode==='auto') calcHeight(); }); });
 
 /* ---------------- Clinometer ---------------- */
-var clinoOn=false, zeroOffsetRad=0, locked=false;
-var elEnable=byId('clino-enable'), elDisable=byId('clino-disable'), elAngle=byId('clino-angle');
-var elLock=byId('clino-lock'), elZero=byId('clino-zero'), elReset=byId('clino-reset'), elStatus=byId('clino-status');
-  var elReadAngle = byId('clino-live-angle');
-var elReadStatus = byId('clino-live-status');
-var toDeg=function(rad){ return rad*180/Math.PI; }, clamp=function(x,a,b){ return Math.min(b,Math.max(a,x)); };
-function buzz(ms){ if(ms===void 0) ms=30; if(navigator.vibrate){ try{navigator.vibrate(ms);}catch(e){} } }
-function requestIOSPermissionIfNeeded(){
-  var any=window.DeviceOrientationEvent; if(!any) return Promise.resolve(true);
-  if(typeof any.requestPermission==='function'){
-    return any.requestPermission().then(function(res){ return res==='granted'; }).catch(function(){ return false; });
+let clinoOn = false, zeroOffsetRad = 0, locked = false;
+const elLock = document.getElementById('clino-lock');
+const elAngle = document.getElementById('clino-angle');
+const elZero = document.getElementById('clino-zero');
+const elReset = document.getElementById('clino-reset');
+const elStatus = document.getElementById('clino-status');
+const elReadAngle = document.getElementById('clino-live-angle');
+const elReadStatus = document.getElementById('clino-live-status');
+
+const toDeg = rad => rad * 180 / Math.PI;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+function buzz(ms = 30) { if (navigator.vibrate) try { navigator.vibrate(ms); } catch {} }
+
+async function requestIOSPermissionIfNeeded() {
+  const any = window.DeviceOrientationEvent;
+  if (!any) return true;
+  if (typeof any.requestPermission === 'function') {
+    try { const res = await any.requestPermission(); return res === 'granted'; }
+    catch { return false; }
   }
-  return Promise.resolve(true);
-}
-function computePitchFromEvent(ev){ var beta=typeof ev.beta==='number'?ev.beta:0; var rad=(beta*Math.PI/180)-zeroOffsetRad; return clamp(toDeg(rad),-89.9,89.9); }
-var onOrientation=null;
-function startClinometer(){
-  if(clinoOn) return; clinoOn=true;
-  if(elAngle){ elAngle.style.display='inline-flex'; }
-  renderClinoStatus('running');            // ← NEW
-  if(elEnable) elEnable.classList.add('active'); if(elDisable) elDisable.classList.remove('active');
-  requestIOSPermissionIfNeeded().then(function(ok){
-    if(!ok){
-      clinoOn=false;
-      if(elStatus) elStatus.textContent='Sensor: permission denied';
-      renderClinoStatus('permission');     // ← NEW
-      return;
-    }
-    onOrientation=function(ev){
-      if(!clinoOn||locked) return;
-      var deg=computePitchFromEvent(ev);
-      if(elAngle) elAngle.textContent=fmt1(deg)+'°';
-      renderClinoReadout(deg);             // ← NEW
-    };
-    window.addEventListener('deviceorientation', onOrientation, {passive:true});
-  });
-}
-function stopClinometer(){
-  if(!clinoOn) return; clinoOn=false;
-  if(elEnable) elEnable.classList.remove('active'); if(elDisable) elDisable.classList.add('active');
-  if(elStatus) elStatus.textContent='Sensor: stopped';
-  renderClinoStatus('stopped');            // ← NEW
-  if(onOrientation){ window.removeEventListener('deviceorientation', onOrientation); onOrientation=null; }
+  return true;
 }
 
-function lockAngle(){
-  if(!locked){
-    locked=true; if(elLock){ elLock.textContent='Locked'; elLock.classList.add('active'); } buzz(40);
-    var txt=elAngle ? elAngle.textContent.replace('°','') : ''; var current=parseFloat(txt);
-    renderClinoReadout(current);           // ← NEW shows "(locked)"
-    if(Number.isFinite(current) && hAngle){ hAngle.value=current.toFixed(1); if(calcMode==='auto') calcHeight(); }
-  } else {
-    locked=false; if(elLock){ elLock.textContent='Lock'; elLock.classList.remove('active'); }
-    var txt2=elAngle ? elAngle.textContent.replace('°','') : ''; var cur=parseFloat(txt2);
-    renderClinoReadout(cur);               // ← NEW removes "(locked)"
-  }
+function computePitchFromEvent(ev) {
+  const beta = typeof ev.beta === 'number' ? ev.beta : 0;
+  const rad = (beta * Math.PI / 180) - zeroOffsetRad;
+  return clamp(toDeg(rad), -89.9, 89.9);
 }
-function zeroCalibrate(){
-  var txt=elAngle ? elAngle.textContent.replace('°','') : ''; var current=parseFloat(txt);
-  if(!Number.isFinite(current)) return;
-  zeroOffsetRad += (current*Math.PI/180);
-  if(elStatus) elStatus.textContent='Zeroed at current angle';
-  renderClinoStatus('running');            // ← NEW (refresh Cal:)
+
+function renderClinoReadout(deg) {
+  const txt = Number.isFinite(deg) ? fmt1(deg) + '°' : '—°';
+  if (locked) elReadAngle.textContent = txt + ' (locked)';
+  else elReadAngle.textContent = txt;
+}
+function renderClinoStatus(state) {
+  const label = (state === 'running' ? 'Sensor: running' :
+    (state === 'stopped' ? 'Sensor: stopped' :
+    (state === 'permission' ? 'Sensor: permission denied' : 'Sensor: idle')));
+  const cal = fmt1(toDeg(zeroOffsetRad)) + '°';
+  elReadStatus.textContent = label + ' · Cal: ' + cal;
+  renderClinoReadout(parseFloat(elAngle.textContent.replace('°', '')));
+}
+
+let onOrientation = null;
+function startClinometer() {
+  if (clinoOn) return;
+  clinoOn = true;
+  renderClinoStatus('running');
+  requestIOSPermissionIfNeeded().then(ok => {
+    if (!ok) {
+      elStatus.textContent = 'Sensor: permission denied';
+      renderClinoStatus('permission');
+      clinoOn = false;
+      return;
+    }
+    onOrientation = ev => {
+      if (!clinoOn || locked) return;
+      const deg = computePitchFromEvent(ev);
+      elAngle.textContent = fmt1(deg) + '°';
+      renderClinoReadout(deg);
+    };
+    window.addEventListener('deviceorientation', onOrientation, { passive: true });
+    elStatus.textContent = 'Sensor: running';
+  });
+}
+
+function stopClinometer() {
+  if (!clinoOn) return;
+  clinoOn = false;
+  if (onOrientation) window.removeEventListener('deviceorientation', onOrientation);
+  onOrientation = null;
+  renderClinoStatus('stopped');
+  elStatus.textContent = 'Sensor: stopped';
+}
+
+function zeroCalibrate() {
+  const txt = elAngle.textContent.replace('°', '');
+  const current = parseFloat(txt);
+  if (!Number.isFinite(current)) return;
+  zeroOffsetRad += (current * Math.PI / 180);
+  elStatus.textContent = 'Zeroed at current angle';
+  renderClinoStatus('running');
   buzz(20);
 }
 
-function resetSensor(){
-  locked=false; if(elLock){ elLock.textContent='Lock'; elLock.classList.remove('active'); }
-  zeroOffsetRad=0;
-  if(elAngle) elAngle.textContent='—°';
-  renderClinoReadout(NaN);                 // ← NEW
-  if(elStatus) elStatus.textContent='Sensor: idle';
-  renderClinoStatus('idle');               // ← NEW
+function resetSensor() {
+  locked = false;
+  zeroOffsetRad = 0;
+  elLock.textContent = 'Lock';
+  elLock.classList.remove('active');
+  elAngle.textContent = '—°';
+  elStatus.textContent = 'Sensor: idle';
+  renderClinoStatus('idle');
+  renderClinoReadout(NaN);
   buzz(10);
 }
 
-  function renderClinoReadout(deg){
-  var txt = Number.isFinite(deg) ? fmt1(deg)+'°' : '—°';
-  if (locked) txt += ' (locked)';
-  if (elReadAngle) elReadAngle.textContent = txt;
-}
-function renderClinoStatus(state){
-  // state: 'idle' | 'running' | 'stopped' | 'permission'
-  var label = (state==='running' ? 'Sensor: running' :
-              (state==='stopped' ? 'Sensor: stopped' :
-              (state==='permission' ? 'Sensor: permission denied' : 'Sensor: idle')));
-  var cal = fmt1(toDeg(zeroOffsetRad))+'°';
-  if (elReadStatus) elReadStatus.textContent = label+' · Cal: '+cal;
-  var angleText = elAngle ? elAngle.textContent.replace('°','') : '';
-  renderClinoReadout(parseFloat(angleText));
+function toggleLock() {
+  // First click ever → start clinometer
+  if (!clinoOn) {
+    startClinometer();
+    buzz(50);
+    return;
+  }
+
+  // After it’s running → toggle lock/unlock
+  if (!locked) {
+    locked = true;
+    elLock.textContent = 'Locked';
+    elLock.classList.add('active');
+    const txt = elAngle.textContent.replace('°', '');
+    const current = parseFloat(txt);
+    if (Number.isFinite(current)) {
+      document.getElementById('h-angle').value = current.toFixed(1);
+      if (calcMode === 'auto') calcHeight();
+    }
+    renderClinoReadout(current);
+    buzz(40);
+  } else {
+    locked = false;
+    elLock.textContent = 'Lock';
+    elLock.classList.remove('active');
+    renderClinoReadout(parseFloat(elAngle.textContent.replace('°', '')));
+  }
 }
 
-if(elEnable) elEnable.addEventListener('click', startClinometer);
-if(elDisable) elDisable.addEventListener('click', stopClinometer);
-if(elLock)   elLock.addEventListener('click', lockAngle);
-if(elZero)   elZero.addEventListener('click', zeroCalibrate);
-if(elReset)  elReset.addEventListener('click', resetSensor);
-document.addEventListener('visibilitychange', function(){ if(document.hidden) stopClinometer(); });
-  renderClinoStatus('idle');
+elLock.addEventListener('click', toggleLock);
+elZero.addEventListener('click', zeroCalibrate);
+elReset.addEventListener('click', resetSensor);
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopClinometer(); });
+
+renderClinoStatus('idle');
 renderClinoReadout(NaN);
 
 
