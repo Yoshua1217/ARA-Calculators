@@ -229,6 +229,37 @@
   /* Map space (+ small gap above) */
   #loc-map { height: 300px; border-radius: 12px; overflow: hidden; margin-top:12px; }
   .map-actions { display:flex; gap:8px; margin:8px 0 0; flex-wrap:wrap; }
+
+  /* Color we already use: grey/amber/green. Add red for "off". */
+.acc-red   { background:#7a2020; color:#ffdede; }
+
+/* Global small pill in the header */
+.acc-pill{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:6px 10px; margin-left:8px;
+  border-radius:999px; font-weight:800; font-size:.95rem;
+  border:1px solid var(--border);
+  background:#404957; color:#d7dee8;  /* default (grey) */
+}
+/* Let the color classes override base */
+.acc-pill.acc-grey  { background:#404957; color:#d7dee8; }
+.acc-pill.acc-amber { background:#7a5a15; color:#ffe2a8; }
+.acc-pill.acc-green { background:#1b5e2b; color:#c6f1cf; }
+.acc-pill.acc-red   { background:#7a2020; color:#ffdede; }
+
+/* Tiny status dot next to the Location tab */
+.acc-dot{
+  display:inline-block; width:10px; height:10px; margin-left:6px;
+  border-radius:50%;
+  border:1px solid rgba(0,0,0,.25);
+  vertical-align:middle;
+}
+/* Dot colors re-use the same classes */
+.acc-dot.acc-grey  { background:#404957; }
+.acc-dot.acc-amber { background:#7a5a15; }
+.acc-dot.acc-green { background:#1b5e2b; }
+.acc-dot.acc-red   { background:#7a2020; }
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -247,6 +278,15 @@
       <span class="toggle-label">Calc:</span>
       <button type="button" id="mode-manual" class="toggle-btn active" aria-pressed="true">Manual</button>
       <button type="button" id="mode-auto"   class="toggle-btn" aria-pressed="false">Auto</button>
+
+      <!-- Global best accuracy pill -->
+<span id="acc-pill-global"
+      class="acc-pill acc-red"
+      aria-live="polite"
+      title="Best location accuracy">
+  ±— m
+</span>
+
     </div>
   </div>
 </div>
@@ -255,7 +295,10 @@
 <div class="tabs">
   <div class="tabs-inner">
     <div class="tab active" data-tab="gen">General</div>
-    <div class="tab" data-tab="loc">Location</div>
+<div class="tab" data-tab="loc">
+  Location
+  <span id="loc-tab-dot" class="acc-dot acc-red" title="Location accuracy status"></span>
+</div>
     <div class="tab" data-tab="circ">Circumference</div>
     <div class="tab" data-tab="height">Height</div>
     <div class="tab" data-tab="canopy">Canopy</div>
@@ -328,6 +371,7 @@
           <p>Time: <span id="loc-best-time">—</span></p>
         </div>
 
+        
         <!-- Action buttons BELOW the best panel -->
         <div class="unit-toggle" style="margin-top:10px;">
           <button type="button" id="loc-use-recent" class="btn-ghost btn-select" disabled>Save recent</button>
@@ -1173,6 +1217,54 @@ if(copyDesc) copyDesc.onclick=function(){
   copyText(text, copyDesc);
 };
 
+  /* ---------- Global accuracy indicator helpers ---------- */
+function accBucket(m){
+  // returns one of: 'red' (off), 'grey' (low), 'amber' (medium), 'green' (high)
+  if(!Number.isFinite(m)) return 'grey';           // use grey for "no fix yet" while running
+  if(m <= 5)   return 'green';
+  if(m < 20)   return 'amber';
+  return 'grey';
+}
+function paintGlobalAcc(accMeters, opts){
+  // opts: { state: 'off'|'nofix'|'ok' }  (controls red vs bucket color)
+  var pill = document.getElementById('acc-pill-global');
+  var dot  = document.getElementById('loc-tab-dot');
+  if(!pill || !dot) return;
+
+  var state = (opts && opts.state) || 'ok';
+  var text  = '±— m';
+  var cls   = 'acc-red'; // default to red only for 'off'
+
+  if(state === 'off'){
+    text = '±— m';
+    cls  = 'acc-red';
+  } else if(state === 'nofix'){
+    text = '±— m';
+    cls  = 'acc-grey';
+  } else {
+    // ok → bucket by value
+    var bucket = accBucket(accMeters);
+    cls = 'acc-' + bucket;
+    text = Number.isFinite(accMeters) ? ('±' + (accMeters.toFixed(1)) + ' m') : '±— m';
+  }
+
+  // reset classes (keep base class)
+  pill.className = 'acc-pill ' + cls;
+  dot.className  = 'acc-dot ' + cls;
+
+  pill.textContent = text;
+
+  // accessibility
+  var label =
+    state === 'off'   ? 'Location accuracy: tracking off'
+  : state === 'nofix' ? 'Location accuracy: no fix yet'
+  : cls === 'acc-green' ? 'Location accuracy: high'
+  : cls === 'acc-amber' ? 'Location accuracy: medium'
+  : 'Location accuracy: low';
+  dot.setAttribute('aria-label', label);
+  pill.setAttribute('aria-label', label);
+}
+
 /* ---------------- Location tracker + map (scoped) ---------------- */
 (function(){
   function el(s){ return document.querySelector(s); }
@@ -1254,6 +1346,24 @@ if(copyDesc) copyDesc.onclick=function(){
   var best   = null; // minimal acc
   var ageTimer = null;
 
+  // Paint global indicator from "running but no best yet" vs "not running/no saved"
+if (best && Number.isFinite(best.acc)){
+  paintGlobalAcc(best.acc, { state: 'ok' });
+} else {
+  // no best yet
+  if (watchId != null){
+    paintGlobalAcc(NaN, { state: 'nofix' });
+  } else {
+    // if we have a saved best in autosave, the load phase handles it; otherwise off
+    var savedTs = (document.getElementById('loc-saved-ts') && document.getElementById('loc-saved-ts').dataset && document.getElementById('loc-saved-ts').dataset.ts) || '';
+    if (savedTs) {
+      // leave as-is; set during load or best update will override
+    } else {
+      paintGlobalAcc(NaN, { state: 'off' });
+    }
+  }
+}
+
   // --- export/import runtime for autosave ---
 window.locExportRuntime = function () {
   return { recent, best, samples };
@@ -1287,7 +1397,10 @@ window.locImportRuntime = function (data) {
   function updateRecentUI() {
     if (recent){
       if(outDD)  outDD.textContent  = 'DD: '+fmt6(recent.lat)+', '+fmt6(recent.lng);
-      if(outAcc){ outAcc.textContent = fmt1a(recent.acc)+' m'; outAcc.className='acc-chip '+accClass(recent.acc); }
+      if(outAcc){
+        outAcc.textContent = '±' + fmt1a(recent.acc) + ' m';
+        outAcc.className='acc-chip '+accClass(recent.acc); 
+      }
       if(outAlt) outAlt.textContent = Number.isFinite(recent.alt) ? fmt1a(recent.alt)+' m' : '—';
 
       if (ageTimer) clearInterval(ageTimer);
@@ -1314,7 +1427,10 @@ window.locImportRuntime = function (data) {
   function updateBestUI(isNew){
     if (best){
       if(bestDD)  bestDD.textContent  = 'DD: '+fmt6(best.lat)+', '+fmt6(best.lng);
-      if(bestAcc){ bestAcc.textContent = fmt1a(best.acc)+' m'; bestAcc.className='acc-chip '+accClass(best.acc); }
+      if(bestAcc){ 
+                  bestAcc.textContent = '±' + fmt1a(best.acc) + ' m';
+                  bestAcc.className='acc-chip '+accClass(best.acc); 
+                 }
       if(bestAlt){ bestAlt.textContent = Number.isFinite(best.alt) ? fmt1a(best.alt)+' m' : '—'; bestAlt.dataset.val = Number.isFinite(best.alt) ? String(best.alt) : ''; }
       if(bestTime){ bestTime.textContent=new Date(best.ts).toLocaleString(); bestTime.dataset.ts=String(best.ts); }
       if(bUseBest) bUseBest.disabled=false;
@@ -1331,6 +1447,12 @@ window.locImportRuntime = function (data) {
     ensureMap();
     updateBestOnMap();
     fitToAny();
+
+    // Update global header pill & tab dot based on BEST
+if (best && Number.isFinite(best.acc)){
+  paintGlobalAcc(best.acc, { state: 'ok' });
+}
+
   }
 
   function handlePosition(pos) {
@@ -1365,6 +1487,10 @@ window.locImportRuntime = function (data) {
       ? navigator.geolocation.watchPosition(handlePosition, handleError, opts)
       : null;
     setRunningUI(true);
+
+    // running, but no fix yet
+paintGlobalAcc(NaN, { state: 'nofix' });
+
   }
 
   function stop() {
@@ -1373,6 +1499,14 @@ window.locImportRuntime = function (data) {
     }
     watchId = null;
     setRunningUI(false);
+
+    // if we already have a best, show it; else "off"
+if (best && Number.isFinite(best.acc)){
+  paintGlobalAcc(best.acc, { state: 'ok' });
+} else {
+  paintGlobalAcc(NaN, { state: 'off' });
+}
+
   }
 
   function resetAll() {
@@ -1412,6 +1546,28 @@ window.locImportRuntime = function (data) {
   updateRecentUI();
   updateBestUI(false);
 })();
+
+  (function(){
+  function goToLocationTab(){
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+    tabs.forEach(function(t){ t.classList.remove('active'); });
+    var locTab = document.querySelector('.tab[data-tab="loc"]');
+    if(locTab) locTab.classList.add('active');
+
+    Array.prototype.slice.call(document.querySelectorAll('.tabpane'))
+      .forEach(function(p){ p.classList.remove('active'); });
+
+    var pane = document.getElementById('pane-loc');
+    if(pane) pane.classList.add('active');
+
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  var pill = document.getElementById('acc-pill-global');
+  var dot  = document.getElementById('loc-tab-dot');
+  if(pill) pill.addEventListener('click', goToLocationTab);
+  if(dot)  dot.addEventListener('click', goToLocationTab);
+})();
+// Make the header accuracy pill and tab dot clickable (opens location tab)//
 
 /* ---------------- Autosave (core, hardened) ---------------- */
 var SAVE_KEY = 'ara_field_v1';
@@ -1507,6 +1663,7 @@ if (st.locRuntime && typeof window.locImportRuntime === 'function') {
 }
 
     updateResultsPanel(); updateCopyButtons();
+    
   } catch(e){ console.warn('setFormState failed', e); }
 }
 function saveState(){
@@ -1541,6 +1698,18 @@ document.addEventListener('DOMContentLoaded', function(){
   document.addEventListener('input',  autoSaveSoon, {capture:true});
   document.addEventListener('change', autoSaveSoon, {capture:true});
   loadState();
+
+  // After prior state is restored, set initial header pill/dot from saved best (if any)
+(function(){
+  var savedAcc = parseFloat((document.getElementById('acc') && document.getElementById('acc').value) || '');
+  var savedTs  = (document.getElementById('loc-saved-ts') && document.getElementById('loc-saved-ts').dataset && document.getElementById('loc-saved-ts').dataset.ts) || '';
+  if (Number.isFinite(savedAcc) && savedTs){
+    paintGlobalAcc(savedAcc, { state:'ok' });
+  } else {
+    paintGlobalAcc(NaN, { state:'off' });
+  }
+})();
+
 
   /* ---------------- Reset form (safe) ---------------- */
   var resetFormResults = byId('resetFormResults');
