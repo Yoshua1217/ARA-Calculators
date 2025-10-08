@@ -1399,106 +1399,132 @@ if(copyDesc) copyDesc.onclick=function(){
   updateBestUI(false);
 })();
 
-/* ---------------- Autosave (core) ---------------- */
+/* ---------------- Autosave (core, hardened) ---------------- */
 var SAVE_KEY = 'ara_field_v1';
 
 function getFormState(){
-  return {
-    inputUnit: inputUnit, calcMode: calcMode,
-    basics: {
-      name:      byId('treeName') ? byId('treeName').value : '',
-      species:   byId('species') ? byId('species').value : '',
-      condition: byId('condition') ? byId('condition').value : '',
-      type:      byId('treeType') ? byId('treeType').value : ''
-    },
-    singleC: byId('singleC') ? byId('singleC').value : '',
-    multi:   { values: $all('#mt-list input[type="number"]').map(function(i){ return i.value || ''; }) },
-    height:  { angle: byId('h-angle') ? byId('h-angle').value : '', dist: byId('h-dist') ? byId('h-dist').value : '', eye: byId('h-eye') ? byId('h-eye').value : '' },
-    spread:  { major: byId('spreadMajor') ? byId('spreadMajor').value : '', minor: byId('spreadMinor') ? byId('spreadMinor').value : '' },
-    notes:   byId('notes') ? byId('notes').value : '',
-    location: {
-      lat: byId('lat') ? byId('lat').value : '',
-      lng: byId('lng') ? byId('lng').value : '',
-      acc: byId('acc') ? byId('acc').value : '',
-      alt: (byId('loc-saved-alt') && byId('loc-saved-alt').dataset) ? byId('loc-saved-alt').dataset.val || '' : '',
-      ts:  (byId('loc-saved-ts')  && byId('loc-saved-ts').dataset)  ? byId('loc-saved-ts').dataset.ts  || '' : ''
-    },
-    desc: (byId('desc') && byId('desc').innerHTML && byId('desc').innerHTML !== '—') ? byId('desc').innerHTML : ''
-  };
+  try {
+    return {
+      inputUnit: inputUnit, calcMode: calcMode,
+      basics: {
+        name:      byId('treeName')?.value || '',
+        species:   byId('species')?.value || '',
+        condition: byId('condition')?.value || '',
+        type:      byId('treeType')?.value || ''
+      },
+      singleC: byId('singleC')?.value || '',
+      multi:   { values: $all('#mt-list input[type="number"]').map(i => i.value || '') },
+      height:  { angle: byId('h-angle')?.value || '', dist: byId('h-dist')?.value || '', eye: byId('h-eye')?.value || '' },
+      spread:  { major: byId('spreadMajor')?.value || '', minor: byId('spreadMinor')?.value || '' },
+      notes:   byId('notes')?.value || '',
+      location: {
+        lat: byId('lat')?.value || '',
+        lng: byId('lng')?.value || '',
+        acc: byId('acc')?.value || '',
+        alt: (byId('loc-saved-alt')?.dataset?.val) || '',
+        ts:  (byId('loc-saved-ts')?.dataset?.ts)  || ''
+      },
+      desc: (byId('desc') && byId('desc').innerHTML && byId('desc').innerHTML !== '—') ? byId('desc').innerHTML : ''
+    };
+  } catch(e){ console.warn('getFormState failed', e); return null; }
 }
 function setFormState(st){
-  if(!st) return;
-  if(st.inputUnit && st.inputUnit !== inputUnit) setUnit(st.inputUnit);
-  if(st.calcMode  && st.calcMode  !== calcMode)  setCalcMode(st.calcMode);
+  try{
+    if(!st) return;
+    if(st.inputUnit && st.inputUnit !== inputUnit) setUnit(st.inputUnit);
+    if(st.calcMode  && st.calcMode  !== calcMode)  setCalcMode(st.calcMode);
 
-  if(byId('treeName'))  byId('treeName').value  = (st.basics && st.basics.name) || '';
-  if(byId('species'))   byId('species').value   = (st.basics && st.basics.species) || '';
-  if(byId('condition')) byId('condition').value = (st.basics && st.basics.condition) || '';
-  if(byId('treeType'))  byId('treeType').value  = (st.basics && st.basics.type) || '';
-  updateTypeVisibility();
+    byId('treeName')  && (byId('treeName').value  = st.basics?.name || '');
+    byId('species')   && (byId('species').value   = st.basics?.species || '');
+    byId('condition') && (byId('condition').value = st.basics?.condition || '');
+    byId('treeType')  && (byId('treeType').value  = st.basics?.type || '');
+    updateTypeVisibility();
 
-  if(byId('singleC')) byId('singleC').value = st.singleC || '';
-  if(byId('mt-list')){
-    var list=byId('mt-list'); list.innerHTML='';
-    var vals=(st.multi && Array.isArray(st.multi.values)) ? st.multi.values : [];
-    if(vals.length){ vals.forEach(function(v){ addMtRow(v); }); } else { addMtRow(); addMtRow(); }
-  }
+    byId('singleC') && (byId('singleC').value = st.singleC || '');
 
-  if(byId('h-angle')) byId('h-angle').value = (st.height && st.height.angle) || '';
-  if(byId('h-dist'))  byId('h-dist').value  = (st.height && st.height.dist)  || '';
-  if(byId('h-eye'))   byId('h-eye').value   = (st.height && st.height.eye)   || '';
+    if(byId('mt-list')){
+      var list=byId('mt-list'); list.innerHTML='';
+      var vals=(st.multi && Array.isArray(st.multi.values)) ? st.multi.values : [];
+      if(vals.length){ vals.forEach(v => addMtRow(v)); } else { addMtRow(); addMtRow(); }
+    }
 
-  if(byId('spreadMajor')) byId('spreadMajor').value = (st.spread && st.spread.major) || '';
-  if(byId('spreadMinor')) byId('spreadMinor').value = (st.spread && st.spread.minor) || '';
+    byId('h-angle') && (byId('h-angle').value = st.height?.angle || '');
+    byId('h-dist')  && (byId('h-dist').value  = st.height?.dist  || '');
+    byId('h-eye')   && (byId('h-eye').value   = st.height?.eye   || '');
 
-  if(byId('notes')) { byId('notes').value = st.notes || ''; autoGrow(byId('notes')); }
+    byId('spreadMajor') && (byId('spreadMajor').value = st.spread?.major || '');
+    byId('spreadMinor') && (byId('spreadMinor').value = st.spread?.minor || '');
 
-  if(st.location){
-    if(byId('lat')) byId('lat').value = st.location.lat || '';
-    if(byId('lng')) byId('lng').value = st.location.lng || '';
-    if(byId('acc')) byId('acc').value = st.location.acc || '';
-    var sa=byId('loc-saved-alt'); if(sa && sa.dataset) sa.dataset.val = st.location.alt || '';
-    var stp=byId('loc-saved-ts'); if(stp && stp.dataset) stp.dataset.ts  = st.location.ts  || '';
-  }
+    if(byId('notes')){ byId('notes').value = st.notes || ''; autoGrow(byId('notes')); }
 
-  if(byId('desc')){
-    if(st.desc){ byId('desc').innerHTML = st.desc; if(copyDesc) copyDesc.removeAttribute('disabled'); if(shareBtn) shareBtn.removeAttribute('disabled'); }
-    else { byId('desc').innerHTML = '—'; if(copyDesc) copyDesc.setAttribute('disabled',''); if(shareBtn) shareBtn.setAttribute('disabled',''); }
-  }
+    if(st.location){
+      byId('lat') && (byId('lat').value = st.location.lat || '');
+      byId('lng') && (byId('lng').value = st.location.lng || '');
+      byId('acc') && (byId('acc').value = st.location.acc || '');
+      var sa=byId('loc-saved-alt'); sa?.dataset && (sa.dataset.val = st.location.alt || '');
+      var stp=byId('loc-saved-ts'); stp?.dataset && (stp.dataset.ts  = st.location.ts  || '');
+    }
 
-  updateResultsPanel();
-  updateCopyButtons();
+    if(byId('desc')){
+      if(st.desc){ byId('desc').innerHTML = st.desc; copyDesc?.removeAttribute('disabled'); shareBtn?.removeAttribute('disabled'); }
+      else { byId('desc').innerHTML = '—'; copyDesc?.setAttribute('disabled',''); shareBtn?.setAttribute('disabled',''); }
+    }
+
+    updateResultsPanel(); updateCopyButtons();
+  } catch(e){ console.warn('setFormState failed', e); }
 }
-function saveState(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(getFormState())); }catch(e){ console.warn('saveState failed', e); } }
-function loadState(){ try{
-  var raw=localStorage.getItem(SAVE_KEY);
-  if(!raw){
-    if(byId('treeType') && byId('treeType').value==='Multi trunked tree' && byId('mt-list') && byId('mt-list').children.length===0){ addMtRow(); addMtRow(); }
-    return;
-  }
-  setFormState(JSON.parse(raw));
-}catch(e){ console.warn('loadState failed', e); } }
+function saveState(){
+  try{
+    var st = getFormState();
+    if (st) localStorage.setItem(SAVE_KEY, JSON.stringify(st));
+  }catch(e){ console.warn('saveState failed', e); }
+}
+function loadState(){
+  try{
+    var raw = localStorage.getItem(SAVE_KEY);
+    if(!raw){
+      if(byId('treeType')?.value==='Multi trunked tree' && byId('mt-list') && byId('mt-list').children.length===0){ addMtRow(); addMtRow(); }
+      return;
+    }
+    setFormState(JSON.parse(raw));
+  }catch(e){ console.warn('loadState failed', e); }
+}
 
 var _asTimer = null;
 function autoSaveSoon(){
-  if (_asTimer) clearTimeout(_asTimer);
-  _asTimer = setTimeout(function(){ if (!window.ARA_RESETTING) { try { saveState(); } catch(e){} } }, 250);
-}
-document.addEventListener('input',  autoSaveSoon, {capture:true});
-document.addEventListener('change', autoSaveSoon, {capture:true});
-window.addEventListener('beforeunload', function(){ if (!window.ARA_RESETTING) { try { saveState(); } catch(e){} } });
-loadState();
-
-/* ---------------- Reset form (safe) ---------------- */
-var resetFormResults = byId('resetFormResults');
-if (resetFormResults){
-  resetFormResults.onclick = function(){
-    window.ARA_RESETTING = true;
+  try{
     if (_asTimer) clearTimeout(_asTimer);
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit: inputUnit, calcMode: calcMode })); } catch(e){}
-    location.replace(location.href);
-  };
+    _asTimer = setTimeout(function(){
+      if (!window.ARA_RESETTING) saveState();
+    }, 250);
+  }catch(e){ console.warn('autoSaveSoon failed', e); }
 }
+
+/* Defer attaching listeners until DOM is ready, so earlier hiccups don’t kill autosave/reset */
+document.addEventListener('DOMContentLoaded', function(){
+  document.addEventListener('input',  autoSaveSoon, {capture:true});
+  document.addEventListener('change', autoSaveSoon, {capture:true});
+  loadState();
+
+  /* ---------------- Reset form (safe) ---------------- */
+  var resetFormResults = byId('resetFormResults');
+  if (resetFormResults){
+    resetFormResults.onclick = function(){
+      window.ARA_RESETTING = true;
+      try{
+        if (_asTimer) clearTimeout(_asTimer);
+        localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit: inputUnit, calcMode: calcMode }));
+      }catch(e){ /* ignore */ }
+      // Hard refresh to clear any transient runtime state
+      location.replace(location.href.split('#')[0]);
+    };
+  }
+});
+
+/* Optional: log the first unhandled error (helps find silent blockers) */
+window.addEventListener('error', function(e){
+  console.warn('Unhandled error:', e.message, 'at', e.filename+':'+e.lineno+':'+e.colno);
+});
 </script>
 </body>
 </html>
