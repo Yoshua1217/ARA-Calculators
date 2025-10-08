@@ -1229,7 +1229,11 @@ const resetFormResults = $('#resetFormResults');
 if (resetFormResults){
   resetFormResults.onclick = () => {
     // preserve unit & mode, clear the rest
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit, calcMode }));
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit, calcMode }));
+    } catch {}
+    // prevent autosave on unload from re-saving old data
+    ARA_RESETTING = true;
     location.reload();
   };
 }
