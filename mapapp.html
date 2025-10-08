@@ -454,27 +454,26 @@
         <!-- Clinometer -->
 <div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
   <div class="block">
-    <!-- Live angle/status header box -->
-    <div class="results" id="clino-readout" style="background:#10253f;border-color:#28466e;">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-        <strong>Live angle</strong>
-        <span id="clino-live-angle" style="font-weight:800;">—°</span>
-      </div>
-      <div id="clino-live-status" class="tiny" style="margin-top:4px;">Sensor: idle · Cal: 0.0°</div>
+
+    <!-- Live angle/status box — restored to original format -->
+    <div class="results" id="clino-readout" 
+         style="background:#0b1a2f;border-color:#1f3553;border-radius:12px;padding:12px;">
+      <h3 style="margin:0 0 6px;">Live angle</h3>
+      <p id="clino-live-angle" style="font-size:1.4rem;font-weight:800;margin:0;">—°</p>
+      <p id="clino-live-status" class="tiny" style="margin-top:4px;">Sensor: idle · Cal: 0.0°</p>
     </div>
 
-    <div class="clino-wrap">
-      <!-- angle pill stays top-right -->
-      <div id="clino-angle" class="clino-angle">—°</div>
-      <!-- BIG button now starts + locks/unlocks -->
+    <!-- Clinometer lock area -->
+    <div class="clino-wrap" style="margin-top:12px;">
       <button type="button" id="clino-lock" class="clino-lock">Start Clinometer</button>
     </div>
 
-    <div class="clino-controls">
+    <!-- Controls below -->
+    <div class="clino-controls" style="margin-top:10px;">
       <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
       <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
     </div>
-    <!-- (removed the old tiny #clino-status line) -->
+
   </div>
 </div>
       </div>
@@ -805,12 +804,11 @@ function calcHeight(){
 if(hCalc) hCalc.onclick=calcHeight;
 [hAngle,hDist,hEye].forEach(function(inp){ if(inp) inp.addEventListener('input',function(){ if(calcMode==='auto') calcHeight(); }); });
 
-/* ---------------- Clinometer ---------------- */
-/* ---------------- Clinometer ---------------- */
+/* ---------------- Clinometer (single-button start/lock) ---------------- */
 let clinoOn = false, zeroOffsetRad = 0, locked = false;
+let lastLiveDeg = NaN; // current live (unlocked) reading in degrees
 
 const elLock       = document.getElementById('clino-lock');
-const elAngle      = document.getElementById('clino-angle');
 const elZero       = document.getElementById('clino-zero');
 const elReset      = document.getElementById('clino-reset');
 const elReadAngle  = document.getElementById('clino-live-angle');
@@ -836,6 +834,7 @@ function computePitchFromEvent(ev){
 }
 
 function renderClinoReadout(deg){
+  lastLiveDeg = deg; // store latest live value
   const txt = Number.isFinite(deg) ? fmt1(deg) + '°' : '—°';
   elReadAngle.textContent = locked ? `${txt} (locked)` : txt;
 }
@@ -849,27 +848,30 @@ function renderClinoStatus(state){
   elReadStatus.textContent = `${label} · Cal: ${cal}`;
 }
 
+function getAngleFromReadout(){
+  // Parse the numeric part from "29.7°" or "29.7° (locked)"
+  const m = String(elReadAngle.textContent).match(/-?\d+(?:\.\d+)?/);
+  return m ? parseFloat(m[0]) : NaN;
+}
+
 let onOrientation = null;
 
 function startClinometer(){
   if (clinoOn) return;
   clinoOn = true;
   renderClinoStatus('running');
-  // After start, button should say "Lock" (running & unlocked)
   elLock.textContent = 'Lock';
 
   requestIOSPermissionIfNeeded().then(ok=>{
     if(!ok){
       clinoOn = false;
       renderClinoStatus('permission');
-      // Revert button so user can try again
       elLock.textContent = 'Start Clinometer';
       return;
     }
     onOrientation = ev => {
       if(!clinoOn || locked) return;
       const deg = computePitchFromEvent(ev);
-      elAngle.textContent = fmt1(deg) + '°';
       renderClinoReadout(deg);
     };
     window.addEventListener('deviceorientation', onOrientation, {passive:true});
@@ -882,12 +884,11 @@ function stopClinometer(){
   if(onOrientation) window.removeEventListener('deviceorientation', onOrientation);
   onOrientation = null;
   renderClinoStatus('stopped');
-  // Back to initial label
   elLock.textContent = 'Start Clinometer';
 }
 
 function zeroCalibrate(){
-  const current = parseFloat(elAngle.textContent.replace('°',''));
+  const current = Number.isFinite(lastLiveDeg) ? lastLiveDeg : getAngleFromReadout();
   if(!Number.isFinite(current)) return;
   zeroOffsetRad += (current * Math.PI/180);
   renderClinoStatus(clinoOn ? 'running' : 'idle');
@@ -897,15 +898,12 @@ function zeroCalibrate(){
 function resetSensor(){
   locked = false;
   zeroOffsetRad = 0;
-  elAngle.textContent = '—°';
   renderClinoReadout(NaN);
   if (clinoOn){
-    // keep it running but unlocked
     elLock.classList.remove('active');
     elLock.textContent = 'Lock';
     renderClinoStatus('running');
   } else {
-    // fully idle/reset state
     elLock.classList.remove('active');
     elLock.textContent = 'Start Clinometer';
     renderClinoStatus('idle');
@@ -914,18 +912,18 @@ function resetSensor(){
 }
 
 function toggleLock(){
-  // First-ever click: start the clinometer
+  // First click starts the sensor
   if(!clinoOn){
     startClinometer();
     buzz(50);
     return;
   }
-  // Running → toggle lock/unlock
+  // Toggle lock/unlock while running
   if(!locked){
     locked = true;
     elLock.textContent = 'Unlock';
     elLock.classList.add('active');
-    const current = parseFloat(elAngle.textContent.replace('°',''));
+    const current = Number.isFinite(lastLiveDeg) ? lastLiveDeg : getAngleFromReadout();
     if (Number.isFinite(current)) {
       document.getElementById('h-angle').value = current.toFixed(1);
       if (calcMode === 'auto') calcHeight();
@@ -936,7 +934,8 @@ function toggleLock(){
     locked = false;
     elLock.textContent = 'Lock';
     elLock.classList.remove('active');
-    renderClinoReadout(parseFloat(elAngle.textContent.replace('°','')));
+    // Immediately refresh readout from stored last value
+    renderClinoReadout(lastLiveDeg);
   }
 }
 
