@@ -50,10 +50,14 @@
   .btn-row{display:flex;flex-wrap:wrap;gap:10px}
   button,.btn{padding:10px 14px;border:0;border-radius:10px;cursor:pointer;color:#001528;background:var(--accent-2);font-weight:700}
   .btn-ghost{background:var(--panel-2);color:var(--text);border:1px solid var(--border)}
-  .btn-dim{background:#113158;color:#bcd8ff;border:1px solid var(--border)}
+  .btn-dim{background:#0e1f3f;color:#cfe0ff;border:1px solid #1c366b}
   .btn-danger{background:var(--danger);color:#fff}
   .btn-ok{background:var(--ok);color:#00180f}
   button[disabled]{opacity:.6;cursor:not-allowed}
+
+  /* universal calc-button behavior (light until calculated → dark) */
+  .calc-btn{background:var(--panel-2);color:var(--text);border:1px solid var(--border)}
+  .calc-btn.calculated{background:#0e1f3f;color:#cfe0ff;border-color:#1c366b}
 
   .mt-label{font-weight:700}
   .badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#1b6cff;color:#001528;font-size:.75rem;vertical-align:middle}
@@ -61,12 +65,11 @@
   .hint{font-size:.86rem;color:#ffc0c0;display:none}
   .hint.show{display:block}
 
-  .clino-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .clino-wrap{position:relative;height:180px;border:1px solid var(--border);border-radius:12px;background:#0b1a2f;margin:10px 0;overflow:hidden;display:flex;align-items:center;justify-content:center}
-  .clino-angle{position:absolute;right:10px;top:10px;font-weight:800;font-size:1.2rem;color:#001528;background:#cfe0ff;padding:6px 10px;border-radius:8px;border:1px solid var(--border)}
   .clino-lock{width:140px;height:140px;border-radius:999px;border:0;cursor:pointer;background:#cfe0ff;color:#001528;font-weight:900;font-size:1.15rem}
   .clino-lock:active{transform:scale(.98)}
-  .clino-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .clino-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+  .clino-angle-chip{font-weight:800;font-size:1.05rem;color:#001528;background:#cfe0ff;padding:6px 10px;border-radius:8px;border:1px solid var(--border);min-width:68px;text-align:center}
 
   .results{background:#0b1a2f;border:1px solid var(--border);border-radius:12px;padding:12px}
   .results p{margin:6px 0}
@@ -79,13 +82,15 @@
   .acc-amber{background:#7a5a15;color:#ffe2a8}
   .acc-green{background:#1b5e2b;color:#c6f1cf}
 
-  #loc-toggle.running{background:#0b3b82;color:#fff}
+  /* Start/Stop toggle visual */
+  #clino-toggle{background:var(--panel);color:var(--text);border:1px solid var(--border)}
+  #clino-toggle.running{background:#0b3b82;color:#fff;border-color:#0b3b82}
 
   #resetFormResults{background:#0e1f3f;color:#fff;border:1px solid #1c366b;transition:background .2s,transform .1s}
   #resetFormResults:hover{background:#c62828;border-color:#b71c1c;transform:scale(1.02)}
   #resetFormResults:active{background:#8e0000;transform:scale(.98)}
 
-  #loc-map{height:300px;border-radius:12px;overflow:hidden}
+  #loc-map{height:300px;border-radius:12px;overflow:hidden; margin-top:12px;} /* gap above the map */
   .map-actions{display:flex;gap:8px;margin:8px 0 0;flex-wrap:wrap}
 </style>
 </head>
@@ -170,7 +175,7 @@
         <p>Time: <span id="loc-best-time">—</span></p>
       </div>
 
-      <div class="unit-toggle" style="margin-top:10px;">
+      <div class="unit-toggle" style="margin-top:10px; margin-bottom:10px;">
         <button type="button" id="loc-use-recent" class="btn-ghost" disabled>Save recent</button>
         <button type="button" id="loc-use-best"   class="btn-ghost" disabled>Save best</button>
         <button type="button" id="loc-reset"      class="btn-ghost btn-danger">Reset location</button>
@@ -207,7 +212,7 @@
         <label for="singleC">Circumference (<span class="unit-tag">m</span>)</label>
         <input id="singleC" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 3.10">
         <div class="btn-row" style="margin-top:8px;">
-          <button type="button" id="single-update" class="btn-dim">Update circumference</button>
+          <button type="button" id="single-update" class="calc-btn">Update circumference</button>
         </div>
         <div class="tiny">Diameter is calculated automatically (D = C / π).</div>
       </div>
@@ -221,7 +226,7 @@
           <button type="button" id="mt-add" class="btn-dim">Add trunk</button>
           <button type="button" id="mt-remove" class="btn-dim">Remove last</button>
           <button type="button" id="mt-sort" class="btn-ghost" title="Sort by diameter (desc)">Sort by diameter</button>
-          <button type="button" id="mt-calc" class="btn-dim">Calculate multi-trunk</button>
+          <button type="button" id="mt-calc" class="calc-btn">Calculate multi-trunk</button>
         </div>
 
         <label for="mt-bulk" style="margin-top:12px;">Bulk paste (numbers + repeaters)</label>
@@ -245,9 +250,7 @@
   <!-- Height -->
   <section id="pane-height" class="tabpane">
     <div class="card"><div class="block">
-      <div class="clino-head">
-        <h2>Height</h2><div id="clino-angle" class="clino-angle">—°</div>
-      </div>
+      <h2>Height</h2>
       <label for="h-angle">Angle to top of the tree (degrees)</label>
       <input id="h-angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5">
       <div class="row">
@@ -257,18 +260,21 @@
           <input id="h-eye" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 1.62"></div>
       </div>
       <div class="btn-row" style="margin-top:10px;">
-        <button type="button" id="h-calc" class="btn-dim">Calculate height</button>
+        <button type="button" id="h-calc" class="calc-btn">Calculate height</button>
       </div>
 
       <div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
         <div class="block">
-          <div class="btn-row" aria-label="Clinometer power">
-            <button type="button" id="clino-enable" class="toggle-btn small">Start</button>
-            <button type="button" id="clino-disable" class="toggle-btn small">Stop</button>
+          <!-- merged toggle + angle chip -->
+          <div class="clino-header">
+            <button type="button" id="clino-toggle" class="toggle-btn">Start clinometer</button>
+            <div id="clino-angle" class="clino-angle-chip">—°</div>
           </div>
+
           <div class="clino-wrap">
             <button type="button" id="clino-lock" class="clino-lock">Lock</button>
           </div>
+
           <div class="clino-controls">
             <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
             <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
@@ -276,6 +282,12 @@
           <div class="tiny" id="clino-status">Sensor: idle</div>
         </div>
       </div>
+
+      <!-- live formula -->
+      <div class="results" id="height-formula" style="margin-top:12px;">
+        height = tan(—°) × — + — = —
+      </div>
+
     </div></div>
   </section>
 
@@ -290,7 +302,7 @@
           <input id="spreadMinor" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 20.00"></div>
       </div>
       <div class="btn-row" style="margin-top:10px;">
-        <button type="button" id="spread-calc" class="btn-dim">Calculate canopy spread</button>
+        <button type="button" id="spread-calc" class="calc-btn">Calculate canopy spread</button>
       </div>
     </div></div>
   </section>
@@ -348,6 +360,12 @@ function toDMS(dec,isLat){ if(!Number.isFinite(dec))return'—'; const hemi=dec>
 /* ===== state ===== */
 let inputUnit='m', calcMode='manual';
 let lastSingle=null, lastMulti=null, lastHeight=null, lastSpread=null;
+
+/* calc buttons: helper to flip light↔dark */
+function setCalcState(btnEl, calculated){
+  if(!btnEl) return;
+  btnEl.classList.toggle('calculated', !!calculated);
+}
 
 /* ===== header ===== */
 const unitM=$('#unit-m'), unitFt=$('#unit-ft');
@@ -412,11 +430,11 @@ treeType.onchange=updateTypeVisibility;
 
 function recomputeSingle(){
   const v=parseFloat(singleC.value);
-  if(Number.isFinite(v)&&v>0){ const cM=toM(v,inputUnit); const dM=cM/PI; lastSingle={cM,cFt:mToFt(cM),dM,dFt:mToFt(dM)}; }
-  else lastSingle=null;
+  if(Number.isFinite(v)&&v>0){ const cM=toM(v,inputUnit); const dM=cM/PI; lastSingle={cM,cFt:mToFt(cM),dM,dFt:mToFt(dM)}; setCalcState(singleUpdateBtn,true); }
+  else { lastSingle=null; setCalcState(singleUpdateBtn,false); }
   updateResultsPanel(); updateCopyButtons();
 }
-singleC.addEventListener('input',()=>{ if(calcMode==='auto') recomputeSingle(); });
+singleC.addEventListener('input',()=>{ setCalcState(singleUpdateBtn,false); if(calcMode==='auto') recomputeSingle(); });
 singleUpdateBtn.addEventListener('click',recomputeSingle);
 
 const MT_MAX=60;
@@ -439,8 +457,7 @@ function addMtRow(val=''){
   const inp=document.createElement('input'); inp.type='number'; inp.step='0.01'; inp.inputMode='decimal'; if(val!=='') inp.value=val;
   const hint=document.createElement('div'); hint.className='hint';
   top.appendChild(lab); top.appendChild(badge); row.appendChild(top); row.appendChild(inp); row.appendChild(hint); mtList.appendChild(row);
-  inp.addEventListener('input',()=>{hint.classList.remove('show'); if(calcMode==='auto') calcMulti();});
-  inp.addEventListener('blur',()=>maybeMtOutlierHint(parseFloat(inp.value),hint));
+  inp.addEventListener('input',()=>{ setCalcState(mtCalc,false); hint.classList.remove('show'); if(calcMode==='auto') calcMulti();});
   renumberTrunks();
 }
 function maybeMtOutlierHint(val,h){
@@ -450,7 +467,7 @@ function maybeMtOutlierHint(val,h){
   else{ if(val<0.66){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
     else if(val>40){h.textContent='Unusually large — check units?';h.classList.add('show');} else h.classList.remove('show');}
 }
-function removeMtRow(){ const rows=getMtRows(); if(rows.length<=1) return; rows[rows.length-1].remove(); clearMtLargest(); renumberTrunks(); if(calcMode==='auto') calcMulti(); }
+function removeMtRow(){ const rows=getMtRows(); if(rows.length<=1) return; rows[rows.length-1].remove(); clearMtLargest(); renumberTrunks(); setCalcState(mtCalc,false); if(calcMode==='auto') calcMulti(); }
 function parseMtBulk(text,limit=MT_MAX){
   const vals=[]; if(!text) return vals; let s=String(text).replace(/[×X]/g,'x');
   const repRE=/(\d+)\s*x\s*([-+]?\d*\.?\d+)/g;
@@ -458,7 +475,7 @@ function parseMtBulk(text,limit=MT_MAX){
   const singles=s.match(/[-+]?\d*\.?\d+/g)||[]; for(const m of singles){ if(vals.length>=limit) break; const v=parseFloat(m); if(Number.isFinite(v)&&v>0) vals.push(v); }
   return vals;
 }
-function mtFillFromBulk(){ const vals=parseMtBulk(mtBulk.value,MT_MAX); if(vals.length===0)return; mtList.innerHTML=''; vals.forEach(v=>addMtRow(v.toFixed(2))); mtResult.textContent='—'; if(calcMode==='auto') calcMulti(); renumberTrunks(); }
+function mtFillFromBulk(){ const vals=parseMtBulk(mtBulk.value,MT_MAX); if(vals.length===0)return; mtList.innerHTML=''; vals.forEach(v=>addMtRow(v.toFixed(2))); mtResult.textContent='—'; setCalcState(mtCalc,false); if(calcMode==='auto') calcMulti(); renumberTrunks(); }
 function mtSortByDiameter(){
   const rows=Array.from(mtList.children); const valid=[], invalid=[];
   rows.forEach(row=>{ const inp=row.querySelector('input[type="number"]'); const v=parseFloat(inp?.value);
@@ -466,7 +483,7 @@ function mtSortByDiameter(){
   if(valid.length<2){ renumberTrunks(); return; }
   valid.sort((a,b)=>b.dM-a.dM);
   const frag=document.createDocumentFragment(); valid.forEach(v=>frag.appendChild(v.row)); invalid.forEach(r=>frag.appendChild(r));
-  mtList.innerHTML=''; mtList.appendChild(frag); clearMtLargest(); renumberTrunks(); if(calcMode==='auto') calcMulti();
+  mtList.innerHTML=''; mtList.appendChild(frag); clearMtLargest(); renumberTrunks(); setCalcState(mtCalc,false); if(calcMode==='auto') calcMulti();
 }
 function clearMtLargest(){ mtList.querySelectorAll('.mt-label').forEach(el=>el.classList.remove('largest-label')); mtList.querySelectorAll('.badge').forEach(b=>{b.classList.add('hide'); b.textContent='Largest';}); }
 function calcMulti(){
@@ -481,51 +498,66 @@ function calcMulti(){
   maxRows.forEach(r=>{const lab=r.row.querySelector('.mt-label'); const badge=r.row.querySelector('.badge'); lab?.classList.add('largest-label'); if(badge){badge.textContent=badgeText; badge.classList.remove('hide');}});
   lastMulti={ trunks:withD.map(t=>({index:t.idx,cM:t.cM,cFt:mToFt(t.cM),dM:t.dM,dFt:mToFt(t.dM),isLargest:Math.abs(t.dM-dmax)<eps})), dEqM,cEqM,dEqFt:mToFt(dEqM),cEqFt:mToFt(cEqM), cAvgM,cAvgFt:mToFt(cAvgM), tie:maxRows.length>1 };
   mtResult.textContent=`Calculated ${withD.length} trunk${withD.length>1?'s':''}.`;
+  setCalcState(mtCalc,true);
   updateResultsPanel(); updateCopyButtons();
 }
 mtAdd.onclick=()=>addMtRow(); mtRemove.onclick=()=>removeMtRow(); mtSort.onclick=mtSortByDiameter; mtCalc.onclick=calcMulti; mtFill.onclick=mtFillFromBulk; mtClear.onclick=()=>{ mtBulk.value=''; };
 
 /* ===== height ===== */
 const hAngle=$('#h-angle'), hDist=$('#h-dist'), hEye=$('#h-eye'), hCalc=$('#h-calc');
+const heightFormula=$('#height-formula');
+
+function renderHeightFormula(){
+  const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value);
+  const aTxt=Number.isFinite(a)?fmt1(a)+'°':'—°';
+  const dTxt=Number.isFinite(d)?fmt2(toM(d,inputUnit))+' m':'—';
+  const eTxt=Number.isFinite(e)?fmt2(toM(e,inputUnit))+' m':'—';
+  const hTxt=(Number.isFinite(a)&&Number.isFinite(d)&&Number.isFinite(e))?fmt2(tanDeg(a)*toM(d,inputUnit)+toM(e,inputUnit))+' m':'—';
+  heightFormula.textContent = `height = tan(${aTxt}) × ${dTxt} + ${eTxt} = ${hTxt}`;
+}
+
 function calcHeight(){
   const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value);
-  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null; updateResultsPanel(); updateCopyButtons(); return; }
+  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null; setCalcState(hCalc,false); updateResultsPanel(); updateCopyButtons(); renderHeightFormula(); return; }
   const dM=toM(d,inputUnit), eM=toM(e,inputUnit); const hM=tanDeg(a)*dM+eM;
-  lastHeight={hM,hFt:mToFt(hM),angleDeg:Number(a.toFixed(1)),dM,eM}; updateResultsPanel(); updateCopyButtons();
+  lastHeight={hM,hFt:mToFt(hM),angleDeg:Number(a.toFixed(1)),dM,eM};
+  setCalcState(hCalc,true);
+  updateResultsPanel(); updateCopyButtons(); renderHeightFormula();
 }
-hCalc.onclick=calcHeight; [hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input',()=>{ if(calcMode==='auto') calcHeight();}));
+hCalc.onclick=calcHeight;
+[hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input',()=>{ setCalcState(hCalc,false); renderHeightFormula(); if(calcMode==='auto') calcHeight();}));
+renderHeightFormula();
 
-/* ===== clinometer ===== */
+/* ===== clinometer (merged toggle) ===== */
 let clinoOn=false, zeroOffsetRad=0, locked=false;
-const elEnable=$('#clino-enable'), elDisable=$('#clino-disable'), elAngle=$('#clino-angle'), elLock=$('#clino-lock'), elZero=$('#clino-zero'), elReset=$('#clino-reset'), elStatus=$('#clino-status');
+const elToggle=$('#clino-toggle'), elAngle=$('#clino-angle'), elLock=$('#clino-lock'), elZero=$('#clino-zero'), elReset=$('#clino-reset'), elStatus=$('#clino-status');
 const toDeg=rad=>rad*180/Math.PI, clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 function buzz(ms=30){ if(navigator.vibrate) try{navigator.vibrate(ms);}catch{} }
 async function requestIOSPermissionIfNeeded(){ const any=window.DeviceOrientationEvent; if(!any) return true; if(typeof any.requestPermission==='function'){ try{const res=await any.requestPermission(); return res==='granted';}catch{return false;} } return true; }
 function computePitchFromEvent(ev){ const beta=typeof ev.beta==='number'?ev.beta:0; const rad=(beta*Math.PI/180)-zeroOffsetRad; return clamp(toDeg(rad),-89.9,89.9); }
 let onOrientation=null;
+function setRunningUI(run){ if(run){ elToggle.textContent='Stop clinometer'; elToggle.classList.add('running'); elStatus.textContent='Sensor: running'; } else { elToggle.textContent='Start clinometer'; elToggle.classList.remove('running'); elStatus.textContent='Sensor: idle'; } }
 function startClinometer(){
-  if(clinoOn) return; clinoOn=true; elStatus.textContent='Sensor: running';
-  elEnable.classList.add('active'); elDisable.classList.remove('active');
+  if(clinoOn) return; clinoOn=true; setRunningUI(true);
   requestIOSPermissionIfNeeded().then(ok=>{
-    if(!ok){ elStatus.textContent='Sensor: permission denied'; clinoOn=false; return; }
+    if(!ok){ elStatus.textContent='Sensor: permission denied'; clinoOn=false; setRunningUI(false); return; }
     onOrientation=(ev)=>{ if(!clinoOn||locked) return; const deg=computePitchFromEvent(ev); elAngle.textContent=`${fmt1(deg)}°`; };
     window.addEventListener('deviceorientation', onOrientation, {passive:true});
   });
 }
 function stopClinometer(){
-  if(!clinoOn) return; clinoOn=false; elEnable.classList.remove('active'); elDisable.classList.add('active');
-  elStatus.textContent='Sensor: stopped'; if(onOrientation){ window.removeEventListener('deviceorientation', onOrientation); onOrientation=null; }
+  if(!clinoOn) return; clinoOn=false; setRunningUI(false);
+  if(onOrientation){ window.removeEventListener('deviceorientation', onOrientation); onOrientation=null; }
 }
+elToggle.addEventListener('click',()=>{ if(clinoOn) stopClinometer(); else startClinometer(); });
 function lockAngle(){
   if(!locked){
     locked=true; elLock.textContent='Locked'; elLock.classList.add('active'); buzz(40);
-    const current=parseFloat(elAngle.textContent.replace('°','')); if(Number.isFinite(current)){ hAngle.value=current.toFixed(1); if(calcMode==='auto') calcHeight(); }
+    const current=parseFloat(elAngle.textContent.replace('°','')); if(Number.isFinite(current)){ hAngle.value=current.toFixed(1); setCalcState(hCalc,false); renderHeightFormula(); if(calcMode==='auto') calcHeight(); }
   } else { locked=false; elLock.textContent='Lock'; elLock.classList.remove('active'); }
 }
 function zeroCalibrate(){ const current=parseFloat(elAngle.textContent.replace('°','')); if(!Number.isFinite(current)) return; zeroOffsetRad += (current*Math.PI/180); elStatus.textContent='Zeroed at current angle'; buzz(20); }
 function resetSensor(){ locked=false; elLock.textContent='Lock'; elLock.classList.remove('active'); zeroOffsetRad=0; elAngle.textContent='—°'; elStatus.textContent='Sensor: idle'; buzz(10); }
-elEnable?.addEventListener('click', startClinometer);
-elDisable?.addEventListener('click', stopClinometer);
 elLock?.addEventListener('click', lockAngle);
 elZero?.addEventListener('click', zeroCalibrate);
 elReset?.addEventListener('click', resetSensor);
@@ -536,13 +568,15 @@ const spreadMajor=$('#spreadMajor'), spreadMinor=$('#spreadMinor'), spreadCalc=$
 function calcSpread(){
   const maj=parseFloat(spreadMajor.value), min=parseFloat(spreadMinor.value);
   const haveMaj=Number.isFinite(maj), haveMin=Number.isFinite(min);
-  if(!haveMaj && !haveMin){ lastSpread=null; updateResultsPanel(); updateCopyButtons(); return; }
+  if(!haveMaj && !haveMin){ lastSpread=null; setCalcState(spreadCalc,false); updateResultsPanel(); updateCopyButtons(); return; }
   const mMaj=haveMaj?toM(maj,inputUnit):null, mMin=haveMin?toM(min,inputUnit):null;
   const meanM=((mMaj??0)+(mMin??0))/((haveMaj?1:0)+(haveMin?1:0));
   lastSpread={majorM:mMaj,minorM:mMin,meanM,meanFt:mToFt(meanM)};
+  setCalcState(spreadCalc,true);
   updateResultsPanel(); updateCopyButtons();
 }
-spreadCalc.onclick=calcSpread; [spreadMajor,spreadMinor].forEach(inp=>inp.addEventListener('input',()=>{ if(calcMode==='auto') calcSpread(); }));
+spreadCalc.onclick=calcSpread;
+[spreadMajor,spreadMinor].forEach(inp=>inp.addEventListener('input',()=>{ setCalcState(spreadCalc,false); if(calcMode==='auto') calcSpread(); }));
 
 /* ===== results & copy ===== */
 const resHeight=$('#res-height'), resEqCirc=$('#res-eqcirc'), resAvgCirc=$('#res-avgcirc'), resSpread=$('#res-spread');
@@ -707,7 +741,7 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
   const o=$('#copyDesc').textContent; $('#copyDesc').textContent='Copied ✓'; setTimeout(()=>$('#copyDesc').textContent=o,1200);
 };
 
-/* ===== Location tracker + Leaflet map (same scope) ===== */
+/* ===== Location tracker + Leaflet map ===== */
 (() => {
   const el = s => document.querySelector(s);
 
@@ -732,9 +766,10 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
 
   // State
   let watchId=null, saver=false, hiacc=false, lastTick=0, samples=0;
-  let recent=null, best=null, ageTimer=null;
+  window.recent=null; window.best=null; // expose for map handlers below
+  let ageTimer=null;
 
-  // Map state (lives here so it can see recent/best)
+  // Map state
   let map=null, tiles=null, recentMarker=null, bestMarker=null, accCircle=null;
 
   function ensureMap(){
@@ -747,6 +782,7 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
     map.whenReady(()=>map.invalidateSize());
     return map;
   }
+  window.ensureMap = ensureMap; // used by other handlers
 
   const fmt6=v=>Number.isFinite(v)?v.toFixed(6):'—';
   const fmt1=v=>Number.isFinite(v)?v.toFixed(1):'—';
@@ -756,33 +792,33 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
 
   function updateRecentOnMap(){
     if(!map) return;
-    if(!recent){ if(recentMarker){map.removeLayer(recentMarker);recentMarker=null;} if(accCircle){map.removeLayer(accCircle);accCircle=null;} return; }
-    const latlng=[recent.lat,recent.lng];
+    if(!window.recent){ if(recentMarker){map.removeLayer(recentMarker);recentMarker=null;} if(accCircle){map.removeLayer(accCircle);accCircle=null;} return; }
+    const latlng=[window.recent.lat,window.recent.lng];
     if(!recentMarker){ recentMarker=L.marker(latlng,{title:'Recent fix'}).addTo(map); } else { recentMarker.setLatLng(latlng); }
-    if(Number.isFinite(recent.acc)){
-      if(!accCircle){ accCircle=L.circle(latlng,{radius:recent.acc,color:'#5aa0ff',fillColor:'#5aa0ff',fillOpacity:.15,weight:1}).addTo(map); }
-      else { accCircle.setLatLng(latlng).setRadius(recent.acc); }
+    if(Number.isFinite(window.recent.acc)){
+      if(!accCircle){ accCircle=L.circle(latlng,{radius:window.recent.acc,color:'#5aa0ff',fillColor:'#5aa0ff',fillOpacity:.15,weight:1}).addTo(map); }
+      else { accCircle.setLatLng(latlng).setRadius(window.recent.acc); }
     } else if(accCircle){ map.removeLayer(accCircle); accCircle=null; }
   }
   function updateBestOnMap(){
     if(!map) return;
-    if(!best){ if(bestMarker){map.removeLayer(bestMarker); bestMarker=null;} return; }
-    const latlng=[best.lat,best.lng];
+    if(!window.best){ if(bestMarker){map.removeLayer(bestMarker); bestMarker=null;} return; }
+    const latlng=[window.best.lat,window.best.lng];
     if(!bestMarker){ bestMarker=L.marker(latlng,{title:'Best fix'}).addTo(map); } else { bestMarker.setLatLng(latlng); }
   }
   function fitToAny(){
     if(!map) return;
-    const pts=[]; if(recent) pts.push([recent.lat,recent.lng]); if(best) pts.push([best.lat,best.lng]);
+    const pts=[]; if(window.recent) pts.push([window.recent.lat,window.recent.lng]); if(window.best) pts.push([window.best.lat,window.best.lng]);
     if(!pts.length) return; if(pts.length===1) map.setView(pts[0],16); else map.fitBounds(pts,{padding:[24,24]});
   }
 
   function updateRecentUI(){
-    if(recent){
-      outDD.textContent=`DD: ${fmt6(recent.lat)}, ${fmt6(recent.lng)}`;
-      outAcc.textContent=`${fmt1(recent.acc)} m`; outAcc.className=`acc-chip ${accClass(recent.acc)}`;
-      outAlt.textContent=Number.isFinite(recent.alt)?`${fmt1(recent.alt)} m`:'—';
+    if(window.recent){
+      outDD.textContent=`DD: ${fmt6(window.recent.lat)}, ${fmt6(window.recent.lng)}`;
+      outAcc.textContent=`${fmt1(window.recent.acc)} m`; outAcc.className=`acc-chip ${accClass(window.recent.acc)}`;
+      outAlt.textContent=Number.isFinite(window.recent.alt)?`${fmt1(window.recent.alt)} m`:'—';
       if(ageTimer) clearInterval(ageTimer);
-      ageTimer=setInterval(()=>{ const secs=Math.max(0,(Date.now()-recent.ts)/1000); outAge.textContent=`${secs.toFixed(1)} s`; },200);
+      ageTimer=setInterval(()=>{ const secs=Math.max(0,(Date.now()-window.recent.ts)/1000); outAge.textContent=`${secs.toFixed(1)} s`; },200);
       bUseRecent.disabled=false;
     }else{
       outDD.textContent='DD: —'; outAcc.textContent='—'; outAcc.className='acc-chip acc-grey'; outAlt.textContent='—'; outAge.textContent='—'; bUseRecent.disabled=true;
@@ -792,11 +828,11 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
   }
 
   function updateBestUI(isNew=false){
-    if(best){
-      bestDD.textContent=`DD: ${fmt6(best.lat)}, ${fmt6(best.lng)}`;
-      bestAcc.textContent=`${fmt1(best.acc)} m`; bestAcc.className=`acc-chip ${accClass(best.acc)}`;
-      bestAlt.textContent=Number.isFinite(best.alt)?`${fmt1(best.alt)} m`:'—'; bestAlt.dataset.val=Number.isFinite(best.alt)?String(best.alt):'';
-      bestTime.textContent=new Date(best.ts).toLocaleString(); bestTime.dataset.ts=String(best.ts);
+    if(window.best){
+      bestDD.textContent=`DD: ${fmt6(window.best.lat)}, ${fmt6(window.best.lng)}`;
+      bestAcc.textContent=`${fmt1(window.best.acc)} m`; bestAcc.className=`acc-chip ${accClass(window.best.acc)}`;
+      bestAlt.textContent=Number.isFinite(window.best.alt)?`${fmt1(window.best.alt)} m`:'—'; bestAlt.dataset.val=Number.isFinite(window.best.alt)?String(window.best.alt):'';
+      bestTime.textContent=new Date(window.best.ts).toLocaleString(); bestTime.dataset.ts=String(window.best.ts);
       bUseBest.disabled=false;
     }else{
       bestDD.textContent='DD: —'; bestAcc.textContent='—'; bestAcc.className='acc-chip acc-grey';
@@ -809,33 +845,33 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
   function handlePosition(pos){
     const c=pos.coords; const now=Date.now(); if(saver && now-lastTick<1500) return; lastTick=now;
     const fix={lat:c.latitude,lng:c.longitude,acc:c.accuracy,alt:Number.isFinite(c.altitude)?c.altitude:null,ts:now};
-    samples++; recent=fix; updateRecentUI();
-    if(!best || (Number.isFinite(fix.acc)&&fix.acc<best.acc)){ best={...fix}; updateBestUI(true); }
+    samples++; window.recent=fix; updateRecentUI();
+    if(!window.best || (Number.isFinite(fix.acc)&&fix.acc<window.best.acc)){ window.best={...fix}; updateBestUI(true); }
   }
   function handleError(err){ console.warn('Geolocation error',err); }
 
   function start(){ if(watchId!=null) return; const opts={enableHighAccuracy:hiacc,maximumAge:0,timeout:20000};
     watchId=(navigator.geolocation&&navigator.geolocation.watchPosition)?navigator.geolocation.watchPosition(handlePosition,handleError,opts):null; setRunningUI(true); }
   function stop(){ if(watchId!=null&&navigator.geolocation&&navigator.geolocation.clearWatch){ navigator.geolocation.clearWatch(watchId);} watchId=null; setRunningUI(false); }
-  function resetAll(){ stop(); samples=0; recent=null; best=null; if(ageTimer){clearInterval(ageTimer);ageTimer=null;} updateRecentUI(); updateBestUI(false); }
+  function resetAll(){ stop(); samples=0; window.recent=null; window.best=null; if(ageTimer){clearInterval(ageTimer);ageTimer=null;} updateRecentUI(); updateBestUI(false); }
 
-  function applyFixToHidden(fix){ if(!fix) return; latEl.value=fix.lat.toFixed(6); lngEl.value=fix.lng.toFixed(6);
-    accEl.value=Number.isFinite(fix.acc)?fix.acc.toFixed(1):''; savedAlt.dataset.val=Number.isFinite(fix.alt)?String(fix.alt):''; savedTs.dataset.ts=String(fix.ts||Date.now());
+  function applyFixToHidden(fix){ if(!fix) return; $('#lat').value=fix.lat.toFixed(6); $('#lng').value=fix.lng.toFixed(6);
+    $('#acc').value=Number.isFinite(fix.acc)?fix.acc.toFixed(1):''; $('#loc-saved-alt').dataset.val=Number.isFinite(fix.alt)?String(fix.alt):''; $('#loc-saved-ts').dataset.ts=String(fix.ts||Date.now());
     if(typeof saveState==='function') saveState(); }
 
   bToggle.addEventListener('click',()=>{ if(watchId==null) start(); else stop(); });
   tSaver.addEventListener('click',()=>{ saver=!saver; tSaver.classList.toggle('active',saver); tSaver.setAttribute('aria-pressed',String(saver)); });
   tHiAcc.addEventListener('click',()=>{ hiacc=!hiacc; tHiAcc.classList.toggle('active',hiacc); tHiAcc.setAttribute('aria-pressed',String(hiacc)); if(watchId!=null){ stop(); start(); } });
-  bUseRecent.addEventListener('click',()=>applyFixToHidden(recent));
-  bUseBest  .addEventListener('click',()=>applyFixToHidden(best));
+  bUseRecent.addEventListener('click',()=>applyFixToHidden(window.recent));
+  bUseBest  .addEventListener('click',()=>applyFixToHidden(window.best));
   bReset    .addEventListener('click',resetAll);
 
   // Initial UI
   setRunningUI(false); updateRecentUI(); updateBestUI(false);
 
   // Recenter buttons
-  document.querySelector('#map-to-recent')?.addEventListener('click',()=>{ ensureMap(); if(recent) map.setView([recent.lat,recent.lng],18); });
-  document.querySelector('#map-to-best')  ?.addEventListener('click',()=>{ ensureMap(); if(best)   map.setView([best.lat,best.lng],18); });
+  document.querySelector('#map-to-recent')?.addEventListener('click',()=>{ ensureMap(); if(window.recent) map.setView([window.recent.lat,window.recent.lng],18); });
+  document.querySelector('#map-to-best')  ?.addEventListener('click',()=>{ ensureMap(); if(window.best)   map.setView([window.best.lat,window.best.lng],18); });
 })();
 
 /* ===== autosave ===== */
@@ -864,7 +900,7 @@ function setFormState(st){
   if($('#notes')){ $('#notes').value=st.notes??''; autoGrow($('#notes')); }
   if(st.location){ $('#lat').value=st.location.lat||''; $('#lng').value=st.location.lng||''; $('#acc').value=st.location.acc||''; $('#loc-saved-alt').dataset.val=st.location.alt||''; $('#loc-saved-ts').dataset.ts=st.location.ts||''; }
   if($('#desc')){ if(st.desc){ $('#desc').innerHTML=st.desc; $('#copyDesc')?.removeAttribute('disabled'); $('#shareLink')?.removeAttribute('disabled'); } else { $('#desc').innerHTML='—'; $('#copyDesc')?.setAttribute('disabled',''); $('#shareLink')?.setAttribute('disabled',''); } }
-  updateResultsPanel(); updateCopyButtons();
+  updateResultsPanel(); updateCopyButtons(); renderHeightFormula();
 }
 function saveState(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(getFormState())); }catch(e){ console.warn('saveState failed',e);} }
 function loadState(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(!raw){ if($('#treeType')?.value==='Multi trunked tree' && $('#mt-list')?.children.length===0){ addMtRow(); addMtRow(); } return; } setFormState(JSON.parse(raw)); }catch(e){ console.warn('loadState failed',e);} }
@@ -884,6 +920,18 @@ if(resetFormResults){
     location.replace(location.href);
   };
 }
+
+/* ===== Leaflet map helpers (global) ===== */
+let map, tiles, recentMarker, bestMarker, accCircle;
+function ensureMap() {
+  if (map || !window.L) return;
+  map = L.map('loc-map', { zoomControl: true, attributionControl: false })
+          .setView([53.5444, -113.4909], 11);
+  tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+}
+function updateRecentOnMap(){}
+function updateBestOnMap(){}
+function fitToAny(){}
 </script>
 </body>
 </html>
