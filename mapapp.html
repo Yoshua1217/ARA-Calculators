@@ -1254,6 +1254,20 @@ if(copyDesc) copyDesc.onclick=function(){
   var best   = null; // minimal acc
   var ageTimer = null;
 
+  // --- export/import runtime for autosave ---
+window.locExportRuntime = function () {
+  return { recent, best, samples };
+};
+window.locImportRuntime = function (data) {
+  if (!data) return;
+  recent  = data.recent  || null;
+  best    = data.best    || null;
+  samples = data.samples || 0;
+  updateRecentUI();
+  updateBestUI(false);
+  ensureMap(); fitToAny();
+};
+
   // Utilities
   var fmt6 = function(v){ return Number.isFinite(v) ? v.toFixed(6) : '—'; };
   var fmt1a = function(v){ return Number.isFinite(v) ? v.toFixed(1) : '—'; };
@@ -1424,10 +1438,20 @@ function getFormState(){
         alt: (byId('loc-saved-alt')?.dataset?.val) || '',
         ts:  (byId('loc-saved-ts')?.dataset?.ts)  || ''
       },
+      // NEW: persist the computed results as plain JSON
+      results: {
+        lastHeight: lastHeight || null,
+        lastSingle: lastSingle || null,
+        lastMulti:  lastMulti  || null,
+        lastSpread: lastSpread || null
+      },
+      // NEW: persist what the location cards/map show
+      locRuntime: (typeof window.locExportRuntime === 'function') ? window.locExportRuntime() : null,
       desc: (byId('desc') && byId('desc').innerHTML && byId('desc').innerHTML !== '—') ? byId('desc').innerHTML : ''
     };
   } catch(e){ console.warn('getFormState failed', e); return null; }
 }
+
 function setFormState(st){
   try{
     if(!st) return;
@@ -1469,6 +1493,18 @@ function setFormState(st){
       if(st.desc){ byId('desc').innerHTML = st.desc; copyDesc?.removeAttribute('disabled'); shareBtn?.removeAttribute('disabled'); }
       else { byId('desc').innerHTML = '—'; copyDesc?.setAttribute('disabled',''); shareBtn?.setAttribute('disabled',''); }
     }
+// NEW: restore computed results (so Final measurements show immediately)
+if (st.results) {
+  lastHeight = st.results.lastHeight ?? null;
+  lastSingle = st.results.lastSingle ?? null;
+  lastMulti  = st.results.lastMulti  ?? null;
+  lastSpread = st.results.lastSpread ?? null;
+}
+
+// NEW: restore the Location cards + map markers
+if (st.locRuntime && typeof window.locImportRuntime === 'function') {
+  window.locImportRuntime(st.locRuntime);
+}
 
     updateResultsPanel(); updateCopyButtons();
   } catch(e){ console.warn('setFormState failed', e); }
