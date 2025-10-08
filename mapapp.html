@@ -788,6 +788,51 @@ function calcHeight(){
 if(hCalc) hCalc.onclick=calcHeight;
 [hAngle,hDist,hEye].forEach(function(inp){ if(inp) inp.addEventListener('input',function(){ if(calcMode==='auto') calcHeight(); }); });
 
+  /* ---------------- Canopy ---------------- */
+var spreadMajor = byId('spreadMajor'),
+    spreadMinor = byId('spreadMinor'),
+    spreadCalcBtn = byId('spread-calc');
+
+function calcSpread(){
+  var maj = parseFloat(spreadMajor && spreadMajor.value);
+  var min = parseFloat(spreadMinor && spreadMinor.value);
+
+  if (!Number.isFinite(maj) || !Number.isFinite(min) || maj <= 0 || min <= 0){
+    lastSpread = null;
+    updateResultsPanel();
+    updateCopyButtons();
+    return;
+  }
+
+  // Convert to meters if needed
+  var majM = toM(maj, inputUnit);
+  var minM = toM(min, inputUnit);
+  var meanM = (majM + minM) / 2;
+
+  lastSpread = {
+    majorM: majM,
+    minorM: minM,
+    meanM: meanM,
+    meanFt: mToFt(meanM)
+  };
+
+  updateResultsPanel();
+  updateCopyButtons();
+
+  if (spreadCalcBtn){
+    spreadCalcBtn.classList.add('active');
+    setTimeout(function(){ spreadCalcBtn.classList.remove('active'); }, 900);
+  }
+}
+
+// Hook up events
+if (spreadCalcBtn) spreadCalcBtn.addEventListener('click', calcSpread);
+[spreadMajor, spreadMinor].forEach(function(inp){
+  if (inp) inp.addEventListener('input', function(){
+    if (calcMode === 'auto') calcSpread();
+  });
+});
+
 /* ---------------- Clinometer (single-button start/lock) ---------------- */
 let clinoOn = false, zeroOffsetRad = 0, locked = false;
 let lastLiveDeg = NaN; // current live (unlocked) reading in degrees
