@@ -35,32 +35,32 @@
     border-bottom:1px solid var(--border);
     padding:10px 14px;
   }
-  .topbar .row {
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:16px;
-   }
-
-  /* On wider screens, keep them side-by-side like before */
-@media (min-width: 720px){
-  .topbar .row{
-    flex-direction:row;
-    align-items:center;
-    justify-content:space-between;
-  }
-}
-  .brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; line-height:1.1; }
-
-html, body { overflow-x: hidden; }
   
-  .inline-controls{
-    display:flex; 
-    align-items:center; /* ensures all controls align */
-    gap:8px;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-  }
+/* Fixed header */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  background:linear-gradient(180deg, #0d1b2a, #0f2236);
+  border-bottom:1px solid var(--border);
+  padding:10px 14px;
+}
+
+.topbar .row{
+  display:flex;
+  flex-direction:column;      /* stack title over controls */
+  align-items:flex-start;     /* left edges line up */
+  gap:8px;
+}
+
+.brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; line-height:1.1; }
+
+.inline-controls{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;             /* wrap nicely on small screens */
+  white-space:nowrap;
+}
+
 
   /* small-screen fit: slightly tighter paddings/fonts */
 @media (max-width: 420px){
@@ -1761,6 +1761,19 @@ if (st.results) {
 // NEW: restore the Location cards + map markers
 if (st.locRuntime && typeof window.locImportRuntime === 'function') {
   window.locImportRuntime(st.locRuntime);
+  // NEW: ensure global pill reflects restored runtime (even if hidden inputs are blank)
+if (typeof paintGlobalAcc === 'function') {
+  var b = st.locRuntime && st.locRuntime.best;
+  var r = st.locRuntime && st.locRuntime.recent;
+  if (b && Number.isFinite(b.acc)) {
+    paintGlobalAcc(b.acc, { state:'ok' });
+  } else if (r && Number.isFinite(r.acc)) {
+    paintGlobalAcc(r.acc, { state:'ok' });
+  } else {
+    // we have no fix in autosave; leave it 'off' until user starts tracking
+    paintGlobalAcc(NaN, { state:'off' });
+  }
+}
 }
 
     updateResultsPanel(); updateCopyButtons();
@@ -1799,18 +1812,6 @@ document.addEventListener('DOMContentLoaded', function(){
   document.addEventListener('input',  autoSaveSoon, {capture:true});
   document.addEventListener('change', autoSaveSoon, {capture:true});
   loadState();
-
-  // After prior state is restored, set initial header pill/dot from saved best (if any)
-(function(){
-  var savedAcc = parseFloat((document.getElementById('acc') && document.getElementById('acc').value) || '');
-  var savedTs  = (document.getElementById('loc-saved-ts') && document.getElementById('loc-saved-ts').dataset && document.getElementById('loc-saved-ts').dataset.ts) || '';
-  if (Number.isFinite(savedAcc) && savedTs){
-    paintGlobalAcc(savedAcc, { state:'ok' });
-  } else {
-    paintGlobalAcc(NaN, { state:'off' });
-  }
-})();
-
 
   /* ---------------- Reset form (safe) ---------------- */
   var resetFormResults = byId('resetFormResults');
