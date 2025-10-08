@@ -140,38 +140,37 @@
     border-radius:12px; background:#0b1a2f; margin:10px 0; overflow:hidden;
     display:flex; align-items:center; justify-content:center;
   }
-  
+
   /* Degree pill (always visible, on top) */
-.clino-angle{
-  position:absolute; right:10px; top:10px;
-  z-index:10;                      /* ← sit above anything */
-  display:inline-flex;             /* ← force visible layout */
-  align-items:center;
-  font-weight:800; font-size:1.2rem;
-  color:#0b2250;
-  background:#cfe0ff;
-  padding:6px 10px; border-radius:10px;
-  border:2px solid #5aa0ff;
-  box-shadow:0 1px 0 rgba(0,0,0,.2) inset;
-}
+  .clino-angle{
+    position:absolute; right:10px; top:10px;
+    z-index:10;
+    display:inline-flex;
+    align-items:center;
+    font-weight:800; font-size:1.2rem;
+    color:#0b2250;
+    background:#cfe0ff;
+    padding:6px 10px; border-radius:10px;
+    border:2px solid #5aa0ff;
+    box-shadow:0 1px 0 rgba(0,0,0,.2) inset;
+  }
 
-
-/* Clinometer lock button (no border when idle) */
-.clino-lock{
-  width:140px; height:140px;
-  border:0;                         /* ← no border when not locked */
-  border-radius:999px;
-  background:#cfe0ff;               /* light blue */
-  color:#0b2250;                    /* dark navy text */
-  font-weight:900; font-size:1.15rem; cursor:pointer;
-  box-shadow:0 2px 8px rgba(0,0,0,.25) inset;
-}
-.clino-lock.active{
-  background:#5aa0ff;               /* darker when locked */
-  color:#001a3d;
-  border:2px solid #2b7fe6;         /* only show border when locked */
-}
-.clino-lock:active{ transform:scale(.98); }
+  /* Clinometer lock button (no border when idle) */
+  .clino-lock{
+    width:140px; height:140px;
+    border:0; /* no border when not locked */
+    border-radius:999px;
+    background:#cfe0ff; /* light blue */
+    color:#0b2250;      /* dark navy text */
+    font-weight:900; font-size:1.15rem; cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.25) inset;
+  }
+  .clino-lock.active{
+    background:#5aa0ff; /* darker when locked */
+    color:#001a3d;
+    border:2px solid #2b7fe6; /* border only when locked */
+  }
+  .clino-lock:active{ transform:scale(.98); }
 
   /* Results */
   .results{
@@ -196,24 +195,24 @@
   /* Running state for the Start/Stop toggle */
   #loc-toggle.running{ background:#0b3b82; color:#fff; }
 
-/* Reset Form Button — bright red fill by default */
-#resetFormResults{
-  background:#e53935;               /* bright red default fill */
-  color:#fff;
-  border:3px solid #6b0e0e;         /* thick dark-red border */
-  border-radius:10px;
-  transition:background .15s, transform .1s, border-color .15s;
-}
-#resetFormResults:hover{
-  background:#d32f2f;               /* slightly darker on hover */
-  border-color:#8e0000;
-  transform:scale(1.02);
-}
-#resetFormResults:active{
-  background:#8e0000;               /* dark red when pressed */
-  border-color:#5c0000;
-  transform:scale(.98);
-}
+  /* Reset Form Button — bright red fill by default, thicker border */
+  #resetFormResults{
+    background:#e53935;
+    color:#fff;
+    border:3px solid #6b0e0e;
+    border-radius:10px;
+    transition:background .15s, transform .1s, border-color .15s;
+  }
+  #resetFormResults:hover{
+    background:#d32f2f;
+    border-color:#8e0000;
+    transform:scale(1.02);
+  }
+  #resetFormResults:active{
+    background:#8e0000;
+    border-color:#5c0000;
+    transform:scale(.98);
+  }
 
   /* Map space (+ small gap above) */
   #loc-map { height: 300px; border-radius: 12px; overflow: hidden; margin-top:12px; }
@@ -403,10 +402,10 @@
     <div class="card">
       <div class="block">
 
-<div class="clino-head">
-  <h2>Height</h2>
-  <div id="clino-angle" class="clino-angle">—°</div>
-</div>
+        <div class="clino-head">
+          <h2>Height</h2>
+          <div id="clino-angle" class="clino-angle">—°</div>
+        </div>
 
         <label for="h-angle">Angle to top of the tree (degrees)</label>
         <input id="h-angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5">
@@ -549,7 +548,7 @@ let lastSingle=null, lastMulti=null, lastHeight=null, lastSpread=null;
 
 /* ---------------- Header controls ---------------- */
 const unitM=$('#unit-m'), unitFt=$('#unit-ft');
-const modeManualBtn=$('#mode-manual'), modeAutoBtn=$('#mode-auto');
+const modeManualBtn=$('#mode-manual'), modeAutoBtn=$('#mode-auto']);
 const unitTags=$$('.unit-tag');
 
 function setUnit(u){
@@ -744,8 +743,8 @@ async function requestIOSPermissionIfNeeded(){
 function computePitchFromEvent(ev){ const beta=typeof ev.beta==='number'?ev.beta:0; const rad=(beta*Math.PI/180)-zeroOffsetRad; return clamp(toDeg(rad),-89.9,89.9); }
 let onOrientation=null;
 function startClinometer(){
-  if(clinoOn) return; clinoOn=true; 
-    elAngle && (elAngle.style.display = 'inline-flex');  // ← add this line
+  if(clinoOn) return; clinoOn=true;
+  elAngle && (elAngle.style.display = 'inline-flex');  // ensure visible
   elStatus.textContent='Sensor: running';
   elEnable.classList.add('active'); elDisable.classList.remove('active');
   requestIOSPermissionIfNeeded().then(ok=>{
@@ -1112,7 +1111,6 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
       bestAlt.textContent = '—';
       bestAlt.dataset.val = '';
       bestTime.textContent= '—';
-      bestTime.dataset.ts = '';
       bUseBest.disabled = true;
     }
     bestBadge.style.display = isNew ? '' : 'none';
