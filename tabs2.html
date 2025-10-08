@@ -885,68 +885,7 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
   const o=$('#copyDesc').textContent; $('#copyDesc').textContent='Copied ✓'; setTimeout(()=>$('#copyDesc').textContent=o,1200);
 };
 
-/* Share link for the current form */
-function getFormState(){
-  return {
-    inputUnit, calcMode,
-    basics:{ name:treeName.value||'', species:species.value||'', condition:condition.value||'', type:treeType.value||'' },
-    singleC: singleC.value||'',
-    height:{ angle:hAngle.value||'', dist:hDist.value||'', eye:hEye.value||'' },
-    spread:{ major:spreadMajor.value||'', minor:spreadMinor.value||'' },
-    notes: notesEl.value||'',
-    multi: { values: $$('#mt-list input').map(i=>i.value||'') },
-    // NEW: location
-    location:{
-      lat: $('#lat')?.value || '',
-      lng: $('#lng')?.value || '',
-      acc: $('#acc')?.value || '',
-      alt: $('#loc-saved-alt')?.dataset?.val || '',
-      ts:  $('#loc-saved-ts')?.dataset?.ts  || ''
-    },
-    desc: (descBox.innerHTML && descBox.innerHTML!=='—') ? descBox.innerHTML : ''
-  };
-}
 
-function setFormState(st){
-  if(!st) return;
-  setUnit(st.inputUnit==='ft'?'ft':'m');
-  setCalcMode(st.calcMode==='auto'?'auto':'manual');
-
-  treeName.value = st.basics?.name ?? '';
-  species.value  = st.basics?.species ?? '';
-  condition.value= st.basics?.condition ?? '';
-  treeType.value = st.basics?.type ?? '';
-  updateTypeVisibility();
-
-  singleC.value  = st.singleC ?? '';
-  hAngle.value   = st.height?.angle ?? '';
-  hDist.value    = st.height?.dist  ?? '';
-  hEye.value     = st.height?.eye   ?? '';
-  spreadMajor.value = st.spread?.major ?? '';
-  spreadMinor.value = st.spread?.minor ?? '';
-  notesEl.value  = st.notes ?? ''; autoGrow(notesEl);
-
-  // Multi
-  mtList.innerHTML=''; mtCount=0;
-  const arr = Array.isArray(st.multi?.values) ? st.multi.values : [];
-  if(arr.length>0) arr.forEach(v=>addMtRow(v)); else { addMtRow(); addMtRow(); }
-
-  // NEW: location
-  if (st.location){
-    if ($('#lat')) $('#lat').value = st.location.lat || '';
-    if ($('#lng')) $('#lng').value = st.location.lng || '';
-    if ($('#acc')) $('#acc').value = st.location.acc || '';
-    if ($('#loc-saved-alt')) $('#loc-saved-alt').dataset.val = st.location.alt || '';
-    if ($('#loc-saved-ts'))  $('#loc-saved-ts').dataset.ts  = st.location.ts  || '';
-  }
-
-  // Description
-  if (st.desc){ descBox.innerHTML = st.desc; copyDesc.disabled=false; shareBtn.disabled=false; }
-  else { markDescDirty(); }
-
-  updateResultsPanel(); updateCopyButtons();
-  formDirty=false;
-}
 
 
 
@@ -1149,6 +1088,130 @@ function setFormState(st){
   updateRecentUI();
   updateBestUI(false);
 })();
+
+// ===== Autosave core (place above the debounced listeners) =====
+const SAVE_KEY = 'ara_field_v1';
+
+function getFormState(){
+  return {
+    // unit/mode
+    inputUnit,
+    calcMode,
+    // basics
+    basics: {
+      name:      $('#treeName')?.value || '',
+      species:   $('#species')?.value || '',
+      condition: $('#condition')?.value || '',
+      type:      $('#treeType')?.value || ''
+    },
+    // circumference
+    singleC: $('#singleC')?.value || '',
+    multi:   { values: $$('#mt-list input[type="number"]').map(i=>i.value || '') },
+    // height
+    height: {
+      angle: $('#h-angle')?.value || '',
+      dist:  $('#h-dist')?.value  || '',
+      eye:   $('#h-eye')?.value   || ''
+    },
+    // canopy
+    spread: {
+      major: $('#spreadMajor')?.value || '',
+      minor: $('#spreadMinor')?.value || ''
+    },
+    // notes
+    notes: $('#notes')?.value || '',
+    // location (hidden fields populated by “Save recent/best”)
+    location: {
+      lat: $('#lat')?.value || '',
+      lng: $('#lng')?.value || '',
+      acc: $('#acc')?.value || '',
+      alt: $('#loc-saved-alt')?.dataset?.val || '',
+      ts:  $('#loc-saved-ts')?.dataset?.ts  || ''
+    },
+    // description html
+    desc: ($('#desc')?.innerHTML && $('#desc').innerHTML !== '—') ? $('#desc').innerHTML : ''
+  };
+}
+
+function setFormState(st){
+  if(!st) return;
+
+  // unit & mode
+  if(st.inputUnit && st.inputUnit !== inputUnit) setUnit(st.inputUnit);
+  if(st.calcMode  && st.calcMode  !== calcMode)  setCalcMode(st.calcMode);
+
+  // basics
+  if($('#treeName'))  $('#treeName').value  = st.basics?.name ?? '';
+  if($('#species'))   $('#species').value   = st.basics?.species ?? '';
+  if($('#condition')) $('#condition').value = st.basics?.condition ?? '';
+  if($('#treeType'))  $('#treeType').value  = st.basics?.type ?? '';
+  updateTypeVisibility();
+
+  // circumference
+  if($('#singleC')) $('#singleC').value = st.singleC ?? '';
+  if($('#mt-list')){
+    const list = $('#mt-list');
+    list.innerHTML = '';
+    let count = 0;
+    const vals = Array.isArray(st.multi?.values) ? st.multi.values : [];
+    if(vals.length){
+      vals.forEach(v => { addMtRow(v); count++; });
+    }
+    if(count === 0){ addMtRow(); addMtRow(); }
+  }
+
+  // height
+  if($('#h-angle')) $('#h-angle').value = st.height?.angle ?? '';
+  if($('#h-dist'))  $('#h-dist').value  = st.height?.dist  ?? '';
+  if($('#h-eye'))   $('#h-eye').value   = st.height?.eye   ?? '';
+
+  // canopy
+  if($('#spreadMajor')) $('#spreadMajor').value = st.spread?.major ?? '';
+  if($('#spreadMinor')) $('#spreadMinor').value = st.spread?.minor ?? '';
+
+  // notes
+  if($('#notes')) { $('#notes').value = st.notes ?? ''; autoGrow($('#notes')); }
+
+  // location
+  if(st.location){
+    if($('#lat')) $('#lat').value = st.location.lat || '';
+    if($('#lng')) $('#lng').value = st.location.lng || '';
+    if($('#acc')) $('#acc').value = st.location.acc || '';
+    if($('#loc-saved-alt')) $('#loc-saved-alt').dataset.val = st.location.alt || '';
+    if($('#loc-saved-ts'))  $('#loc-saved-ts').dataset.ts  = st.location.ts  || '';
+  }
+
+  // description
+  if($('#desc')){
+    if(st.desc){ $('#desc').innerHTML = st.desc; $('#copyDesc')?.removeAttribute('disabled'); $('#shareLink')?.removeAttribute('disabled'); }
+    else { $('#desc').innerHTML = '—'; $('#copyDesc')?.setAttribute('disabled', ''); $('#shareLink')?.setAttribute('disabled', ''); }
+  }
+
+  // refresh computed UI
+  updateResultsPanel();
+  updateCopyButtons();
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify(getFormState()));
+  }catch(e){ console.warn('saveState failed', e); }
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw){
+      // First load: ensure multi has 2 rows if needed
+      if($('#treeType')?.value === 'Multi trunked tree' && $('#mt-list')?.children.length === 0){
+        addMtRow(); addMtRow();
+      }
+      return;
+    }
+    const st = JSON.parse(raw);
+    setFormState(st);
+  }catch(e){ console.warn('loadState failed', e); }
+}
   
 // Debounced autosave for any field change
 let _asTimer=null;
@@ -1159,6 +1222,8 @@ function autoSaveSoon(){
 document.addEventListener('input', autoSaveSoon, {capture:true});
 document.addEventListener('change', autoSaveSoon, {capture:true});
 window.addEventListener('beforeunload', ()=>{ try{ saveState(); }catch{} });
+// hydrate form on load
+loadState();
 
 const resetFormResults = $('#resetFormResults');
 if (resetFormResults){
