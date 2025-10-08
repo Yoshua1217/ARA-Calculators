@@ -659,9 +659,15 @@ hCalc.onclick=calcHeight;
 
 /* ====== Clinometer ====== */
 let clinoOn = false, zeroOffsetRad = 0, locked=false;
-const elEnable=$('#clino-enable'), elDisable=$('#clino-disable'), elAngle=$('#clino-angle');
-const elLock=$('#clino-lock'), elZero=$('#clino-zero'), el=$('#clino-reset'), elStatus=$('#clino-status');
-const toDeg=rad=>rad*180/Math.PI, clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+// Clinometer DOM refs (safe)
+const elEnable = document.querySelector('#clino-enable') || null;
+const elDisable = document.querySelector('#clino-disable') || null;
+const elAngle  = document.querySelector('#clino-angle')  || null;
+const elLock   = document.querySelector('#clino-lock')   || null;
+const elZero   = document.querySelector('#clino-zero')   || null;
+const elReset  = document.querySelector('#clino-reset')  || null; // ensures it's defined
+const elStatus = document.querySelector('#clino-status') || null;
+  const toDeg=rad=>rad*180/Math.PI, clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 function buzz(ms=30){ if(navigator.vibrate) try{navigator.vibrate(ms);}catch{} }
 async function requestIOSPermissionIfNeeded(){
   const any=window.DeviceOrientationEvent; if(!any) return true;
