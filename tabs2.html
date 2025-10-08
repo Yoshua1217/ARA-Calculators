@@ -524,6 +524,7 @@ function setUnit(u){
   unitM.classList.toggle('active',isM); unitFt.classList.toggle('active',!isM);
   unitM.setAttribute('aria-pressed',String(isM)); unitFt.setAttribute('aria-pressed',String(!isM));
   unitTags.forEach(t=>t.textContent=isM?'m':'ft');
+  renumberTrunks();
   if(calcMode==='auto'){ if($('#treeType').value==='Single trunk tree') recomputeSingle(); if($('#treeType').value==='Multi trunked tree') calcMulti(); calcHeight(); calcSpread(); }
   updateResultsPanel(); updateCopyButtons();
 }
@@ -581,21 +582,7 @@ singleUpdateBtn.addEventListener('click',recomputeSingle);
 
 /* Multi-trunk block (batch) */
 let mtCount=0; const MT_MAX=60;
-function addMtRow(val=''){
-  if(mtCount>=MT_MAX) return;
-  mtCount++;
-  const row=document.createElement('div'); row.className='row'; row.style.gridTemplateColumns='1fr'; row.dataset.index=String(mtCount);
-  const top=document.createElement('div'); top.style.display='flex'; top.style.alignItems='center';
-  const lab=document.createElement('label'); lab.className='mt-label'; lab.htmlFor=`mt-${mtCount}`; lab.textContent=`Trunk ${mtCount} circumference (${inputUnit})`;
-  const badge=document.createElement('span'); badge.className='badge hide'; badge.textContent='Largest';
-  const inp=document.createElement('input'); inp.id=`mt-${mtCount}`; inp.type='number'; inp.step='0.01'; inp.inputMode='decimal'; if(val!=='') inp.value=val;
-  const hint=document.createElement('div'); hint.className='hint';
-  top.appendChild(lab); top.appendChild(badge);
-  row.appendChild(top); row.appendChild(inp); row.appendChild(hint);
-  mtList.appendChild(row);
-  inp.addEventListener('input',()=>{hint.classList.remove('show'); if(calcMode==='auto') calcMulti();});
-  inp.addEventListener('blur',()=>maybeMtOutlierHint(parseFloat(inp.value),hint));
-}
+
 function maybeMtOutlierHint(val,h){
   if(!Number.isFinite(val)||val<=0){h.classList.remove('show');return}
   if(inputUnit==='m'){ if(val<0.20){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
@@ -603,8 +590,80 @@ function maybeMtOutlierHint(val,h){
   else{ if(val<0.66){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
     else if(val>40){h.textContent='Unusually large — check units?';h.classList.add('show');} else h.classList.remove('show');}
 }
-function removeMtRow(){ if(mtCount<=1) return; mtList.lastElementChild?.remove(); mtCount--; renumberMtLabels(); if(calcMode==='auto') calcMulti(); }
-function renumberMtLabels(){ $$('#mt-list .mt-label').forEach((lab,i)=>lab.textContent=`Trunk ${i+1} circumference (${inputUnit})`); }
+
+// ---------- Multi-trunk DOM helpers (single source of truth) ----------
+function getMtRows(){ return Array.from(mtList.querySelectorAll('.mt-row')); }
+
+function renumberTrunks(){
+  const rows = getMtRows();
+  rows.forEach((row, i) => {
+    const idx = i + 1;
+    row.dataset.index = String(idx);
+
+    const lab = row.querySelector('.mt-label');
+    const inp = row.querySelector('input[type="number"]');
+
+    if (inp) inp.id = `mt-${idx}`;
+    if (lab) {
+      lab.htmlFor = `mt-${idx}`;
+      lab.textContent = `Trunk ${idx} circumference (${inputUnit})`;
+    }
+  });
+}
+
+function addMtRow(val=''){
+  if (getMtRows().length >= MT_MAX) return;
+
+  const row = document.createElement('div');
+  row.className = 'row mt-row';
+  row.style.gridTemplateColumns = '1fr';
+
+  const top = document.createElement('div');
+  top.style.display = 'flex';
+  top.style.alignItems = 'center';
+
+  const lab   = document.createElement('label');
+  lab.className = 'mt-label';
+
+  const badge = document.createElement('span');
+  badge.className = 'badge hide';
+  badge.textContent = 'Largest';
+
+  const inp = document.createElement('input');
+  inp.type = 'number';
+  inp.step = '0.01';
+  inp.inputMode = 'decimal';
+  if (val !== '') inp.value = val;
+
+  const hint = document.createElement('div');
+  hint.className = 'hint';
+
+  top.appendChild(lab);
+  top.appendChild(badge);
+  row.appendChild(top);
+  row.appendChild(inp);
+  row.appendChild(hint);
+  mtList.appendChild(row);
+
+  // listeners
+  inp.addEventListener('input', () => {
+    hint.classList.remove('show');
+    if (calcMode === 'auto') calcMulti();
+  });
+  inp.addEventListener('blur', () => maybeMtOutlierHint(parseFloat(inp.value), hint));
+
+  renumberTrunks();
+}
+
+function removeMtRow(){
+  const rows = getMtRows();
+  if (rows.length <= 1) return;
+  rows[rows.length - 1].remove();
+  clearMtLargest();
+  renumberTrunks();
+  if (calcMode === 'auto') calcMulti();
+}
+
 function parseMtBulk(text,limit=MT_MAX){
   const vals=[]; if(!text) return vals; let s=String(text).replace(/[×X]/g,'x');
   const repRE=/(\d+)\s*x\s*([-+]?\d*\.?\d+)/g;
@@ -613,16 +672,49 @@ function parseMtBulk(text,limit=MT_MAX){
   for(const m of singles){ if(vals.length>=limit) break; const v=parseFloat(m); if(Number.isFinite(v)&&v>0) vals.push(v); }
   return vals;
 }
-function mtFillFromBulk(){ const vals=parseMtBulk(mtBulk.value,MT_MAX); if(vals.length===0)return; mtList.innerHTML=''; mtCount=0; vals.forEach(v=>addMtRow(v.toFixed(2))); mtResult.textContent='—'; if(calcMode==='auto') calcMulti(); }
+function mtFillFromBulk(){ const vals=parseMtBulk(mtBulk.value,MT_MAX); if(vals.length===0)return; mtList.innerHTML=''; mtCount=0; vals.forEach(v=>addMtRow(v.toFixed(2))); mtResult.textContent='—'; if(calcMode==='auto') calcMulti(); 
+                         renumberTrunks();
+                         }
 function mtSortByDiameter(){
-  const rows=Array.from(mtList.children); const valid=[], invalid=[];
-  rows.forEach(row=>{ const inp=row.querySelector('input'); const v=parseFloat(inp.value); if(Number.isFinite(v)&&v>0){const cM=toM(v,inputUnit), dM=cM/PI; valid.push({row,dM});} else invalid.push(row);});
-  if(valid.length<2) return;
-  valid.sort((a,b)=>b.dM-a.dM);
-  const frag=document.createDocumentFragment(); valid.forEach(v=>frag.appendChild(v.row)); invalid.forEach(r=>frag.appendChild(r));
-  mtList.innerHTML=''; mtList.appendChild(frag); renumberMtLabels(); clearMtLargest();
-  if(calcMode==='auto') calcMulti();
+  // Collect rows into "valid" (has a number) and "invalid" (empty/bad)
+  const rows = Array.from(mtList.children);
+  const valid = [];
+  const invalid = [];
+
+  rows.forEach(row => {
+    const inp = row.querySelector('input[type="number"]');
+    const v = parseFloat(inp?.value);
+    if (Number.isFinite(v) && v > 0) {
+      const cM = toM(v, inputUnit);
+      const dM = cM / PI;
+      valid.push({ row, dM });
+    } else {
+      invalid.push(row);
+    }
+  });
+
+  if (valid.length < 2) {
+    // not enough to sort—just ensure labels are correct
+    renumberTrunks();
+    return;
+  }
+
+  // Sort by diameter (desc)
+  valid.sort((a, b) => b.dM - a.dM);
+
+  // Rebuild DOM: valid rows first (sorted), then invalid
+  const frag = document.createDocumentFragment();
+  valid.forEach(v => frag.appendChild(v.row));
+  invalid.forEach(r => frag.appendChild(r));
+  mtList.innerHTML = '';
+  mtList.appendChild(frag);
+
+  // Clear any previous "Largest" styling, renumber, and (optionally) recalc
+  clearMtLargest();
+  renumberTrunks();
+  if (calcMode === 'auto') calcMulti();
 }
+
 function clearMtLargest(){ mtList.querySelectorAll('.mt-label').forEach(el=>el.classList.remove('largest-label')); mtList.querySelectorAll('.badge').forEach(b=>{b.classList.add('hide'); b.textContent='Largest';}); }
 function calcMulti(){
   clearMtLargest();
