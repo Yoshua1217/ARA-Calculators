@@ -141,20 +141,6 @@
     display:flex; align-items:center; justify-content:center;
   }
 
-  /* Degree pill (always visible, on top) */
-  .clino-angle{
-    position:absolute; right:10px; top:10px;
-    z-index:10;
-    display:inline-flex;
-    align-items:center;
-    font-weight:800; font-size:1.2rem;
-    color:#0b2250;
-    background:#cfe0ff;
-    padding:6px 10px; border-radius:10px;
-    border:2px solid #5aa0ff;
-    box-shadow:0 1px 0 rgba(0,0,0,.2) inset;
-  }
-
   /* Clinometer lock button (no border when idle) */
   .clino-lock{
     width:140px; height:140px;
@@ -430,7 +416,6 @@
 
         <div class="clino-head">
           <h2>Height</h2>
-          <div id="clino-angle" class="clino-angle">—°</div>
         </div>
 
         <label for="h-angle">Angle to top of the tree (degrees)</label>
@@ -456,12 +441,11 @@
   <div class="block">
 
     <!-- Live angle/status box — restored to original format -->
-    <div class="results" id="clino-readout" 
-         style="background:#0b1a2f;border-color:#1f3553;border-radius:12px;padding:12px;">
-      <h3 style="margin:0 0 6px;">Live angle</h3>
-      <p id="clino-live-angle" style="font-size:1.4rem;font-weight:800;margin:0;">—°</p>
-      <p id="clino-live-status" class="tiny" style="margin-top:4px;">Sensor: idle · Cal: 0.0°</p>
-    </div>
+<div class="clino-readout" id="clino-readout">
+  <h3 style="margin:0 0 6px;">Live angle</h3>
+  <p id="clino-live-angle" class="angle" style="margin:0;">—°</p>
+  <p id="clino-live-status" class="status">Sensor: idle · Cal: 0.0°</p>
+</div>
 
     <!-- Clinometer lock area -->
     <div class="clino-wrap" style="margin-top:12px;">
