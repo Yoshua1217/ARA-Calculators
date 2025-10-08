@@ -60,19 +60,21 @@
   padding-left: 2px; /* alignment fix */
 }
 .inline-controls {
-  margin-left: 0;
-  padding-left: 2px;        /* aligns with .brand text */
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;        /* keep everything on one line */
-  overflow-x: auto;         /* allows gentle horizontal scroll on narrow screens */
+  flex-wrap: nowrap;
+  overflow-x: auto;
   white-space: nowrap;
-  scrollbar-width: none;    /* hide scrollbar on Firefox */
+  scrollbar-width: none; /* hide scrollbars on Firefox */
+  gap: 6px; /* tighter gap between buttons */
+  margin-left: -2px; /* pulls Units: text left to match title */
+  padding-left: 0;
 }
+
 .inline-controls::-webkit-scrollbar {
-  display: none;            /* hide scrollbar on Chrome/Safari */
+  display: none; /* hide scrollbars on Chrome/Safari */
 }
+
 
 
 
