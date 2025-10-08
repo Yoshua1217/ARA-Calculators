@@ -165,35 +165,39 @@
     font-weight:900; font-size:1.15rem; cursor:pointer;
     box-shadow:0 2px 8px rgba(0,0,0,.25) inset;
   }
-  .clino-lock.active{
-    background:#5aa0ff; /* darker when locked */
-    color:#001a3d;
-    border:2px solid #2b7fe6; /* border only when locked */
-  }
+ /* Lock button: darker blue when locked (less neon) */
+.clino-lock.active {
+  background: #2b66d6;          /* deeper blue */
+  color: #e8f0ff;
+  border: 2px solid #1b4ca3;    /* slightly darker border */
+}
   .clino-lock:active{ transform:scale(.98); }
 
-  /* Readout box (above the lock) */
-.clino-readout{
-  background:#cfe0ff;
-  color:#0b2250;
-  border:1px solid #5aa0ff;
-  border-radius:12px;
-  padding:10px 12px;
-  margin:10px 0 12px;
+/* Live angle box - dark blue like the clinometer card */
+.clino-readout {
+  background: #0f2236;               /* matches card background */
+  color: #cfe0ff;
+  border: 1px solid #1f3553;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 10px 0 12px;
 }
-.clino-readout .angle{
-  font-weight:900;
-  font-size:2rem;
-  line-height:1.1;
+.clino-readout .angle {
+  font-weight: 900;
+  font-size: 2rem;
+  line-height: 1.1;
 }
-.clino-readout .status{
-  color:#38507a;
-  font-size:.92rem;
-  margin-top:4px;
+.clino-readout .status {
+  color: #99b8ff;
+  font-size: 0.92rem;
+  margin-top: 4px;
 }
-
-/* (keep your existing .clino-angle + .clino-lock styles as-is) */
-
+/* Calculate height button: lighter “active” state */
+#h-calc.active {
+  background: #4db2ff;          /* lighter blue flash */
+  color: #001528;
+  transition: background 0.25s, color 0.25s;
+}
   /* Results */
   .results{
     background:#0b1a2f; border:1px solid var(--border);
