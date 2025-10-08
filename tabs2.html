@@ -170,6 +170,24 @@ textarea::placeholder {
   background:#0b3b82; /* dark blue when running */
   color:#fff;
 }
+/* Reset Form Button visual feedback */
+#resetFormResults {
+  background: #0e1f3f;          /* dark blue default */
+  color: #fff;
+  border: 1px solid #1c366b;
+  transition: background 0.2s, transform 0.1s;
+}
+
+#resetFormResults:hover {
+  background: #c62828;          /* red on hover */
+  border-color: #b71c1c;
+  transform: scale(1.02);
+}
+
+#resetFormResults:active {
+  background: #8e0000;          /* darker red when pressed */
+  transform: scale(0.98);
+}
 
 </style>
 </head>
@@ -443,8 +461,7 @@ textarea::placeholder {
           <button type="button" id="copySpread"  class="btn-ghost" disabled>Copy Canopy (m)</button>
         </div>
         <div class="unit-toggle" style="margin-top:8px;">
-  <button type="button" id="resetFormResults" class="btn-ghost danger" title="Reset the form (does not clear the log)">Reset form</button>
-</div>
+
       </div>
       <div class="block">
         <h3>Description</h3>
@@ -457,12 +474,18 @@ textarea::placeholder {
         <div id="desc" class="results" style="margin-top:10px;">—</div>
         <div class="tiny" style="margin-top:6px;">Timestamp uses local 24-hour time.</div>
       </div>
+          <button type="button" id="resetFormResults" class="btn-ghost danger" title="Reset the form (does not clear the log)">Reset form</button>
+</div>
     </div>
   </section>
 
 </div>
 
 <script>
+  
+  // Global guard to prevent autosave during a deliberate reset
+window.ARA_RESETTING = false;
+
   // Decimal degrees -> DMS string (global helper)
 function toDMS(dec, isLat){
   if (!Number.isFinite(dec)) return '—';
@@ -637,7 +660,7 @@ hCalc.onclick=calcHeight;
 /* ====== Clinometer ====== */
 let clinoOn = false, zeroOffsetRad = 0, locked=false;
 const elEnable=$('#clino-enable'), elDisable=$('#clino-disable'), elAngle=$('#clino-angle');
-const elLock=$('#clino-lock'), elZero=$('#clino-zero'), elReset=$('#clino-reset'), elStatus=$('#clino-status');
+const elLock=$('#clino-lock'), elZero=$('#clino-zero'), el=$('#clino-reset'), elStatus=$('#clino-status');
 const toDeg=rad=>rad*180/Math.PI, clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 function buzz(ms=30){ if(navigator.vibrate) try{navigator.vibrate(ms);}catch{} }
 async function requestIOSPermissionIfNeeded(){
@@ -1214,27 +1237,47 @@ function loadState(){
 }
   
 // Debounced autosave for any field change
-let _asTimer=null;
+let _asTimer = null;
+
 function autoSaveSoon(){
   if (_asTimer) clearTimeout(_asTimer);
-  _asTimer = setTimeout(()=>{ try{ saveState(); }catch{} }, 250);
+  _asTimer = setTimeout(() => {
+    if (!window.ARA_RESETTING) {
+      try { saveState(); } catch {}
+    }
+  }, 250);
 }
-document.addEventListener('input', autoSaveSoon, {capture:true});
+
+document.addEventListener('input',  autoSaveSoon, {capture:true});
 document.addEventListener('change', autoSaveSoon, {capture:true});
-window.addEventListener('beforeunload', ()=>{ try{ saveState(); }catch{} });
+window.addEventListener('beforeunload', () => {
+  if (!window.ARA_RESETTING) {
+    try { saveState(); } catch {}
+  }
+});
+
 // hydrate form on load
 loadState();
-
+  
+// --- Reset Form Button (Results tab) ---
 const resetFormResults = $('#resetFormResults');
 if (resetFormResults){
   resetFormResults.onclick = () => {
-    // preserve unit & mode, clear the rest
+    // 1) Tell autosave to back off
+    window.ARA_RESETTING = true;
+
+    // 2) Stop any queued autosave timers
+    if (typeof _asTimer !== 'undefined' && _asTimer) {
+      clearTimeout(_asTimer);
+    }
+
+    // 3) Keep current measurement unit + mode
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit, calcMode }));
     } catch {}
-    // prevent autosave on unload from re-saving old data
-    ARA_RESETTING = true;
-    location.reload();
+
+    // 4) Reload cleanly (no history restore)
+    location.replace(location.href);
   };
 }
 
