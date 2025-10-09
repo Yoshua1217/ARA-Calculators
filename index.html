@@ -35,10 +35,58 @@
     border-bottom:1px solid var(--border);
     padding:10px 14px;
   }
-  .topbar .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  .brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; }
+  
+/* Fixed header */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  background:linear-gradient(180deg, #0d1b2a, #0f2236);
+  border-bottom:1px solid var(--border);
+  padding:10px 14px;
+}
 
-  .inline-controls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.topbar .row{
+  display:flex;
+  flex-direction:column;      /* stack title over controls */
+  align-items:flex-start;     /* left edges line up */
+  gap:8px;
+}
+
+.brand {
+  font-weight: 800;
+  letter-spacing: .2px;
+  font-size: 1.05rem;
+  color: #eaf3ff;
+  line-height: 1.1;
+  padding-left: 2px; /* alignment fix */
+}
+.inline-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none; /* hide scrollbars on Firefox */
+  gap: 4px; /* tighter gap between buttons */
+  margin-left: -5px; /* pulls Units: text left to match title */
+  padding-left: 0;
+}
+
+.inline-controls::-webkit-scrollbar {
+  display: none; /* hide scrollbars on Chrome/Safari */
+}
+
+.inline-controls .acc-pill {
+  margin-left: -1px;
+  flex-shrink: 0;
+}
+
+
+  /* small-screen fit: slightly tighter paddings/fonts */
+@media (max-width: 420px){
+  .inline-controls{ gap:6px; }
+  .toggle-btn{ padding:6px 10px; }        /* was 8px 12px */
+  .acc-pill{ font-size:.85rem; padding:3px 8px; }
+}
   .toggle-btn{
     padding:8px 12px; border:1px solid var(--border); border-radius:999px;
     background:var(--panel); color:var(--text); cursor:pointer;
@@ -70,26 +118,22 @@
   h2{ margin:0 0 8px; font-size:1.2rem; }
   h3{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
   label{ display:block; font-weight:700; margin:10px 0 6px; }
- /* Use the same monospace font for all form fields */
-/* Consistent system font for all entry fields */
-input[type="text"], input[type="number"], select, textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--panel-2);
-  color: var(--text);
-  font-size: 1rem;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  letter-spacing: 0.01em;
-}
 
-/* Make placeholders inherit the same font */
-input::placeholder,
-textarea::placeholder{
-  font-family: inherit;
-}
+  /* Consistent system font for all entry fields */
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 1rem;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    letter-spacing: 0.01em;
+  }
+  input::placeholder, textarea::placeholder{ font-family:inherit; color:#99a5b8; }
   textarea{ min-height:88px; resize:none; overflow:hidden; }
+
   .row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); }
   @media (max-width:780px){ .row{ grid-template-columns:1fr } }
 
@@ -110,6 +154,26 @@ textarea::placeholder{
   .btn-ok{ background:var(--ok); color:#00180f; }
   button[disabled]{ opacity:.6; cursor:not-allowed; }
 
+  /* “Selectable” (light by default, dark when chosen) */
+  .btn-select{
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-select.active{
+    background: var(--accent-2);
+    color: #001528;
+    border-color: transparent;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.06) inset;
+  }
+
+  /* Allow ghost buttons to darken when we set .active in JS */
+  .btn-ghost.active{
+    background: var(--accent-2);
+    color:#001528;
+    border-color: transparent;
+  }
+
   /* Multi-trunk minor styles */
   .mt-label{font-weight:700}
   .badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#1b6cff;color:#001528;font-size:.75rem;vertical-align:middle}
@@ -117,32 +181,57 @@ textarea::placeholder{
   .hint{font-size:.86rem;color:#ffc0c0;display:none}
   .hint.show{display:block}
 
-  input::placeholder,
-textarea::placeholder {
-  font-family: inherit;
-  color: #99a5b8;
-}
-
-
-  /* Clinometer (grid removed, angle top-right) */
+  /* Clinometer (angle pill + lock in light blue) */
   .clino-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .clino-wrap{
     position:relative; height:180px; border:1px solid var(--border);
     border-radius:12px; background:#0b1a2f; margin:10px 0; overflow:hidden;
     display:flex; align-items:center; justify-content:center;
   }
-  .clino-angle{
-    position:absolute; right:10px; top:10px;
-    font-weight:800; font-size:1.2rem; color:#001528;
-    background:#cfe0ff; padding:6px 10px; border-radius:8px; border:1px solid var(--border);
-  }
-  .clino-lock{
-    width:140px; height:140px; border-radius:999px; border:0; cursor:pointer;
-    background:#cfe0ff; color:#001528; font-weight:900; font-size:1.15rem;
-  }
-  .clino-lock:active{ transform:scale(.98); }
-  .clino-controls{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 
+  /* Clinometer lock button (no border when idle) */
+  .clino-lock{
+    width:140px; height:140px;
+    border:0; /* no border when not locked */
+    border-radius:999px;
+    background:#cfe0ff; /* light blue */
+    color:#0b2250;      /* dark navy text */
+    font-weight:900; font-size:1.15rem; cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.25) inset;
+  }
+ /* Lock button: darker blue when locked (less neon) */
+.clino-lock.active {
+  background: #2b66d6;          /* deeper blue */
+  color: #e8f0ff;
+  border: 2px solid #1b4ca3;    /* slightly darker border */
+}
+  .clino-lock:active{ transform:scale(.98); }
+
+/* Live angle box - dark blue like the clinometer card */
+.clino-readout {
+  background: #0f2236;               /* matches card background */
+  color: #cfe0ff;
+  border: 1px solid #1f3553;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 10px 0 12px;
+}
+.clino-readout .angle {
+  font-weight: 900;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+.clino-readout .status {
+  color: #99b8ff;
+  font-size: 0.92rem;
+  margin-top: 4px;
+}
+/* Calculate height button: lighter “active” state */
+#h-calc.active {
+  background: #4db2ff;          /* lighter blue flash */
+  color: #001528;
+  transition: background 0.25s, color 0.25s;
+}
   /* Results */
   .results{
     background:#0b1a2f; border:1px solid var(--border);
@@ -157,45 +246,95 @@ textarea::placeholder {
   .tabpane{ display:none }
   .tabpane.active{ display:block }
 
-  /* Accuracy pill colors for location tab*/
-.acc-chip{
-  display:inline-block; padding:2px 8px; border-radius:999px; font-weight:600;
-}
-.acc-grey { background:#404957; color:#d7dee8; }
-.acc-amber{ background:#7a5a15; color:#ffe2a8; }
-.acc-green{ background:#1b5e2b; color:#c6f1cf; }
+  /* Location accuracy chips */
+  .acc-chip{ display:inline-block; padding:2px 8px; border-radius:999px; font-weight:600; }
+ .acc-grey, .acc-pill.acc-grey, .acc-dot.acc-grey {
+  background:#46505e;      /* neutral grey */
+  color:#e2e8f0;
+  }
+  .acc-amber, .acc-pill.acc-amber, .acc-dot.acc-amber {
+    background:#ffb300;      /* bright golden yellow */
+    color:#2b1a00;           /* dark text for contrast */
+  }
+  .acc-green, .acc-pill.acc-green, .acc-dot.acc-green {
+    background:#1b5e2b; 
+    color:#e6fff2; 
+  }
+  .acc-red, .acc-pill.acc-red, .acc-dot.acc-red {
+    background:#7a2020; 
+    color:#ffdede; 
+  }
 
-/* Running state for the Start/Stop toggle */
-#loc-toggle.running{
-  background:#0b3b82; /* dark blue when running */
-  color:#fff;
+ .acc-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    line-height: 1;
+    margin-left: 8px;
+    vertical-align: middle;
 }
-/* Reset Form Button visual feedback */
-#resetFormResults {
-  background: #0e1f3f;          /* dark blue default */
-  color: #fff;
-  border: 1px solid #1c366b;
-  transition: background 0.2s, transform 0.1s;
+  /* Running state for the Start/Stop toggle */
+  #loc-toggle.running{ background:#0b3b82; color:#fff; }
+
+  /* Reset Form Button — bright red fill by default, thicker border */
+  #resetFormResults{
+    background:#e53935;
+    color:#fff;
+    border:3px solid #6b0e0e;
+    border-radius:10px;
+    transition:background .15s, transform .1s, border-color .15s;
+  }
+  #resetFormResults:hover{
+    background:#d32f2f;
+    border-color:#8e0000;
+    transform:scale(1.02);
+  }
+  #resetFormResults:active{
+    background:#8e0000;
+    border-color:#5c0000;
+    transform:scale(.98);
+  }
+
+  /* Map space (+ small gap above) */
+  #loc-map { height: 300px; border-radius: 12px; overflow: hidden; margin-top:12px; }
+  .map-actions { display:flex; gap:8px; margin:8px 0 0; flex-wrap:wrap; }
+
+/* Global small pill in the header */
+.acc-pill{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:6px 10px; margin-left:8px;
+  border-radius:999px; font-weight:800; font-size:.95rem;
+  border:1px solid var(--border);
+  background:#404957; color:#d7dee8;  /* default (grey) */
 }
 
-#resetFormResults:hover {
-  background: #c62828;          /* red on hover */
-  border-color: #b71c1c;
-  transform: scale(1.02);
-}
 
-#resetFormResults:active {
-  background: #8e0000;          /* darker red when pressed */
-  transform: scale(0.98);
+
+/* Tiny status dot next to the Location tab */
+.acc-dot{
+  display:inline-block; width:10px; height:10px; margin-left:6px;
+  border-radius:50%;
+  border:1px solid rgba(0,0,0,.25);
+  vertical-align:middle;
 }
+/* Dot colors re-use the same classes
+.acc-dot.acc-grey  { background:#404957; }
+.acc-dot.acc-amber { background:#7a5a15; }
+.acc-dot.acc-green { background:#1b5e2b; }
+.acc-dot.acc-red   { background:#7a2020; } */
 
 </style>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-  
 
-
-<!-- Top bar (tree name removed) -->
+<!-- Top bar -->
 <div class="topbar">
   <div class="row">
     <div class="brand">ARA Field Tools</div>
@@ -203,9 +342,18 @@ textarea::placeholder {
       <span class="toggle-label">Units:</span>
       <button type="button" id="unit-m"  class="toggle-btn active" aria-pressed="true">m</button>
       <button type="button" id="unit-ft" class="toggle-btn" aria-pressed="false">ft</button>
-      <span class="toggle-label">Calc:</span>
+      <span class="toggle-label">Mode:</span>
       <button type="button" id="mode-manual" class="toggle-btn active" aria-pressed="true">Manual</button>
       <button type="button" id="mode-auto"   class="toggle-btn" aria-pressed="false">Auto</button>
+
+      <!-- Global best accuracy pill -->
+<span id="acc-pill-global"
+      class="acc-pill acc-red"
+      aria-live="polite"
+      title="Best location accuracy">
+  ±— m
+</span>
+
     </div>
   </div>
 </div>
@@ -214,7 +362,10 @@ textarea::placeholder {
 <div class="tabs">
   <div class="tabs-inner">
     <div class="tab active" data-tab="gen">General</div>
-    <div class="tab" data-tab="loc">Location</div>
+<div class="tab" data-tab="loc">
+  Location
+  <span id="loc-tab-dot" class="acc-dot acc-red" title="Location accuracy status"></span>
+</div>
     <div class="tab" data-tab="circ">Circumference</div>
     <div class="tab" data-tab="height">Height</div>
     <div class="tab" data-tab="canopy">Canopy</div>
@@ -255,58 +406,60 @@ textarea::placeholder {
     </div>
   </section>
 
-  <!-- Location  -->
- <section id="pane-loc" class="tabpane">
-  <div class="card">
-    <div class="block">
-      <h2>Location</h2>
+  <!-- Location -->
+  <section id="pane-loc" class="tabpane">
+    <div class="card">
+      <div class="block">
+        <h2>Location</h2>
 
-      <!-- Controls row -->
-      <div class="unit-toggle" style="flex-wrap:wrap; gap:8px;">
-        <button type="button" id="loc-toggle" class="btn-primary">Start tracking</button>
-        <button type="button" id="loc-hiacc"  class="toggle-btn" aria-pressed="false" title="Request highest accuracy">High accuracy</button>
-        <button type="button" id="loc-saver"  class="toggle-btn" aria-pressed="false" title="Reduce update rate to save battery">Battery saver</button>
+        <!-- Controls row -->
+        <div class="unit-toggle" style="flex-wrap:wrap; gap:8px;">
+          <button type="button" id="loc-toggle" class="btn-primary">Start tracking</button>
+          <button type="button" id="loc-hiacc"  class="toggle-btn" aria-pressed="false" title="Request highest accuracy">High accuracy</button>
+          <button type="button" id="loc-saver"  class="toggle-btn" aria-pressed="false" title="Reduce update rate to save battery">Battery saver</button>
+        </div>
+
+        <!-- Recent fix -->
+        <div class="results" style="margin-top:10px;">
+          <h3 style="margin:0 0 6px;">Recent fix</h3>
+          <p id="loc-recent-dd">DD: —</p>
+          <p>Altitude: <span id="loc-recent-alt">—</span></p>
+          <p>Accuracy: <span id="loc-recent-acc" class="acc-chip acc-grey">—</span></p>
+          <p>Age: <span id="loc-recent-age">—</span></p>
+          <p class="tiny" style="margin-top:6px;">Samples: <span id="loc-samples">0</span></p>
+        </div>
+
+        <!-- Best fix -->
+        <div class="results" style="margin-top:10px;">
+          <h3 style="margin:0 0 6px;">Best so far <span id="loc-best-badge" class="badge" style="display:none;">new</span></h3>
+          <p id="loc-best-dd">DD: —</p>
+          <p>Altitude: <span id="loc-best-alt">—</span></p>
+          <p>Accuracy: <span id="loc-best-acc" class="acc-chip acc-grey">—</span></p>
+          <p>Time: <span id="loc-best-time">—</span></p>
+        </div>
+
+        
+        <!-- Action buttons BELOW the best panel -->
+        <div class="unit-toggle" style="margin-top:10px;">
+          <button type="button" id="loc-use-recent" class="btn-ghost btn-select" disabled>Save recent</button>
+          <button type="button" id="loc-use-best"   class="btn-ghost btn-select" disabled>Save best</button>
+          <button type="button" id="loc-reset"      class="btn-ghost danger">Reset location</button>
+        </div>
+
+        <!-- Hidden storage used by description -->
+        <input type="hidden" id="lat"><input type="hidden" id="lng"><input type="hidden" id="acc">
+        <span id="loc-saved-alt" data-val="" style="display:none;"></span>
+        <span id="loc-saved-ts" data-ts="" style="display:none;"></span>
+
+        <!-- Map + actions -->
+        <div id="loc-map"></div>
+        <div class="map-actions">
+          <button type="button" id="map-to-recent" class="btn-ghost">Recenter to recent</button>
+          <button type="button" id="map-to-best"   class="btn-ghost">Recenter to best</button>
+        </div>
       </div>
-
-      <!-- Recent fix -->
-      <div class="results" style="margin-top:10px;">
-        <h3 style="margin:0 0 6px;">Recent fix</h3>
-        <p id="loc-recent-dd">DD: —</p>
-        <p>Altitude: <span id="loc-recent-alt">—</span></p>
-        <p>
-          Accuracy: <span id="loc-recent-acc" class="acc-chip acc-grey">—</span>
-        </p>
-        <p>Age: <span id="loc-recent-age">—</span></p>
-        <p class="tiny" style="margin-top:6px;">Samples: <span id="loc-samples">0</span></p>
-      </div>
-
-      <!-- Best fix -->
-      <div class="results" style="margin-top:10px;">
-        <h3 style="margin:0 0 6px;">Best so far <span id="loc-best-badge" class="badge" style="display:none;">new</span></h3>
-        <p id="loc-best-dd">DD: —</p>
-        <p>Altitude: <span id="loc-best-alt">—</span></p>
-        <p>
-          Accuracy: <span id="loc-best-acc" class="acc-chip acc-grey">—</span>
-        </p>
-        <p>Time: <span id="loc-best-time">—</span></p>
-      </div>
-
-      <!-- Action buttons BELOW the best panel -->
-      <div class="unit-toggle" style="margin-top:10px;">
-        <button type="button" id="loc-use-recent" class="btn-ghost" disabled>Save recent</button>
-        <button type="button" id="loc-use-best"   class="btn-ghost" disabled>Save best</button>
-        <button type="button" id="loc-reset"      class="btn-ghost danger">Reset location</button>
-      </div>
-
-      <!-- Hidden storage for description/builders (keep IDs so existing code works) -->
-      <input type="hidden" id="lat">
-      <input type="hidden" id="lng">
-      <input type="hidden" id="acc">
-      <span id="loc-saved-alt" data-val="" style="display:none;"></span>
-      <span id="loc-saved-ts" data-ts="" style="display:none;"></span>
     </div>
-  </div>
-</section>
+  </section>
 
   <!-- Circumference -->
   <section id="pane-circ" class="tabpane">
@@ -371,9 +524,9 @@ textarea::placeholder {
   <section id="pane-height" class="tabpane">
     <div class="card">
       <div class="block">
+
         <div class="clino-head">
           <h2>Height</h2>
-          <div id="clino-angle" class="clino-angle">—°</div>
         </div>
 
         <label for="h-angle">Angle to top of the tree (degrees)</label>
@@ -395,24 +548,37 @@ textarea::placeholder {
         </div>
 
         <!-- Clinometer -->
-        <div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
-          <div class="block">
-            <div class="btn-row" aria-label="Clinometer power">
-              <button type="button" id="clino-enable" class="toggle-btn small">Start</button>
-              <button type="button" id="clino-disable" class="toggle-btn small">Stop</button>
-            </div>
+<div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
+  <div class="block">
 
-            <div class="clino-wrap">
-              <!-- angle readout lives top-right; lock fills the space -->
-              <button type="button" id="clino-lock" class="clino-lock">Lock</button>
-            </div>
+    <!-- Live angle/status box — restored to original format -->
+<div class="clino-readout" id="clino-readout">
+  <h3 style="margin:0 0 6px;">Live angle</h3>
+  <p id="clino-live-angle" class="angle" style="margin:0;">—°</p>
+  <p id="clino-live-status" class="status">Sensor: idle · Cal: 0.0°</p>
+</div>
 
-            <div class="clino-controls">
-              <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
-              <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
-            </div>
-            <div class="tiny" id="clino-status">Sensor: idle</div>
-          </div>
+    <!-- Clinometer lock area -->
+    <div class="clino-wrap" style="margin-top:12px;">
+      <button type="button" id="clino-lock" class="clino-lock">Start Clinometer</button>
+    </div>
+
+    <!-- Controls below -->
+    <div class="clino-controls" style="margin-top:10px;">
+      <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
+      <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
+    </div>
+
+  </div>
+</div>
+      </div>
+    </div>
+
+    <!-- Height formula shown under the clinometer card -->
+    <div class="card">
+      <div class="block">
+        <div class="tiny">
+          Height formula: <strong>height = tan(angle) × distance + eye height</strong>
         </div>
       </div>
     </div>
@@ -460,8 +626,6 @@ textarea::placeholder {
           <button type="button" id="copyAvgCirc" class="btn-ghost" disabled>Copy Avg Circ (m)</button>
           <button type="button" id="copySpread"  class="btn-ghost" disabled>Copy Canopy (m)</button>
         </div>
-        <div class="unit-toggle" style="margin-top:8px;">
-
       </div>
       <div class="block">
         <h3>Description</h3>
@@ -474,658 +638,897 @@ textarea::placeholder {
         <div id="desc" class="results" style="margin-top:10px;">—</div>
         <div class="tiny" style="margin-top:6px;">Timestamp uses local 24-hour time.</div>
       </div>
-          <button type="button" id="resetFormResults" class="btn-ghost danger" title="Reset the form (does not clear the log)">Reset form</button>
-</div>
+      <div class="block">
+        <button type="button" id="resetFormResults" class="btn-ghost danger" title="Reset the form (does not clear the log)">Reset form</button>
+      </div>
     </div>
   </section>
 
 </div>
 
 <script>
-  
-  // Global guard to prevent autosave during a deliberate reset
+/* -------- small helpers (no optional chaining) -------- */
 window.ARA_RESETTING = false;
+function $(s){ return document.querySelector(s); }
+function $all(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+function byId(id){ return document.getElementById(id); }
+function has(el){ return !!el; }
 
-  // Decimal degrees -> DMS string (global helper)
-function toDMS(dec, isLat){
-  if (!Number.isFinite(dec)) return '—';
-  const hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
-  let v = Math.abs(dec);
-  const d = Math.floor(v); v = (v - d) * 60;
-  const m = Math.floor(v); const s = (v - m) * 60;
-  return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
-}
-
-/* ====== Helpers & globals ====== */
+/* ---------------- Core helpers ---------------- */
 const PI=Math.PI, FT_PER_M=3.28084, M_PER_FT=0.3048;
-const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const tanDeg=d=>Math.tan(d*Math.PI/180);
 const fmt2=x=>Number.isFinite(x)?x.toFixed(2):'—', fmt1=x=>Number.isFinite(x)?x.toFixed(1):'—';
 const toM=(v,u)=>u==='m'?v:v*M_PER_FT, mToFt=m=>m*FT_PER_M;
-const nowLocal24=()=>{const d=new Date();const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`};
-const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nowLocal24=()=>{var d=new Date();var p=n=>String(n).padStart(2,'0');return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());};
+const escapeHtml=s=>String(s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});
 
-/* State */
-let inputUnit='m', calcMode='manual';
-let lastSingle=null, lastMulti=null, lastHeight=null, lastSpread=null;
+/* DMS helper for description */
+function toDMS(dec, isLat){
+  if (!Number.isFinite(dec)) return '—';
+  var hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
+  var v = Math.abs(dec);
+  var d = Math.floor(v); v = (v - d) * 60;
+  var m = Math.floor(v); var s = (v - m) * 60;
+  return d+'° '+m+"' "+s.toFixed(2)+'" '+hemi;
+}
 
-/* Header controls */
-const unitM=$('#unit-m'), unitFt=$('#unit-ft');
-const modeManualBtn=$('#mode-manual'), modeAutoBtn=$('#mode-auto');
-const unitTags=$$('.unit-tag');
+/* ---------------- State ---------------- */
+var inputUnit='m', calcMode='manual';
+var lastSingle=null, lastMulti=null, lastHeight=null, lastSpread=null;
+
+/* ---------------- Header controls ---------------- */
+var unitM=byId('unit-m'), unitFt=byId('unit-ft');
+var modeManualBtn=byId('mode-manual'), modeAutoBtn=byId('mode-auto');
+var unitTags=$all('.unit-tag');
 
 function setUnit(u){
   if(u===inputUnit) return;
-  const conv=inp=>{ const v=parseFloat(inp.value); if(!Number.isNaN(v)){ const m=toM(v,inputUnit); inp.value=(u==='m'?m:m*FT_PER_M).toFixed(2); } };
-  [$('#singleC'), $('#h-dist'), $('#h-eye'), $('#spreadMajor'), $('#spreadMinor')].forEach(el=>el&&conv(el));
-  $$('#mt-list input[type="number"]').forEach(conv);
+  function conv(inp){ if(!inp) return; var v=parseFloat(inp.value); if(!Number.isNaN(v)){ var m=toM(v,inputUnit); inp.value=(u==='m'?m:m*FT_PER_M).toFixed(2); } }
+  [byId('singleC'), byId('h-dist'), byId('h-eye'), byId('spreadMajor'), byId('spreadMinor')].forEach(conv);
+  $all('#mt-list input[type="number"]').forEach(conv);
   inputUnit=u;
-  const isM=u==='m';
-  unitM.classList.toggle('active',isM); unitFt.classList.toggle('active',!isM);
-  unitM.setAttribute('aria-pressed',String(isM)); unitFt.setAttribute('aria-pressed',String(!isM));
-  unitTags.forEach(t=>t.textContent=isM?'m':'ft');
+  var isM=u==='m';
+  if(unitM){ unitM.classList.toggle('active',isM); unitM.setAttribute('aria-pressed',String(isM)); }
+  if(unitFt){ unitFt.classList.toggle('active',!isM); unitFt.setAttribute('aria-pressed',String(!isM)); }
+  unitTags.forEach(function(t){ t.textContent=isM?'m':'ft'; });
   renumberTrunks();
-  if(calcMode==='auto'){ if($('#treeType').value==='Single trunk tree') recomputeSingle(); if($('#treeType').value==='Multi trunked tree') calcMulti(); calcHeight(); calcSpread(); }
+  if(calcMode==='auto'){ 
+    var tt = byId('treeType') ? byId('treeType').value : '';
+    if(tt==='Single trunk tree') recomputeSingle();
+    if(tt==='Multi trunked tree') calcMulti();
+    calcHeight(); calcSpread();
+  }
   updateResultsPanel(); updateCopyButtons();
 }
-unitM.onclick=()=>setUnit('m'); unitFt.onclick=()=>setUnit('ft');
+if(unitM) unitM.onclick=function(){ setUnit('m'); };
+if(unitFt) unitFt.onclick=function(){ setUnit('ft'); };
 
-function setCalcMode(m){ calcMode=m; const man=m==='manual';
-  modeManualBtn.classList.toggle('active',man); modeAutoBtn.classList.toggle('active',!man);
-  modeManualBtn.setAttribute('aria-pressed',String(man)); modeAutoBtn.setAttribute('aria-pressed',String(!man));
+function setCalcMode(m){
+  calcMode=m; var man=m==='manual';
+  if(modeManualBtn){ modeManualBtn.classList.toggle('active',man); modeManualBtn.setAttribute('aria-pressed',String(man)); }
+  if(modeAutoBtn){ modeAutoBtn.classList.toggle('active',!man); modeAutoBtn.setAttribute('aria-pressed',String(!man)); }
 }
-modeManualBtn.onclick=()=>setCalcMode('manual'); modeAutoBtn.onclick=()=>setCalcMode('auto');
+if(modeManualBtn) modeManualBtn.onclick=function(){ setCalcMode('manual'); };
+if(modeAutoBtn)   modeAutoBtn.onclick=function(){ setCalcMode('auto'); };
 
-/* ====== Tabs ====== */
-$$('.tab').forEach(tab=>{
-  tab.addEventListener('click', ()=>{
-    $$('.tab').forEach(t=>t.classList.remove('active'));
-    tab.addClass?.('active') ?? tab.classList.add('active');
-    const id = tab.dataset.tab;
-    $$('.tabpane').forEach(p=>p.classList.remove('active'));
-    $('#pane-' + id).classList.add('active');
+/* ---------------- Tabs ---------------- */
+$all('.tab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    $all('.tab').forEach(function(t){ t.classList.remove('active'); });
+    tab.classList.add('active');
+    var id = tab.getAttribute('data-tab');
+    $all('.tabpane').forEach(function(p){ p.classList.remove('active'); });
+    var pane = byId('pane-'+id); if(pane) pane.classList.add('active');
     window.scrollTo({top:0,behavior:'smooth'});
   });
 });
 
-/* ====== General ====== */
-const notesEl = $('#notes');
-function autoGrow(el){ el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
-notesEl.addEventListener('input',()=>autoGrow(notesEl));
+/* ---------------- General ---------------- */
+var notesEl = byId('notes');
+function autoGrow(el){ if(!el) return; el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
+if(notesEl) notesEl.addEventListener('input',function(){ autoGrow(notesEl); });
 
-/* ====== Circumference: single vs multi ====== */
-const treeType=$('#treeType'), singleBlock=$('#single-circ-block'), singleC=$('#singleC');
-const singleUpdateBtn = $('#single-update');
+/* ---------------- Circumference ---------------- */
+var treeType=byId('treeType'), singleBlock=byId('single-circ-block'), singleC=byId('singleC');
+var singleUpdateBtn = byId('single-update');
 
-const mtBlock=$('#multi-block'), mtList=$('#mt-list'), mtAdd=$('#mt-add'), mtRemove=$('#mt-remove'),
-      mtSort=$('#mt-sort'), mtCalc=$('#mt-calc'), mtBulk=$('#mt-bulk'), mtFill=$('#mt-fill'),
-      mtClear=$('#mt-clear'), mtResult=$('#mt-result');
+var mtBlock=byId('multi-block'), mtList=byId('mt-list'), mtAdd=byId('mt-add'), mtRemove=byId('mt-remove'),
+    mtSort=byId('mt-sort'), mtCalc=byId('mt-calc'), mtBulk=byId('mt-bulk'), mtFill=byId('mt-fill'),
+    mtClear=byId('mt-clear'), mtResult=byId('mt-result');
 
 function updateTypeVisibility(){
-  const t=treeType.value;
-  singleBlock.style.display=(t==='Single trunk tree')?'':'none';
-  mtBlock.style.display=(t==='Multi trunked tree')?'':'none';
-  if (t==='Multi trunked tree' && mtList.children.length===0){ addMtRow(); addMtRow(); }
+  var t=treeType ? treeType.value : '';
+  if(singleBlock) singleBlock.style.display=(t==='Single trunk tree')?'':'none';
+  if(mtBlock)     mtBlock.style.display=(t==='Multi trunked tree')?'':'none';
+  if (t==='Multi trunked tree' && mtList && mtList.children.length===0){ addMtRow(); addMtRow(); }
   updateResultsPanel(); updateCopyButtons();
 }
-treeType.onchange=updateTypeVisibility;
+if(treeType) treeType.onchange=updateTypeVisibility;
 
 /* Single trunk */
 function recomputeSingle(){
-  const v=parseFloat(singleC.value);
-  if(Number.isFinite(v)&&v>0){ const cM=toM(v,inputUnit); const dM=cM/PI; lastSingle={cM,cFt:mToFt(cM),dM,dFt:mToFt(dM)}; }
+  var v=parseFloat(singleC && singleC.value);
+  if(Number.isFinite(v)&&v>0){ var cM=toM(v,inputUnit); var dM=cM/PI; lastSingle={cM:cM,cFt:mToFt(cM),dM:dM,dFt:mToFt(dM)}; }
   else lastSingle=null;
   updateResultsPanel(); updateCopyButtons();
 }
-singleC.addEventListener('input',()=>{ if(calcMode==='auto') recomputeSingle(); });
-singleUpdateBtn.addEventListener('click',recomputeSingle);
+if(singleC) singleC.addEventListener('input',function(){ if(calcMode==='auto') recomputeSingle(); });
+if(singleUpdateBtn) singleUpdateBtn.addEventListener('click',recomputeSingle);
 
-/* Multi-trunk block (batch) */
-let mtCount=0; const MT_MAX=60;
-
-function maybeMtOutlierHint(val,h){
-  if(!Number.isFinite(val)||val<=0){h.classList.remove('show');return}
-  if(inputUnit==='m'){ if(val<0.20){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
-    else if(val>12){h.textContent='Unusually large — check units?';h.classList.add('show');} else h.classList.remove('show');}
-  else{ if(val<0.66){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
-    else if(val>40){h.textContent='Unusually large — check units?';h.classList.add('show');} else h.classList.remove('show');}
-}
-
-// ---------- Multi-trunk DOM helpers (single source of truth) ----------
-function getMtRows(){ return Array.from(mtList.querySelectorAll('.mt-row')); }
-
+/* Multi-trunk block */
+var MT_MAX=60;
+function getMtRows(){ return mtList ? Array.prototype.slice.call(mtList.querySelectorAll('.mt-row')) : []; }
 function renumberTrunks(){
-  const rows = getMtRows();
-  rows.forEach((row, i) => {
-    const idx = i + 1;
-    row.dataset.index = String(idx);
-
-    const lab = row.querySelector('.mt-label');
-    const inp = row.querySelector('input[type="number"]');
-
-    if (inp) inp.id = `mt-${idx}`;
-    if (lab) {
-      lab.htmlFor = `mt-${idx}`;
-      lab.textContent = `Trunk ${idx} circumference (${inputUnit})`;
-    }
+  var rows = getMtRows();
+  rows.forEach(function(row, i){
+    var idx=i+1;
+    row.dataset.index=String(idx);
+    var lab=row.querySelector('.mt-label');
+    var inp=row.querySelector('input[type="number"]');
+    if (inp) inp.id='mt-'+idx;
+    if (lab){ lab.htmlFor='mt-'+idx; lab.textContent='Trunk '+idx+' circumference ('+inputUnit+')'; }
   });
 }
-
-function addMtRow(val=''){
+function addMtRow(val){
+  if(!mtList) return;
   if (getMtRows().length >= MT_MAX) return;
-
-  const row = document.createElement('div');
-  row.className = 'row mt-row';
-  row.style.gridTemplateColumns = '1fr';
-
-  const top = document.createElement('div');
-  top.style.display = 'flex';
-  top.style.alignItems = 'center';
-
-  const lab   = document.createElement('label');
-  lab.className = 'mt-label';
-
-  const badge = document.createElement('span');
-  badge.className = 'badge hide';
-  badge.textContent = 'Largest';
-
-  const inp = document.createElement('input');
-  inp.type = 'number';
-  inp.step = '0.01';
-  inp.inputMode = 'decimal';
-  if (val !== '') inp.value = val;
-
-  const hint = document.createElement('div');
-  hint.className = 'hint';
-
-  top.appendChild(lab);
-  top.appendChild(badge);
-  row.appendChild(top);
-  row.appendChild(inp);
-  row.appendChild(hint);
+  var row=document.createElement('div');
+  row.className='row mt-row'; row.style.gridTemplateColumns='1fr';
+  var top=document.createElement('div');
+  top.style.display='flex'; top.style.alignItems='center';
+  var lab=document.createElement('label'); lab.className='mt-label';
+  var badge=document.createElement('span'); badge.className='badge hide'; badge.textContent='Largest';
+  var inp=document.createElement('input'); inp.type='number'; inp.step='0.01'; inp.inputMode='decimal'; if(val!==undefined && val!=='') inp.value=val;
+  var hint=document.createElement('div'); hint.className='hint';
+  top.appendChild(lab); top.appendChild(badge);
+  row.appendChild(top); row.appendChild(inp); row.appendChild(hint);
   mtList.appendChild(row);
-
-  // listeners
-  inp.addEventListener('input', () => {
-    hint.classList.remove('show');
-    if (calcMode === 'auto') calcMulti();
-  });
-  inp.addEventListener('blur', () => maybeMtOutlierHint(parseFloat(inp.value), hint));
-
+  inp.addEventListener('input',function(){ hint.classList.remove('show'); if(calcMode==='auto') calcMulti(); });
+  inp.addEventListener('blur',function(){ maybeMtOutlierHint(parseFloat(inp.value),hint); });
   renumberTrunks();
 }
-
 function removeMtRow(){
-  const rows = getMtRows();
-  if (rows.length <= 1) return;
-  rows[rows.length - 1].remove();
-  clearMtLargest();
-  renumberTrunks();
-  if (calcMode === 'auto') calcMulti();
+  var rows=getMtRows(); if(rows.length<=1) return;
+  rows[rows.length-1].remove(); clearMtLargest(); renumberTrunks();
+  if(calcMode==='auto') calcMulti();
 }
-
-function parseMtBulk(text,limit=MT_MAX){
-  const vals=[]; if(!text) return vals; let s=String(text).replace(/[×X]/g,'x');
-  const repRE=/(\d+)\s*x\s*([-+]?\d*\.?\d+)/g;
-  s=s.replace(repRE,(_,nStr,vStr)=>{const n=parseInt(nStr,10), v=parseFloat(vStr); if(Number.isFinite(n)&&n>0&&Number.isFinite(v)&&v>0){for(let i=0;i<n&&vals.length<limit;i++) vals.push(v);} return ' ';});
-  const singles=s.match(/[-+]?\d*\.?\d+/g)||[];
-  for(const m of singles){ if(vals.length>=limit) break; const v=parseFloat(m); if(Number.isFinite(v)&&v>0) vals.push(v); }
+function maybeMtOutlierHint(val,h){
+  if(!h) return;
+  if(!Number.isFinite(val)||val<=0){h.classList.remove('show');return}
+  if(inputUnit==='m'){
+    if(val<0.20){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
+    else if(val>12){h.textContent='Unusually large — check units?';h.classList.add('show');}
+    else h.classList.remove('show');
+  } else {
+    if(val<0.66){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
+    else if(val>40){h.textContent='Unusually large — check units?';h.classList.add('show');}
+    else h.classList.remove('show');
+  }
+}
+function parseMtBulk(text,limit){
+  limit = limit||MT_MAX;
+  var vals=[]; if(!text) return vals; var s=String(text).replace(/[×X]/g,'x');
+  var repRE=/(\d+)\s*x\s*([-+]?\d*\.?\d+)/g, m;
+  s=s.replace(repRE,function(_,nStr,vStr){
+    var n=parseInt(nStr,10), v=parseFloat(vStr);
+    if(Number.isFinite(n)&&n>0&&Number.isFinite(v)&&v>0){ for(var i=0;i<n&&vals.length<limit;i++) vals.push(v); }
+    return ' ';
+  });
+  var singles=s.match(/[-+]?\d*\.?\d+/g)||[];
+  for(var j=0;j<singles.length && vals.length<limit;j++){
+    var v=parseFloat(singles[j]); if(Number.isFinite(v)&&v>0) vals.push(v);
+  }
   return vals;
 }
-function mtFillFromBulk(){ const vals=parseMtBulk(mtBulk.value,MT_MAX); if(vals.length===0)return; mtList.innerHTML=''; mtCount=0; vals.forEach(v=>addMtRow(v.toFixed(2))); mtResult.textContent='—'; if(calcMode==='auto') calcMulti(); 
-                         renumberTrunks();
-                         }
+function mtFillFromBulk(){
+  if(!mtFill) return;
+  mtFill.classList.add('active');
+  var vals=parseMtBulk(mtBulk?mtBulk.value:'',MT_MAX);
+  if(vals.length===0){ setTimeout(function(){ mtFill.classList.remove('active'); }, 500); return; }
+  if(mtList) mtList.innerHTML='';
+  vals.forEach(function(v){ addMtRow(v.toFixed(2)); });
+  if(mtResult) mtResult.textContent='—';
+  if(calcMode==='auto') calcMulti();
+  renumberTrunks();
+  setTimeout(function(){ mtFill.classList.remove('active'); }, 900);
+}
 function mtSortByDiameter(){
-  // Collect rows into "valid" (has a number) and "invalid" (empty/bad)
-  const rows = Array.from(mtList.children);
-  const valid = [];
-  const invalid = [];
-
-  rows.forEach(row => {
-    const inp = row.querySelector('input[type="number"]');
-    const v = parseFloat(inp?.value);
-    if (Number.isFinite(v) && v > 0) {
-      const cM = toM(v, inputUnit);
-      const dM = cM / PI;
-      valid.push({ row, dM });
-    } else {
-      invalid.push(row);
-    }
+  if(!mtList) return;
+  var rows=Array.prototype.slice.call(mtList.children);
+  var valid=[], invalid=[];
+  rows.forEach(function(row){
+    var inp=row.querySelector('input[type="number"]'); var v=parseFloat(inp && inp.value);
+    if(Number.isFinite(v)&&v>0){ var cM=toM(v,inputUnit), dM=cM/PI; valid.push({row:row,dM:dM}); }
+    else invalid.push(row);
   });
+  if(valid.length<2){ renumberTrunks(); return; }
+  valid.sort(function(a,b){ return b.dM-a.dM; });
+  var frag=document.createDocumentFragment(); valid.forEach(function(v){ frag.appendChild(v.row); }); invalid.forEach(function(r){ frag.appendChild(r); });
+  mtList.innerHTML=''; mtList.appendChild(frag);
+  clearMtLargest(); renumberTrunks();
+  if(calcMode==='auto') calcMulti();
+}
+function clearMtLargest(){
+  if(!mtList) return;
+  mtList.querySelectorAll('.mt-label').forEach(function(el){ el.classList.remove('largest-label'); });
+  mtList.querySelectorAll('.badge').forEach(function(b){ b.classList.add('hide'); b.textContent='Largest'; });
+}
+function calcMulti(){
+  clearMtLargest();
+  var items=mtList ? Array.prototype.slice.call(mtList.querySelectorAll('input')) : [];
+  var valid=items.map(function(inp){ return {inp:inp,val:parseFloat(inp.value),row:inp.closest('.row')} })
+    .filter(function(o){ return Number.isFinite(o.val)&&o.val>0; });
+  if(valid.length===0){
+    lastMulti=null; if(mtResult) mtResult.textContent='Enter at least one trunk circumference.'; updateResultsPanel(); updateCopyButtons(); return;
+  }
+  var withD=valid.map(function(r,i){ var cM=toM(r.val,inputUnit); var dM=cM/PI; return {row:r.row,cM:cM,dM:dM,idx:i+1}; });
+  var eps=1e-9; var dmax=Math.max.apply(null,withD.map(function(x){return x.dM;}));
+  var maxRows=withD.filter(function(x){ return Math.abs(x.dM-dmax)<eps; });
+  var sumAll=withD.reduce(function(a,x){return a+x.dM;},0);
+  var dEqM=dmax+0.5*(sumAll-dmax); var cEqM=dEqM*PI; var cAvgM=withD.reduce(function(a,x){return a+x.cM;},0)/withD.length;
+  var badgeText=(maxRows.length>1)?'Tied for largest':'Largest';
+  maxRows.forEach(function(r){
+    var lab=r.row.querySelector('.mt-label'); var badge=r.row.querySelector('.badge');
+    if(lab) lab.classList.add('largest-label'); if(badge){ badge.textContent=badgeText; badge.classList.remove('hide'); }
+  });
+  lastMulti={
+    trunks: withD.map(function(t){ return {index:t.idx,cM:t.cM,cFt:mToFt(t.cM),dM:t.dM,dFt:mToFt(t.dM),isLargest:Math.abs(t.dM-dmax)<eps}; }),
+    dEqM:dEqM, cEqM:cEqM, dEqFt:mToFt(dEqM), cEqFt:mToFt(cEqM),
+    cAvgM:cAvgM, cAvgFt:mToFt(cAvgM), tie:maxRows.length>1
+  };
+  if(mtResult) mtResult.textContent='Calculated '+withD.length+' trunk'+(withD.length>1?'s':'')+'.';
+  updateResultsPanel(); updateCopyButtons();
+}
+if(mtAdd)    mtAdd.onclick=function(){ addMtRow(); };
+if(mtRemove) mtRemove.onclick=function(){ removeMtRow(); };
+if(mtSort)   mtSort.onclick=mtSortByDiameter;
+if(mtCalc)   mtCalc.onclick=calcMulti;
+if(mtFill)   mtFill.onclick=mtFillFromBulk;
+if(mtClear)  mtClear.onclick=function(){ if(mtBulk) mtBulk.value=''; };
 
-  if (valid.length < 2) {
-    // not enough to sort—just ensure labels are correct
-    renumberTrunks();
+/* ---------------- Height ---------------- */
+var hAngle=byId('h-angle'), hDist=byId('h-dist'), hEye=byId('h-eye'), hCalc=byId('h-calc');
+function calcHeight(){
+  var a=parseFloat(hAngle && hAngle.value), d=parseFloat(hDist && hDist.value), e=parseFloat(hEye && hEye.value);
+  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null; updateResultsPanel(); updateCopyButtons(); return; }
+  var dM=toM(d,inputUnit), eM=toM(e,inputUnit); var hM=tanDeg(a)*dM+eM;
+  lastHeight={hM:hM,hFt:mToFt(hM),angleDeg:Number(a.toFixed(1)),dM:dM,eM:eM};
+  updateResultsPanel(); updateCopyButtons();
+  if(hCalc){ hCalc.classList.add('active'); setTimeout(function(){ hCalc.classList.remove('active'); },900); }
+}
+if(hCalc) hCalc.onclick=calcHeight;
+[hAngle,hDist,hEye].forEach(function(inp){ if(inp) inp.addEventListener('input',function(){ if(calcMode==='auto') calcHeight(); }); });
+
+  /* ---------------- Canopy ---------------- */
+var spreadMajor = byId('spreadMajor'),
+    spreadMinor = byId('spreadMinor'),
+    spreadCalcBtn = byId('spread-calc');
+
+function calcSpread(){
+  var maj = parseFloat(spreadMajor && spreadMajor.value);
+  var min = parseFloat(spreadMinor && spreadMinor.value);
+
+  if (!Number.isFinite(maj) || !Number.isFinite(min) || maj <= 0 || min <= 0){
+    lastSpread = null;
+    updateResultsPanel();
+    updateCopyButtons();
     return;
   }
 
-  // Sort by diameter (desc)
-  valid.sort((a, b) => b.dM - a.dM);
+  // Convert to meters if needed
+  var majM = toM(maj, inputUnit);
+  var minM = toM(min, inputUnit);
+  var meanM = (majM + minM) / 2;
 
-  // Rebuild DOM: valid rows first (sorted), then invalid
-  const frag = document.createDocumentFragment();
-  valid.forEach(v => frag.appendChild(v.row));
-  invalid.forEach(r => frag.appendChild(r));
-  mtList.innerHTML = '';
-  mtList.appendChild(frag);
+  lastSpread = {
+    majorM: majM,
+    minorM: minM,
+    meanM: meanM,
+    meanFt: mToFt(meanM)
+  };
 
-  // Clear any previous "Largest" styling, renumber, and (optionally) recalc
-  clearMtLargest();
-  renumberTrunks();
-  if (calcMode === 'auto') calcMulti();
+  updateResultsPanel();
+  updateCopyButtons();
+
+  if (spreadCalcBtn){
+    spreadCalcBtn.classList.add('active');
+    setTimeout(function(){ spreadCalcBtn.classList.remove('active'); }, 900);
+  }
 }
 
-function clearMtLargest(){ mtList.querySelectorAll('.mt-label').forEach(el=>el.classList.remove('largest-label')); mtList.querySelectorAll('.badge').forEach(b=>{b.classList.add('hide'); b.textContent='Largest';}); }
-function calcMulti(){
-  clearMtLargest();
-  const items=Array.from(mtList.querySelectorAll('input'));
-  const valid=items.map(inp=>({inp,val:parseFloat(inp.value),row:inp.closest('.row')})).filter(o=>Number.isFinite(o.val)&&o.val>0);
-  if(valid.length===0){ lastMulti=null; mtResult.textContent='Enter at least one trunk circumference.'; updateResultsPanel(); updateCopyButtons(); return; }
-  const withD=valid.map((r,i)=>{const cM=toM(r.val,inputUnit); const dM=cM/PI; return {row:r.row,cM,dM,idx:i+1};});
-  const eps=1e-9; const dmax=Math.max(...withD.map(x=>x.dM)); const maxRows=withD.filter(x=>Math.abs(x.dM-dmax)<eps); const sumAll=withD.reduce((a,x)=>a+x.dM,0);
-  const dEqM=dmax+0.5*(sumAll-dmax); const cEqM=dEqM*PI; const cAvgM=withD.reduce((a,x)=>a+x.cM,0)/withD.length;
-  const badgeText=(maxRows.length>1)?'Tied for largest':'Largest';
-  maxRows.forEach(r=>{const lab=r.row.querySelector('.mt-label'); const badge=r.row.querySelector('.badge'); lab?.classList.add('largest-label'); if(badge){badge.textContent=badgeText; badge.classList.remove('hide');}});
-  lastMulti={ trunks:withD.map(t=>({index:t.idx,cM:t.cM,cFt:mToFt(t.cM),dM:t.dM,dFt:mToFt(t.dM),isLargest:Math.abs(t.dM-dmax)<eps})), dEqM,cEqM,dEqFt:mToFt(dEqM),cEqFt:mToFt(cEqM), cAvgM,cAvgFt:mToFt(cAvgM), tie:maxRows.length>1 };
-  mtResult.textContent=`Calculated ${withD.length} trunk${withD.length>1?'s':''}.`;
-  updateResultsPanel(); updateCopyButtons();
-}
-mtAdd.onclick=()=>addMtRow();
-mtRemove.onclick=()=>removeMtRow();
-mtSort.onclick=mtSortByDiameter;
-mtCalc.onclick=calcMulti;
-mtFill.onclick=mtFillFromBulk;
-mtClear.onclick=()=>{ mtBulk.value=''; };
+// Hook up events
+if (spreadCalcBtn) spreadCalcBtn.addEventListener('click', calcSpread);
+[spreadMajor, spreadMinor].forEach(function(inp){
+  if (inp) inp.addEventListener('input', function(){
+    if (calcMode === 'auto') calcSpread();
+  });
+});
 
-/* ====== Height ====== */
-const hAngle=$('#h-angle'), hDist=$('#h-dist'), hEye=$('#h-eye'), hCalc=$('#h-calc');
-function calcHeight(){
-  const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value);
-  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null; updateResultsPanel(); updateCopyButtons(); return; }
-  const dM=toM(d,inputUnit), eM=toM(e,inputUnit); const hM=tanDeg(a)*dM+eM;
-  lastHeight={hM,hFt:mToFt(hM),angleDeg:Number(a.toFixed(1)),dM,eM};
-  updateResultsPanel(); updateCopyButtons();
-}
-hCalc.onclick=calcHeight;
-[hAngle,hDist,hEye].forEach(inp=>inp.addEventListener('input',()=>{ if(calcMode==='auto') calcHeight();}));
+/* ---------------- Clinometer (single-button start/lock) ---------------- */
+let clinoOn = false, zeroOffsetRad = 0, locked = false;
+let lastLiveDeg = NaN; // current live (unlocked) reading in degrees
 
-/* ====== Clinometer ====== */
-let clinoOn = false, zeroOffsetRad = 0, locked=false;
-// Clinometer DOM refs (safe)
-const elEnable = document.querySelector('#clino-enable') || null;
-const elDisable = document.querySelector('#clino-disable') || null;
-const elAngle  = document.querySelector('#clino-angle')  || null;
-const elLock   = document.querySelector('#clino-lock')   || null;
-const elZero   = document.querySelector('#clino-zero')   || null;
-const elReset  = document.querySelector('#clino-reset')  || null; // ensures it's defined
-const elStatus = document.querySelector('#clino-status') || null;
-  const toDeg=rad=>rad*180/Math.PI, clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
-function buzz(ms=30){ if(navigator.vibrate) try{navigator.vibrate(ms);}catch{} }
+const elLock       = document.getElementById('clino-lock');
+const elZero       = document.getElementById('clino-zero');
+const elReset      = document.getElementById('clino-reset');
+const elReadAngle  = document.getElementById('clino-live-angle');
+const elReadStatus = document.getElementById('clino-live-status');
+
+const toDeg = rad => rad * 180 / Math.PI;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+function buzz(ms = 30){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch{} }
+
 async function requestIOSPermissionIfNeeded(){
-  const any=window.DeviceOrientationEvent; if(!any) return true;
-  if(typeof any.requestPermission==='function'){ try{ const res=await any.requestPermission(); return res==='granted'; }catch{ return false; } }
+  const any = window.DeviceOrientationEvent;
+  if(!any) return true;
+  if(typeof any.requestPermission === 'function'){
+    try { return (await any.requestPermission()) === 'granted'; } catch { return false; }
+  }
   return true;
 }
-function computePitchFromEvent(ev){ const beta=typeof ev.beta==='number'?ev.beta:0; const rad=(beta*Math.PI/180)-zeroOffsetRad; return clamp(toDeg(rad),-89.9,89.9); }
-let onOrientation=null;
+
+function computePitchFromEvent(ev){
+  const beta = typeof ev.beta === 'number' ? ev.beta : 0;
+  const rad  = (beta * Math.PI/180) - zeroOffsetRad;
+  return clamp(toDeg(rad), -89.9, 89.9);
+}
+
+function renderClinoReadout(deg){
+  lastLiveDeg = deg; // store latest live value
+  const txt = Number.isFinite(deg) ? fmt1(deg) + '°' : '—°';
+  elReadAngle.textContent = locked ? `${txt} (locked)` : txt;
+}
+
+function renderClinoStatus(state){
+  const label = state === 'running'   ? 'Sensor: running'
+              : state === 'stopped'   ? 'Sensor: stopped'
+              : state === 'permission'? 'Sensor: permission denied'
+              :                         'Sensor: idle';
+  const cal   = fmt1(toDeg(zeroOffsetRad)) + '°';
+  elReadStatus.textContent = `${label} · Cal: ${cal}`;
+}
+
+function getAngleFromReadout(){
+  // Parse the numeric part from "29.7°" or "29.7° (locked)"
+  const m = String(elReadAngle.textContent).match(/-?\d+(?:\.\d+)?/);
+  return m ? parseFloat(m[0]) : NaN;
+}
+
+let onOrientation = null;
+
 function startClinometer(){
-  if(clinoOn) return; clinoOn=true; elStatus.textContent='Sensor: running';
-  elEnable.classList.add('active'); elDisable.classList.remove('active');
+  if (clinoOn) return;
+  clinoOn = true;
+  renderClinoStatus('running');
+  elLock.textContent = 'Lock';
+
   requestIOSPermissionIfNeeded().then(ok=>{
-    if(!ok){ elStatus.textContent='Sensor: permission denied'; clinoOn=false; return; }
-    onOrientation=(ev)=>{ if(!clinoOn||locked) return; const deg=computePitchFromEvent(ev); elAngle.textContent=`${fmt1(deg)}°`; };
+    if(!ok){
+      clinoOn = false;
+      renderClinoStatus('permission');
+      elLock.textContent = 'Start Clinometer';
+      return;
+    }
+    onOrientation = ev => {
+      if(!clinoOn || locked) return;
+      const deg = computePitchFromEvent(ev);
+      renderClinoReadout(deg);
+    };
     window.addEventListener('deviceorientation', onOrientation, {passive:true});
   });
 }
+
 function stopClinometer(){
-  if(!clinoOn) return; clinoOn=false; elEnable.classList.remove('active'); elDisable.classList.add('active');
-  elStatus.textContent='Sensor: stopped'; if(onOrientation){ window.removeEventListener('deviceorientation', onOrientation); onOrientation=null; }
+  if(!clinoOn) return;
+  clinoOn = false;
+  if(onOrientation) window.removeEventListener('deviceorientation', onOrientation);
+  onOrientation = null;
+  renderClinoStatus('stopped');
+  elLock.textContent = 'Start Clinometer';
 }
-function lockAngle(){
-  // Toggle lock; when locking, write current angle to the input field
-  if(!locked){
-    locked=true; elLock.textContent='Locked'; elLock.classList.add('active'); buzz(40);
-    const txt=elAngle.textContent.replace('°',''); const current=parseFloat(txt);
-    if(Number.isFinite(current)){ hAngle.value=current.toFixed(1); if(calcMode==='auto') calcHeight(); }
+
+function zeroCalibrate(){
+  const current = Number.isFinite(lastLiveDeg) ? lastLiveDeg : getAngleFromReadout();
+  if(!Number.isFinite(current)) return;
+  zeroOffsetRad += (current * Math.PI/180);
+  renderClinoStatus(clinoOn ? 'running' : 'idle');
+  buzz(20);
+}
+
+function resetSensor(){
+  locked = false;
+  zeroOffsetRad = 0;
+  renderClinoReadout(NaN);
+  if (clinoOn){
+    elLock.classList.remove('active');
+    elLock.textContent = 'Lock';
+    renderClinoStatus('running');
   } else {
-    locked=false; elLock.textContent='Lock'; elLock.classList.remove('active');
+    elLock.classList.remove('active');
+    elLock.textContent = 'Start Clinometer';
+    renderClinoStatus('idle');
+  }
+  buzz(10);
+}
+
+function toggleLock(){
+  // First click starts the sensor
+  if(!clinoOn){
+    startClinometer();
+    buzz(50);
+    return;
+  }
+  // Toggle lock/unlock while running
+  if(!locked){
+    locked = true;
+    elLock.textContent = 'Unlock';
+    elLock.classList.add('active');
+    const current = Number.isFinite(lastLiveDeg) ? lastLiveDeg : getAngleFromReadout();
+    if (Number.isFinite(current)) {
+      document.getElementById('h-angle').value = current.toFixed(1);
+      if (calcMode === 'auto') calcHeight();
+    }
+    renderClinoReadout(current);
+    buzz(40);
+  } else {
+    locked = false;
+    elLock.textContent = 'Lock';
+    elLock.classList.remove('active');
+    // Immediately refresh readout from stored last value
+    renderClinoReadout(lastLiveDeg);
   }
 }
-function zeroCalibrate(){ const txt=elAngle.textContent.replace('°',''); const current=parseFloat(txt); if(!Number.isFinite(current)) return; zeroOffsetRad += (current*Math.PI/180); elStatus.textContent='Zeroed at current angle'; buzz(20); }
-function resetSensor(){ locked=false; elLock.textContent='Lock'; elLock.classList.remove('active'); zeroOffsetRad=0; elAngle.textContent='—°'; elStatus.textContent='Sensor: idle'; buzz(10); }
-elEnable?.addEventListener('click', startClinometer);
-elDisable?.addEventListener('click', stopClinometer);
-elLock?.addEventListener('click', lockAngle);
-elZero?.addEventListener('click', zeroCalibrate);
-elReset?.addEventListener('click', resetSensor);
+
+elLock.addEventListener('click', toggleLock);
+elZero.addEventListener('click', zeroCalibrate);
+elReset.addEventListener('click', resetSensor);
+
+// Stop sensor when tab goes to background
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stopClinometer(); });
 
-/* ====== Canopy ====== */
-const spreadMajor=$('#spreadMajor'), spreadMinor=$('#spreadMinor'), spreadCalc=$('#spread-calc');
-function calcSpread(){
-  const maj=parseFloat(spreadMajor.value), min=parseFloat(spreadMinor.value);
-  const haveMaj=Number.isFinite(maj), haveMin=Number.isFinite(min);
-  if(!haveMaj && !haveMin){ lastSpread=null; updateResultsPanel(); updateCopyButtons(); return; }
-  const mMaj=haveMaj?toM(maj,inputUnit):null, mMin=haveMin?toM(min,inputUnit):null;
-  const meanM=((mMaj??0)+(mMin??0))/((haveMaj?1:0)+(haveMin?1:0));
-  lastSpread={majorM:mMaj,minorM:mMin,meanM,meanFt:mToFt(meanM)};
-  updateResultsPanel(); updateCopyButtons();
-}
-spreadCalc.onclick=calcSpread;
-[spreadMajor,spreadMinor].forEach(inp=>inp.addEventListener('input',()=>{ if(calcMode==='auto') calcSpread(); }));
+// Initialize live box so it isn’t blank
+renderClinoStatus('idle');
+renderClinoReadout(NaN);
 
-/* ====== Results & Quick Copy ====== */
-const resHeight=$('#res-height'), resEqCirc=$('#res-eqcirc'), resAvgCirc=$('#res-avgcirc'), resSpread=$('#res-spread');
+/* ---------------- Results & Quick Copy ---------------- */
+var resHeight=byId('res-height'), resEqCirc=byId('res-eqcirc'), resAvgCirc=byId('res-avgcirc'), resSpread=byId('res-spread');
 function updateResultsPanel(){
-  resHeight.textContent = lastHeight ? `Height: ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)` : 'Height: —';
-  const t=treeType.value;
+  if(resHeight) resHeight.textContent = lastHeight ? ('Height: '+fmt2(lastHeight.hM)+' m ('+fmt2(lastHeight.hFt)+' ft)') : 'Height: —';
+  var t=treeType ? treeType.value : '';
   if(t==='Multi trunked tree' && lastMulti){
-    resEqCirc.textContent=`Equivalent circumference: ${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft)`;
-    resAvgCirc.style.display=''; resAvgCirc.textContent=`Average circumference (multi): ${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft)`;
+    if(resEqCirc) resEqCirc.textContent='Equivalent circumference: '+fmt2(lastMulti.cEqM)+' m ('+fmt2(lastMulti.cEqFt)+' ft)';
+    if(resAvgCirc){ resAvgCirc.style.display=''; resAvgCirc.textContent='Average circumference (multi): '+fmt2(lastMulti.cAvgM)+' m ('+fmt2(lastMulti.cAvgFt)+' ft)'; }
   } else if(t==='Single trunk tree' && lastSingle){
-    resEqCirc.textContent=`Entered circumference: ${fmt2(lastSingle.cM)} m (${fmt2(lastSingle.cFt)} ft)`;
-    resAvgCirc.style.display='none'; resAvgCirc.textContent='Average circumference (multi): —';
+    if(resEqCirc) resEqCirc.textContent='Entered circumference: '+fmt2(lastSingle.cM)+' m ('+fmt2(lastSingle.cFt)+' ft)';
+    if(resAvgCirc){ resAvgCirc.style.display='none'; resAvgCirc.textContent='Average circumference (multi): —'; }
   } else {
-    resEqCirc.textContent='Equivalent / Entered circumference: —';
-    resAvgCirc.style.display=(t==='Multi trunked tree')?'':'none';
-    resAvgCirc.textContent='Average circumference (multi): —';
+    if(resEqCirc) resEqCirc.textContent='Equivalent / Entered circumference: —';
+    if(resAvgCirc){ resAvgCirc.style.display=(t==='Multi trunked tree')?'':'none'; resAvgCirc.textContent='Average circumference (multi): —'; }
   }
-  resSpread.textContent = lastSpread ? `Final canopy spread: ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)` : 'Final canopy spread: —';
+  if(resSpread) resSpread.textContent = lastSpread ? ('Final canopy spread: '+fmt2(lastSpread.meanM)+' m ('+fmt2(lastSpread.meanFt)+' ft)') : 'Final canopy spread: —';
 }
-const copyHeight=$('#copyHeight'), copyEqCirc=$('#copyEqCirc'), copyAvgCirc=$('#copyAvgCirc'), copySpread=$('#copySpread');
+var copyHeight=byId('copyHeight'), copyEqCirc=byId('copyEqCirc'), copyAvgCirc=byId('copyAvgCirc'), copySpreadBtn=byId('copySpread');
 function updateCopyButtons(){
-  copyHeight.disabled=!(lastHeight&&Number.isFinite(lastHeight.hM));
-  if(treeType.value==='Multi trunked tree'){ copyEqCirc.disabled=!(lastMulti&&Number.isFinite(lastMulti.cEqM)); copyAvgCirc.disabled=!(lastMulti&&Number.isFinite(lastMulti.cAvgM)); }
-  else if(treeType.value==='Single trunk tree'){ copyEqCirc.disabled=!(lastSingle&&Number.isFinite(lastSingle.cM)); copyAvgCirc.disabled=true; }
-  else { copyEqCirc.disabled=true; copyAvgCirc.disabled=true; }
-  copySpread.disabled=!(lastSpread&&Number.isFinite(lastSpread.meanM));
+  if(copyHeight) copyHeight.disabled=!(lastHeight&&Number.isFinite(lastHeight.hM));
+  var t=treeType ? treeType.value : '';
+  if(t==='Multi trunked tree'){
+    if(copyEqCirc) copyEqCirc.disabled=!(lastMulti&&Number.isFinite(lastMulti.cEqM));
+    if(copyAvgCirc) copyAvgCirc.disabled=!(lastMulti&&Number.isFinite(lastMulti.cAvgM));
+  } else if(t==='Single trunk tree'){
+    if(copyEqCirc) copyEqCirc.disabled=!(lastSingle&&Number.isFinite(lastSingle.cM));
+    if(copyAvgCirc) copyAvgCirc.disabled=true;
+  } else {
+    if(copyEqCirc) copyEqCirc.disabled=true;
+    if(copyAvgCirc) copyAvgCirc.disabled=true;
+  }
+  if(copySpreadBtn) copySpreadBtn.disabled=!(lastSpread&&Number.isFinite(lastSpread.meanM));
 }
-async function copyText(txt,btn){
-  try{ await navigator.clipboard.writeText(txt); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200); }
-  catch{ const t=document.createElement('input'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); const o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=o,1200); }
+function copyText(txt,btn){
+  (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt)
+    : new Promise(function(res){ var t=document.createElement('input'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); res(); })
+  ).then(function(){
+    var o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(function(){ btn.textContent=o; },1200);
+  }).catch(function(){});
 }
-copyHeight.onclick=()=>{ if(lastHeight) copyText(fmt2(lastHeight.hM),copyHeight); };
-copyEqCirc.onclick=()=>{ const t=treeType.value; if(t==='Multi trunked tree'&&lastMulti) copyText(fmt2(lastMulti.cEqM),copyEqCirc); if(t==='Single trunk tree'&&lastSingle) copyText(fmt2(lastSingle.cM),copyEqCirc); };
-copyAvgCirc.onclick=()=>{ if(lastMulti) copyText(fmt2(lastMulti.cAvgM),copyAvgCirc); };
-copySpread.onclick=()=>{ if(lastSpread) copyText(fmt2(lastSpread.meanM),copySpread); };
+if(copyHeight)   copyHeight.onclick=function(){ if(lastHeight) copyText(fmt2(lastHeight.hM),copyHeight); };
+if(copyEqCirc)   copyEqCirc.onclick=function(){
+  var t=treeType ? treeType.value : '';
+  if(t==='Multi trunked tree'&&lastMulti) copyText(fmt2(lastMulti.cEqM),copyEqCirc);
+  if(t==='Single trunk tree'&&lastSingle) copyText(fmt2(lastSingle.cM),copyEqCirc);
+};
+if(copyAvgCirc)  copyAvgCirc.onclick=function(){ if(lastMulti) copyText(fmt2(lastMulti.cAvgM),copyAvgCirc); };
+if(copySpreadBtn)copySpreadBtn.onclick=function(){ if(lastSpread) copyText(fmt2(lastSpread.meanM),copySpreadBtn); };
 
-/* ====== Description / Email / Share ====== */
-const treeNameInput=$('#treeName'), species=$('#species'), condition=$('#condition');
-const descBox=$('#desc'), genDesc=$('#genDesc'), copyDesc=$('#copyDesc'), shareBtn=$('#shareLink'), emailBtn=$('#emailBtn');
+/* ---------------- Description / Share ---------------- */
+var treeNameInput=byId('treeName'), species=byId('species'), condition=byId('condition');
+var descBox=byId('desc'), genDesc=byId('genDesc'), copyDesc=byId('copyDesc'), shareBtn=byId('shareLink'), emailBtn=byId('emailBtn');
 
 function ensureOnDemand(){
-  if(treeType.value==='Multi trunked tree'){ const any=$$('#mt-list input').some(i=>Number.isFinite(parseFloat(i.value))); if(any && !lastMulti) calcMulti(); }
-  const a=parseFloat(hAngle.value), d=parseFloat(hDist.value), e=parseFloat(hEye.value); if(Number.isFinite(a)&&Number.isFinite(d)&&Number.isFinite(e)&&!lastHeight) calcHeight();
-  if(!lastSpread && (Number.isFinite(parseFloat(spreadMajor.value))||Number.isFinite(parseFloat(spreadMinor.value)))) calcSpread();
-  if(treeType.value==='Single trunk tree' && !lastSingle && Number.isFinite(parseFloat(singleC.value))) recomputeSingle();
+  if((treeType && treeType.value==='Multi trunked tree')){
+    var any=$all('#mt-list input').some(function(i){ return Number.isFinite(parseFloat(i.value)); });
+    if(any && !lastMulti) calcMulti();
+  }
+  var a=parseFloat(hAngle && hAngle.value), d=parseFloat(hDist && hDist.value), e=parseFloat(hEye && hEye.value);
+  if(Number.isFinite(a)&&Number.isFinite(d)&&Number.isFinite(e)&&!lastHeight) calcHeight();
+  if(!lastSpread && (Number.isFinite(parseFloat(spreadMajor && spreadMajor.value))||Number.isFinite(parseFloat(spreadMinor && spreadMinor.value)))) calcSpread();
+  if(treeType && treeType.value==='Single trunk tree' && !lastSingle && Number.isFinite(parseFloat(singleC && singleC.value))) recomputeSingle();
 }
 function buildDescription(){
-  const parts=[]; const name=treeNameInput.value?.trim(), sp=species.value?.trim(), cond=condition.value?.trim(), type=treeType.value?.trim();
-  const head=document.createElement('div');
-  if(name) head.innerHTML+=`<p><strong>Tree</strong>: ${escapeHtml(name)}</p>`;
-  if(sp)   head.innerHTML+=`<p><strong>Species</strong>: ${escapeHtml(sp)}</p>`;
-  if(cond) head.innerHTML+=`<p><strong>Condition</strong>: ${escapeHtml(cond)}</p>`;
-  if(type) head.innerHTML+=`<p><strong>Type</strong>: ${escapeHtml(type)}</p>`;
+  var parts=[]; 
+  var name=treeNameInput && treeNameInput.value ? treeNameInput.value.trim() : '';
+  var sp=species && species.value ? species.value.trim() : '';
+  var cond=condition && condition.value ? condition.value.trim() : '';
+  var type=treeType && treeType.value ? treeType.value.trim() : '';
+  var head=document.createElement('div');
+  if(name) head.innerHTML+='<p><strong>Tree</strong>: '+escapeHtml(name)+'</p>';
+  if(sp)   head.innerHTML+='<p><strong>Species</strong>: '+escapeHtml(sp)+'</p>';
+  if(cond) head.innerHTML+='<p><strong>Condition</strong>: '+escapeHtml(cond)+'</p>';
+  if(type) head.innerHTML+='<p><strong>Type</strong>: '+escapeHtml(type)+'</p>';
   if(head.innerHTML) parts.push(head);
 
-  const meas=document.createElement('div'); let has=false;
+  var meas=document.createElement('div'); var has=false;
 
   if(type==='Single trunk tree' && lastSingle){
     has=true;
-    const p1=document.createElement('p'); p1.innerHTML='<strong>Measurements</strong>';
-    const ul=document.createElement('ul');
-    const li=document.createElement('li');
-    li.textContent=`Circumference: ${fmt2(lastSingle.cM)} m (${fmt2(lastSingle.cFt)} ft) → Diameter: ${fmt2(lastSingle.dM)} m (${fmt2(lastSingle.dFt)} ft)`;
+    var p1=document.createElement('p'); p1.innerHTML='<strong>Measurements</strong>';
+    var ul=document.createElement('ul');
+    var li=document.createElement('li');
+    li.textContent='Circumference: '+fmt2(lastSingle.cM)+' m ('+fmt2(lastSingle.cFt)+' ft) → Diameter: '+fmt2(lastSingle.dM)+' m ('+fmt2(lastSingle.dFt)+' ft)';
     ul.appendChild(li); meas.appendChild(p1); meas.appendChild(ul);
   }
 
   if(type==='Multi trunked tree' && lastMulti){
     has=true;
-    const p1=document.createElement('p'); p1.innerHTML='<strong>Individual trunks (circumference → diameter)</strong>';
-    const ul1=document.createElement('ul');
-    lastMulti.trunks.forEach(t=>{
-      const txt=`T${t.index}: ${fmt2(t.cM)} m (${fmt2(t.cFt)} ft) → ${fmt2(t.dM)} m (${fmt2(t.dFt)} ft)`;
-      const li=document.createElement('li');
-      if(t.isLargest){ li.innerHTML=`<strong>${txt}</strong>`; } else { li.textContent=txt; }
-      ul1.appendChild(li);
+    var p1b=document.createElement('p'); p1b.innerHTML='<strong>Individual trunks (circumference → diameter)</strong>';
+    var ul1=document.createElement('ul');
+    lastMulti.trunks.forEach(function(t){
+      var txt='T'+t.index+': '+fmt2(t.cM)+' m ('+fmt2(t.cFt)+' ft) → '+fmt2(t.dM)+' m ('+fmt2(t.dFt)+' ft)';
+      var lii=document.createElement('li');
+      if(t.isLargest){ lii.innerHTML='<strong>'+txt+'</strong>'; } else { lii.textContent=txt; }
+      ul1.appendChild(lii);
     });
-    const p2=document.createElement('p'); p2.innerHTML='<strong>Full Tree Circumference (circumference → diameter)</strong>';
-    const ul2=document.createElement('ul');
-    const liC=document.createElement('li'); liC.textContent=`Equivalent circumference: ${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft) → ${fmt2(lastMulti.dEqM)} m (${fmt2(lastMulti.dEqFt)} ft)`;
-    const dAvgM=lastMulti.cAvgM/PI, dAvgFt=mToFt(dAvgM);
-    const liA=document.createElement('li'); liA.textContent=`Average circumference: ${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft) → ${fmt2(dAvgM)} m (${fmt2(dAvgFt)} ft)`;
+    var p2=document.createElement('p'); p2.innerHTML='<strong>Full Tree Circumference (circumference → diameter)</strong>';
+    var ul2=document.createElement('ul');
+    var liC=document.createElement('li'); liC.textContent='Equivalent circumference: '+fmt2(lastMulti.cEqM)+' m ('+fmt2(lastMulti.cEqFt)+' ft) → '+fmt2(lastMulti.dEqM)+' m ('+fmt2(lastMulti.dEqFt)+' ft)';
+    var dAvgM=lastMulti.cAvgM/PI, dAvgFt=mToFt(dAvgM);
+    var liA=document.createElement('li'); liA.textContent='Average circumference: '+fmt2(lastMulti.cAvgM)+' m ('+fmt2(lastMulti.cAvgFt)+' ft) → '+fmt2(dAvgM)+' m ('+fmt2(dAvgFt)+' ft)';
     ul2.appendChild(liC); ul2.appendChild(liA);
-    meas.appendChild(p1); meas.appendChild(ul1); meas.appendChild(p2); meas.appendChild(ul2);
+    meas.appendChild(p1b); meas.appendChild(ul1); meas.appendChild(p2); meas.appendChild(ul2);
   }
 
   if(lastHeight){
     has=true;
-    const p=document.createElement('p'); p.innerHTML='<strong>Height</strong>';
-    const ul=document.createElement('ul');
-    const liH=document.createElement('li'); liH.textContent=`Tree height: ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`;
-    const liF=document.createElement('li'); liF.textContent=`height = tan(${fmt1(lastHeight.angleDeg)}°) × ${fmt2(lastHeight.dM)} m + ${fmt2(lastHeight.eM)} m = ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`;
-    ul.appendChild(liH); ul.appendChild(liF); meas.appendChild(p); meas.appendChild(ul);
+    var pH=document.createElement('p'); pH.innerHTML='<strong>Height</strong>';
+    var ulH=document.createElement('ul');
+    var liH=document.createElement('li'); liH.textContent='Tree height: '+fmt2(lastHeight.hM)+' m ('+fmt2(lastHeight.hFt)+' ft)';
+    var liF=document.createElement('li'); liF.textContent='height = tan('+fmt1(lastHeight.angleDeg)+'°) × '+fmt2(lastHeight.dM)+' m + '+fmt2(lastHeight.eM)+' m = '+fmt2(lastHeight.hM)+' m ('+fmt2(lastHeight.hFt)+' ft)';
+    ulH.appendChild(liH); ulH.appendChild(liF); meas.appendChild(pH); meas.appendChild(ulH);
   }
 
   if(lastSpread){
     has=true;
-    const p=document.createElement('p'); p.innerHTML='<strong>Canopy spread</strong>';
-    const ul=document.createElement('ul');
-    if(Number.isFinite(lastSpread.majorM)){ const li=document.createElement('li'); li.textContent=`Major: ${fmt2(lastSpread.majorM)} m (${fmt2(mToFt(lastSpread.majorM))} ft)`; ul.appendChild(li); }
-    if(Number.isFinite(lastSpread.minorM)){ const li=document.createElement('li'); li.textContent=`Minor: ${fmt2(lastSpread.minorM)} m (${fmt2(mToFt(lastSpread.minorM))} ft)`; ul.appendChild(li); }
-    const liMean=document.createElement('li'); liMean.innerHTML=`<strong>Final canopy spread: ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)</strong>`; ul.appendChild(liMean);
-    meas.appendChild(p); meas.appendChild(ul);
+    var pS=document.createElement('p'); pS.innerHTML='<strong>Canopy spread</strong>';
+    var ulS=document.createElement('ul');
+    if(Number.isFinite(lastSpread.majorM)){ var liMs=document.createElement('li'); liMs.textContent='Major: '+fmt2(lastSpread.majorM)+' m ('+fmt2(mToFt(lastSpread.majorM))+' ft)'; ulS.appendChild(liMs); }
+    if(Number.isFinite(lastSpread.minorM)){ var liMn=document.createElement('li'); liMn.textContent='Minor: '+fmt2(lastSpread.minorM)+' m ('+fmt2(mToFt(lastSpread.minorM))+' ft)'; ulS.appendChild(liMn); }
+    var liMean=document.createElement('li'); liMean.innerHTML='<strong>Final canopy spread: '+fmt2(lastSpread.meanM)+' m ('+fmt2(lastSpread.meanFt)+' ft)</strong>'; ulS.appendChild(liMean);
+    meas.appendChild(pS); meas.appendChild(ulS);
   }
 
   if(has) parts.push(meas);
 
-  const nTxt=notesEl.value.trim();
+  var nTxt=notesEl && notesEl.value ? notesEl.value.trim() : '';
   if(nTxt){
-    const n=document.createElement('div');
+    var n=document.createElement('div');
     n.innerHTML='<p><strong>Notes</strong></p>';
-    const ul=document.createElement('ul');
-    nTxt.split(/\n+/).forEach(line=>{ const li=document.createElement('li'); li.textContent=line; ul.appendChild(li); });
-    n.appendChild(ul); parts.push(n);
+    var ulN=document.createElement('ul');
+    nTxt.split(/\n+/).forEach(function(line){ var li=document.createElement('li'); li.textContent=line; ulN.appendChild(li); });
+    n.appendChild(ulN); parts.push(n);
   }
 
-// ---- Location section (if saved) ----
-const latIn = parseFloat(document.querySelector('#lat')?.value);
-const lngIn = parseFloat(document.querySelector('#lng')?.value);
-if (Number.isFinite(latIn) && Number.isFinite(lngIn)) {
-  const accIn = parseFloat(document.querySelector('#acc')?.value);
-  const altSavedEl = document.querySelector('#loc-saved-alt');
-  const tsSavedEl  = document.querySelector('#loc-saved-ts');
+  // Location (if saved)
+  var latEl=byId('lat'), lngEl=byId('lng'), accEl=byId('acc');
+  var latIn=parseFloat(latEl && latEl.value), lngIn=parseFloat(lngEl && lngEl.value);
+  if (Number.isFinite(latIn) && Number.isFinite(lngIn)) {
+    var accIn=parseFloat(accEl && accEl.value);
+    var savedAlt=byId('loc-saved-alt'); var savedTs=byId('loc-saved-ts');
+    var altSaved = (savedAlt && savedAlt.dataset && savedAlt.dataset.val) ? parseFloat(savedAlt.dataset.val) : NaN;
+    var tsSaved  = (savedTs && savedTs.dataset && savedTs.dataset.ts) ? parseInt(savedTs.dataset.ts,10) : NaN;
+    var locWhen = Number.isFinite(tsSaved) ? new Date(tsSaved).toLocaleString() : nowLocal24();
 
-  const altSaved = altSavedEl?.dataset?.val ? parseFloat(altSavedEl.dataset.val) : NaN;
-  const tsSaved  = tsSavedEl?.dataset?.ts ? parseInt(tsSavedEl.dataset.ts, 10) : NaN;
+    var loc=document.createElement('div');
+    loc.innerHTML = '<p><strong>Location</strong></p>';
+    var ulL=document.createElement('ul');
 
-  const locWhen = Number.isFinite(tsSaved)
-    ? new Date(tsSaved).toLocaleString()
-    : nowLocal24();
+    var li1=document.createElement('li'); li1.textContent='DD: '+latIn.toFixed(6)+', '+lngIn.toFixed(6); ulL.appendChild(li1);
+    var li2=document.createElement('li'); li2.textContent='DMS: '+toDMS(latIn,true)+'  |  '+toDMS(lngIn,false); ulL.appendChild(li2);
+    var li3=document.createElement('li'); li3.textContent='Altitude: '+(Number.isFinite(altSaved)?altSaved.toFixed(1)+' m':'—'); ulL.appendChild(li3);
+    var li4=document.createElement('li'); li4.textContent='Accuracy: '+(Number.isFinite(accIn)?'±'+accIn.toFixed(1)+' m':'±—'); ulL.appendChild(li4);
+    var li5=document.createElement('li'); li5.textContent='Recorded: '+locWhen; ulL.appendChild(li5);
 
-  const loc = document.createElement('div');
-  loc.innerHTML = '<p><strong>Location</strong></p>';
-  const ul = document.createElement('ul');
+    loc.appendChild(ulL);
+    parts.push(loc);
+  }
 
-  const li1 = document.createElement('li');
-  li1.textContent = `DD: ${latIn.toFixed(6)}, ${lngIn.toFixed(6)}`;
-  ul.appendChild(li1);
-
-  const li2 = document.createElement('li');
-  li2.textContent = `DMS: ${toDMS(latIn, true)}  |  ${toDMS(lngIn, false)}`;
-  ul.appendChild(li2);
-
-  const li3 = document.createElement('li');
-  li3.textContent = `Altitude: ${Number.isFinite(altSaved) ? altSaved.toFixed(1) + ' m' : '—'}`;
-  ul.appendChild(li3);
-
-  const li4 = document.createElement('li');
-  li4.textContent = `Accuracy: ${Number.isFinite(accIn) ? '±' + accIn.toFixed(1) + ' m' : '±—'}`;
-  ul.appendChild(li4);
-
-  const li5 = document.createElement('li');
-  li5.textContent = `Recorded: ${locWhen}`;
-  ul.appendChild(li5);
-
-  loc.appendChild(ul);
-  parts.push(loc);
-}
-
-  
-  const obs=document.createElement('div');
-  obs.innerHTML=`<p><strong>Observation</strong></p><ul><li>Recorded: ${nowLocal24()}</li></ul>`;
+  var obs=document.createElement('div');
+  obs.innerHTML='<p><strong>Observation</strong></p><ul><li>Recorded: '+nowLocal24()+'</li></ul>';
   parts.push(obs);
 
-  const out=document.createElement('div'); parts.forEach(p=>out.appendChild(p)); return out.innerHTML;
+  var out=document.createElement('div'); parts.forEach(function(p){ out.appendChild(p); }); return out.innerHTML;
 }
 function extractPlainText(container){
-  const items=Array.from(container.querySelectorAll('li')).map(li=>`- ${li.innerText}`);
-  const paras=Array.from(container.querySelectorAll('p')).map(p=>p.innerText);
-  return [...paras,...items].join('\n').trim();
+  var items=Array.prototype.slice.call(container.querySelectorAll('li')).map(function(li){ return '- '+li.innerText; });
+  var paras=Array.prototype.slice.call(container.querySelectorAll('p')).map(function(p){ return p.innerText; });
+  return items.concat(paras).join('\n').trim();
 }
 function generateDescription(){
   ensureOnDemand();
-  const html=buildDescription(); descBox.innerHTML=html||'—'; copyDesc.disabled=!html; shareBtn.disabled=!html;
+  var html=buildDescription();
+  if(descBox) descBox.innerHTML=html||'—';
+  if(copyDesc) copyDesc.disabled=!html;
+  if(shareBtn) shareBtn.disabled=!html;
   if(html){
-    const text=extractPlainText(descBox); const nm=$('#treeName').value?.trim();
-    const subject=`ARA Field Nomination${nm?' – '+nm:''}`;
-    emailBtn.href=`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
-    emailBtn.removeAttribute('aria-disabled');
-  } else { emailBtn.setAttribute('aria-disabled','true'); emailBtn.href='#'; }
+    var text=extractPlainText(descBox);
+    var nm=(byId('treeName')&&byId('treeName').value)?byId('treeName').value.trim():'';
+    var subject='ARA Field Nomination'+(nm?' – '+nm:'');
+    if(emailBtn){ emailBtn.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(text); emailBtn.removeAttribute('aria-disabled'); }
+  } else { if(emailBtn){ emailBtn.setAttribute('aria-disabled','true'); emailBtn.href='#'; } }
   saveState();
 }
-$('#genDesc').onclick=generateDescription;
-
-$('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html||html==='—') return; const text=extractPlainText(descBox);
-  if(navigator.clipboard && window.ClipboardItem){ try{
-    await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]);
-    const o=$('#copyDesc').textContent; $('#copyDesc').textContent='Copied ✓'; setTimeout(()=>$('#copyDesc').textContent=o,1200); return;
-  }catch{} }
-  const tmp=document.createElement('div'); tmp.contentEditable='true'; tmp.style.position='fixed'; tmp.style.left='-9999px'; tmp.innerHTML=html; document.body.appendChild(tmp);
-  const r=document.createRange(); r.selectNodeContents(tmp); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); s.removeAllRanges(); tmp.remove();
-  const o=$('#copyDesc').textContent; $('#copyDesc').textContent='Copied ✓'; setTimeout(()=>$('#copyDesc').textContent=o,1200);
+var genDescBtn=byId('genDesc');
+if(genDescBtn) genDescBtn.onclick=generateDescription;
+if(copyDesc) copyDesc.onclick=function(){
+  var html=descBox && descBox.innerHTML ? descBox.innerHTML.trim() : '';
+  if(!html||html==='—') return;
+  var text=extractPlainText(descBox);
+  copyText(text, copyDesc);
 };
 
+  /* ---------- Global accuracy indicator helpers ---------- */
+function accBucket(m){
+  // returns one of: 'red' (off), 'grey' (low), 'amber' (medium), 'green' (high)
+  if(!Number.isFinite(m)) return 'grey';           // use grey for "no fix yet" while running
+  if(m <= 5)   return 'green';
+  if(m < 20)   return 'amber';
+  return 'grey';
+}
+function paintGlobalAcc(accMeters, opts){
+  // opts: { state: 'off'|'nofix'|'ok' }  (controls red vs bucket color)
+  var pill = document.getElementById('acc-pill-global');
+  var dot  = document.getElementById('loc-tab-dot');
+  if(!pill || !dot) return;
 
+  var state = (opts && opts.state) || 'ok';
+  var text  = '±— m';
+  var cls   = 'acc-red'; // default to red only for 'off'
 
+  if(state === 'off'){
+    text = '±— m';
+    cls  = 'acc-red';
+  } else if(state === 'nofix'){
+    text = '±— m';
+    cls  = 'acc-grey';
+  } else {
+    // ok → bucket by value
+    var bucket = accBucket(accMeters);
+    cls = 'acc-' + bucket;
+    text = Number.isFinite(accMeters) ? ('±' + (accMeters.toFixed(1)) + ' m') : '±— m';
+  }
 
+  // reset classes (keep base class)
+  pill.className = 'acc-pill ' + cls;
+  dot.className  = 'acc-dot ' + cls;
 
-// ------- Location Tracker (compact, no sparkline) -------
-(() => {
-  const el = s => document.querySelector(s);
+  pill.textContent = text;
+
+  // accessibility
+  var label =
+    state === 'off'   ? 'Location accuracy: tracking off'
+  : state === 'nofix' ? 'Location accuracy: no fix yet'
+  : cls === 'acc-green' ? 'Location accuracy: high'
+  : cls === 'acc-amber' ? 'Location accuracy: medium'
+  : 'Location accuracy: low';
+  dot.setAttribute('aria-label', label);
+  pill.setAttribute('aria-label', label);
+}
+
+/* ---------------- Location tracker + map (scoped) ---------------- */
+(function(){
+  function el(s){ return document.querySelector(s); }
 
   // Controls
-  const bToggle = el('#loc-toggle');   // single Start/Stop button
-  const tHiAcc  = el('#loc-hiacc');
-  const tSaver  = el('#loc-saver');
+  var bToggle = el('#loc-toggle');
+  var tHiAcc  = el('#loc-hiacc');
+  var tSaver  = el('#loc-saver');
 
   // Recent readouts
-  const outDD   = el('#loc-recent-dd');
-  const outAcc  = el('#loc-recent-acc');
-  const outAlt  = el('#loc-recent-alt');
-  const outAge  = el('#loc-recent-age');
-  const outCnt  = el('#loc-samples');
+  var outDD   = el('#loc-recent-dd');
+  var outAcc  = el('#loc-recent-acc');
+  var outAlt  = el('#loc-recent-alt');
+  var outAge  = el('#loc-recent-age');
+  var outCnt  = el('#loc-samples');
 
   // Best readouts
-  const bestDD    = el('#loc-best-dd');
-  const bestAcc   = el('#loc-best-acc');
-  const bestAlt   = el('#loc-best-alt');
-  const bestTime  = el('#loc-best-time');
-  const bestBadge = el('#loc-best-badge');
+  var bestDD    = el('#loc-best-dd');
+  var bestAcc   = el('#loc-best-acc');
+  var bestAlt   = el('#loc-best-alt');
+  var bestTime  = el('#loc-best-time');
+  var bestBadge = el('#loc-best-badge');
 
   // Action buttons
-  const bUseRecent = el('#loc-use-recent');
-  const bUseBest   = el('#loc-use-best');
-  const bReset     = el('#loc-reset');
+  var bUseRecent = el('#loc-use-recent');
+  var bUseBest   = el('#loc-use-best');
+  var bReset     = el('#loc-reset');
 
-  // Hidden storage (keeps your description logic working)
-  const latEl = el('#lat'), lngEl = el('#lng'), accEl = el('#acc');
-  const savedAlt = el('#loc-saved-alt');
-  const savedTs  = el('#loc-saved-ts');
+  // Hidden storage for description
+  var latEl = el('#lat'), lngEl = el('#lng'), accEl = el('#acc');
+  var savedAlt = el('#loc-saved-alt');
+  var savedTs  = el('#loc-saved-ts');
+
+  // Map refs
+  var map, tiles, recentMarker, bestMarker, accCircle;
+
+  function ensureMap() {
+    if (map || !window.L) return;
+    map = L.map('loc-map', { zoomControl:true, attributionControl:false }).setView([53.5444, -113.4909], 11);
+    tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
+  }
+  function updateRecentOnMap() {
+    if (!map) return;
+    if (!recent) {
+      if (recentMarker) { map.removeLayer(recentMarker); recentMarker=null; }
+      if (accCircle)    { map.removeLayer(accCircle);    accCircle=null; }
+      return;
+    }
+    var latlng=[recent.lat,recent.lng];
+    if (!recentMarker) { recentMarker=L.marker(latlng,{title:'Recent fix'}).addTo(map); }
+    else { recentMarker.setLatLng(latlng); }
+    if (Number.isFinite(recent.acc)) {
+      if (!accCircle) {
+        accCircle=L.circle(latlng,{radius:recent.acc,color:'#5aa0ff',fillColor:'#5aa0ff',fillOpacity:0.15,weight:1}).addTo(map);
+      } else { accCircle.setLatLng(latlng).setRadius(recent.acc); }
+    } else if (accCircle) { map.removeLayer(accCircle); accCircle=null; }
+  }
+  function updateBestOnMap() {
+    if (!map) return;
+    if (!best) { if (bestMarker){ map.removeLayer(bestMarker); bestMarker=null; } return; }
+    var latlng=[best.lat,best.lng];
+    if (!bestMarker) { bestMarker=L.marker(latlng,{title:'Best fix'}).addTo(map); }
+    else { bestMarker.setLatLng(latlng); }
+  }
+  function fitToAny(){
+    if(!map) return;
+    var pts=[]; if(recent) pts.push([recent.lat,recent.lng]); if(best) pts.push([best.lat,best.lng]);
+    if(!pts.length) return;
+    if(pts.length===1) map.setView(pts[0],16); else map.fitBounds(pts,{padding:[24,24]});
+  }
 
   // State
-  let watchId = null;
-  let saver = false;
-  let hiacc = false;
-  let lastTick = 0;
-  let samples = 0;
-  let recent = null;         // {lat,lng,acc,alt,ts}
-  let best = null;           // minimal acc
-  let ageTimer = null;
+  var watchId = null;
+  var saver = false;
+  var hiacc = false;
+  var lastTick = 0;
+  var samples = 0;
+  var recent = null; // {lat,lng,acc,alt,ts}
+  var best   = null; // minimal acc
+  var ageTimer = null;
+
+  // Paint global indicator from "running but no best yet" vs "not running/no saved"
+if (best && Number.isFinite(best.acc)){
+  paintGlobalAcc(best.acc, { state: 'ok' });
+} else {
+  // no best yet
+  if (watchId != null){
+    paintGlobalAcc(NaN, { state: 'nofix' });
+  } else {
+    // if we have a saved best in autosave, the load phase handles it; otherwise off
+    var savedTs = (document.getElementById('loc-saved-ts') && document.getElementById('loc-saved-ts').dataset && document.getElementById('loc-saved-ts').dataset.ts) || '';
+    if (savedTs) {
+      // leave as-is; set during load or best update will override
+    } else {
+      paintGlobalAcc(NaN, { state: 'off' });
+    }
+  }
+}
+
+  // --- export/import runtime for autosave ---
+window.locExportRuntime = function () {
+  return { recent, best, samples };
+};
+window.locImportRuntime = function (data) {
+  if (!data) return;
+  recent  = data.recent  || null;
+  best    = data.best    || null;
+  samples = data.samples || 0;
+  updateRecentUI();
+  updateBestUI(false);
+  ensureMap(); fitToAny();
+};
 
   // Utilities
-  const fmt6 = v => Number.isFinite(v) ? v.toFixed(6) : '—';
-  const fmt1 = v => Number.isFinite(v) ? v.toFixed(1) : '—';
-  const accClass = m =>
-    !Number.isFinite(m) ? 'acc-grey' :
-    m >= 20 ? 'acc-grey' : (m > 5 ? 'acc-amber' : 'acc-green');
+  var fmt6 = function(v){ return Number.isFinite(v) ? v.toFixed(6) : '—'; };
+  var fmt1a = function(v){ return Number.isFinite(v) ? v.toFixed(1) : '—'; };
+  function accClass(m){ return !Number.isFinite(m) ? 'acc-grey' : (m>=20 ? 'acc-grey' : (m>5 ? 'acc-amber' : 'acc-green')); }
 
   function setRunningUI(running){
-    if (running){
-      bToggle.textContent = 'Stop tracking';
-      bToggle.classList.add('running');
-    } else {
-      bToggle.textContent = 'Start tracking';
-      bToggle.classList.remove('running');
-    }
+    if (!bToggle) return;
+    if (running){ bToggle.textContent='Stop tracking'; bToggle.classList.add('running'); }
+    else        { bToggle.textContent='Start tracking'; bToggle.classList.remove('running'); }
+  }
+
+  function setSaveChoice(which){ // 'recent' | 'best' | null
+    if (bUseRecent) bUseRecent.classList.toggle('active', which==='recent');
+    if (bUseBest)   bUseBest.classList.toggle('active', which==='best');
   }
 
   function updateRecentUI() {
     if (recent){
-      outDD.textContent  = `DD: ${fmt6(recent.lat)}, ${fmt6(recent.lng)}`;
-      outAcc.textContent = `${fmt1(recent.acc)} m`;
-      outAcc.className   = `acc-chip ${accClass(recent.acc)}`;
-      outAlt.textContent = Number.isFinite(recent.alt) ? `${fmt1(recent.alt)} m` : '—';
+      if(outDD)  outDD.textContent  = 'DD: '+fmt6(recent.lat)+', '+fmt6(recent.lng);
+      if(outAcc){
+        outAcc.textContent = '±' + fmt1a(recent.acc) + ' m';
+        outAcc.className='acc-chip '+accClass(recent.acc); 
+      }
+      if(outAlt) outAlt.textContent = Number.isFinite(recent.alt) ? fmt1a(recent.alt)+' m' : '—';
 
       if (ageTimer) clearInterval(ageTimer);
-      ageTimer = setInterval(() => {
-        const secs = Math.max(0, (Date.now() - recent.ts)/1000);
-        outAge.textContent = `${secs.toFixed(1)} s`;
+      ageTimer = setInterval(function(){
+        var secs = Math.max(0, (Date.now() - recent.ts)/1000);
+        if(outAge) outAge.textContent = secs.toFixed(1)+' s';
       }, 200);
 
-      bUseRecent.disabled = false;
+      if(bUseRecent) bUseRecent.disabled = false;
     } else {
-      outDD.textContent  = 'DD: —';
-      outAcc.textContent = '—';
-      outAcc.className   = 'acc-chip acc-grey';
-      outAlt.textContent = '—';
-      outAge.textContent = '—';
-      bUseRecent.disabled = true;
+      if(outDD)  outDD.textContent  = 'DD: —';
+      if(outAcc){ outAcc.textContent = '—'; outAcc.className='acc-chip acc-grey'; }
+      if(outAlt) outAlt.textContent = '—';
+      if(outAge) outAge.textContent = '—';
+      if(bUseRecent) bUseRecent.disabled = true;
     }
-    outCnt.textContent = String(samples);
+    if(outCnt) outCnt.textContent = String(samples);
+
+    ensureMap();
+    updateRecentOnMap();
+    fitToAny();
   }
 
-  function updateBestUI(isNew=false) {
+  function updateBestUI(isNew){
     if (best){
-      bestDD.textContent  = `DD: ${fmt6(best.lat)}, ${fmt6(best.lng)}`;
-      bestAcc.textContent = `${fmt1(best.acc)} m`;
-      bestAcc.className   = `acc-chip ${accClass(best.acc)}`;
-      bestAlt.textContent = Number.isFinite(best.alt) ? `${fmt1(best.alt)} m` : '—';
-      bestAlt.dataset.val = Number.isFinite(best.alt) ? String(best.alt) : '';
-      bestTime.textContent= new Date(best.ts).toLocaleString();
-      bestTime.dataset.ts = String(best.ts);
-      bUseBest.disabled = false;
+      if(bestDD)  bestDD.textContent  = 'DD: '+fmt6(best.lat)+', '+fmt6(best.lng);
+      if(bestAcc){ 
+                  bestAcc.textContent = '±' + fmt1a(best.acc) + ' m';
+                  bestAcc.className='acc-chip '+accClass(best.acc); 
+                 }
+      if(bestAlt){ bestAlt.textContent = Number.isFinite(best.alt) ? fmt1a(best.alt)+' m' : '—'; bestAlt.dataset.val = Number.isFinite(best.alt) ? String(best.alt) : ''; }
+      if(bestTime){ bestTime.textContent=new Date(best.ts).toLocaleString(); bestTime.dataset.ts=String(best.ts); }
+      if(bUseBest) bUseBest.disabled=false;
     } else {
-      bestDD.textContent  = 'DD: —';
-      bestAcc.textContent = '—';
-      bestAcc.className   = 'acc-chip acc-grey';
-      bestAlt.textContent = '—';
-      bestAlt.dataset.val = '';
-      bestTime.textContent= '—';
-      bestTime.dataset.ts = '';
-      bUseBest.disabled = true;
+      if(bestDD)  bestDD.textContent  = 'DD: —';
+      if(bestAcc){ bestAcc.textContent = '—'; bestAcc.className='acc-chip acc-grey'; }
+      if(bestAlt){ bestAlt.textContent = '—'; bestAlt.dataset.val = ''; }
+      if(bestTime){ bestTime.textContent='—'; bestTime.dataset.ts=''; }
+      if(bUseBest) bUseBest.disabled=true;
     }
-    bestBadge.style.display = isNew ? '' : 'none';
-    if (isNew) setTimeout(()=>bestBadge.style.display='none', 1200);
+    if(bestBadge) bestBadge.style.display = isNew ? '' : 'none';
+    if (isNew && bestBadge) setTimeout(function(){ bestBadge.style.display='none'; },1200);
+
+    ensureMap();
+    updateBestOnMap();
+    fitToAny();
+
+    // Update global header pill & tab dot based on BEST
+if (best && Number.isFinite(best.acc)){
+  paintGlobalAcc(best.acc, { state: 'ok' });
+}
+
   }
 
   function handlePosition(pos) {
-    const c = pos.coords;
-    const now = Date.now();
+    var c = pos.coords;
+    var now = Date.now();
     if (saver && now - lastTick < 1500) return; // throttle in saver mode
     lastTick = now;
 
-    const fix = {
+    var fix = {
       lat: c.latitude,
       lng: c.longitude,
       acc: c.accuracy,
@@ -1137,24 +1540,36 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
     updateRecentUI();
 
     if (!best || (Number.isFinite(fix.acc) && fix.acc < best.acc)) {
-      best = {...fix};
+      best = {lat:fix.lat,lng:fix.lng,acc:fix.acc,alt:fix.alt,ts:fix.ts};
       updateBestUI(true);
     }
   }
 
-  function handleError(err) {
-    console.warn('Geolocation error', err);
-    // User can try again or just save what they have
-  }
+  function handleError(err) { console.warn('Geolocation error', err); }
 
-  function start() {
-    if (watchId != null) return;
-    const opts = { enableHighAccuracy: hiacc, maximumAge: 0, timeout: 20000 };
-    watchId = (navigator.geolocation && navigator.geolocation.watchPosition)
-      ? navigator.geolocation.watchPosition(handlePosition, handleError, opts)
-      : null;
-    setRunningUI(true);
+function start() {
+  if (watchId != null) return;
+  // Saver = allow cached fixes a bit & be more patient
+  var opts = {
+    enableHighAccuracy: hiacc,
+    maximumAge: saver ? 15000 : 0,     // up to 15s old when saving battery
+    timeout:    saver ? 30000 : 20000  // a little longer timeout
+  };
+  watchId = (navigator.geolocation && navigator.geolocation.watchPosition)
+    ? navigator.geolocation.watchPosition(handlePosition, handleError, opts)
+    : null;
+  setRunningUI(true);
+  // Reflect that we're now running; show best if we already had one
+if (typeof paintGlobalAcc === 'function') {
+  if (best && Number.isFinite(best.acc)) {
+    paintGlobalAcc(best.acc, { state: 'ok' });
+  } else {
+    paintGlobalAcc(NaN, { state: 'nofix' });
   }
+}
+
+}
+
 
   function stop() {
     if (watchId != null && navigator.geolocation && navigator.geolocation.clearWatch) {
@@ -1162,6 +1577,14 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
     }
     watchId = null;
     setRunningUI(false);
+
+    // if we already have a best, show it; else "off"
+if (best && Number.isFinite(best.acc)){
+  paintGlobalAcc(best.acc, { state: 'ok' });
+} else {
+  paintGlobalAcc(NaN, { state: 'off' });
+}
+
   }
 
   function resetAll() {
@@ -1174,282 +1597,260 @@ $('#copyDesc').onclick=async ()=>{ const html=descBox.innerHTML.trim(); if(!html
 
   function applyFixToHidden(fix){
     if (!fix) return;
-    latEl.value = fix.lat.toFixed(6);
-    lngEl.value = fix.lng.toFixed(6);
-    accEl.value = Number.isFinite(fix.acc) ? fix.acc.toFixed(1) : '';
-    savedAlt.dataset.val = Number.isFinite(fix.alt) ? String(fix.alt) : '';
-    savedTs.dataset.ts   = String(fix.ts || Date.now());
+    if(latEl) latEl.value = fix.lat.toFixed(6);
+    if(lngEl) lngEl.value = fix.lng.toFixed(6);
+    if(accEl) accEl.value = Number.isFinite(fix.acc) ? fix.acc.toFixed(1) : '';
+    if(savedAlt && savedAlt.dataset) savedAlt.dataset.val = Number.isFinite(fix.alt) ? String(fix.alt) : '';
+    if(savedTs  && savedTs.dataset)  savedTs.dataset.ts   = String(fix.ts || Date.now());
     if (typeof saveState === 'function') saveState();
   }
 
-  // Wire up controls
-  bToggle.addEventListener('click', () => {
-    if (watchId == null) start(); else stop();
-  });
+  if(bToggle) bToggle.addEventListener('click', function(){ if (watchId == null) start(); else stop(); });
+if(tHiAcc)  tHiAcc.addEventListener('click',  function(){
+  hiacc=!hiacc;
+  tHiAcc.classList.toggle('active',hiacc);
+  tHiAcc.setAttribute('aria-pressed',String(hiacc));
 
-  tSaver.addEventListener('click', () => {
-    saver = !saver;
-    tSaver.classList.toggle('active', saver);
-    tSaver.setAttribute('aria-pressed', String(saver));
-  });
+  if (watchId!=null){ 
+    stop(); 
+    start(); 
+  }
 
-  tHiAcc.addEventListener('click', () => {
-    hiacc = !hiacc;
-    tHiAcc.classList.toggle('active', hiacc);
-    tHiAcc.setAttribute('aria-pressed', String(hiacc));
-    if (watchId != null) { stop(); start(); }
-  });
+  // NEW: immediately reflect the best-known accuracy in the header pill
+  if (typeof paintGlobalAcc === 'function') {
+    if (best && Number.isFinite(best.acc)) {
+      paintGlobalAcc(best.acc, { state: 'ok' });
+    } else if (recent && Number.isFinite(recent.acc)) {
+      paintGlobalAcc(recent.acc, { state: 'ok' });
+    } else {
+      paintGlobalAcc(NaN, { state: 'off' }); // nothing saved yet
+    }
+  }
+});
 
-  bUseRecent.addEventListener('click', () => applyFixToHidden(recent));
-  bUseBest  .addEventListener('click', () => applyFixToHidden(best));
-  bReset    .addEventListener('click', resetAll);
+  if (tSaver) tSaver.addEventListener('click', function () {
+  saver = !saver;
+  tSaver.classList.toggle('active', saver);
+  tSaver.setAttribute('aria-pressed', String(saver));
 
-  // Initialize UI
+  if (watchId != null) {
+    stop();
+    start();
+  }
+
+  // keep the pill/dot reflecting the best we know
+  if (typeof paintGlobalAcc === 'function') {
+    if (best && Number.isFinite(best.acc)) {
+      paintGlobalAcc(best.acc, { state: 'ok' });
+    } else if (recent && Number.isFinite(recent.acc)) {
+      paintGlobalAcc(recent.acc, { state: 'ok' });
+    } else {
+      // running but no fix yet (after restart)
+      paintGlobalAcc(NaN, { state: 'nofix' });
+    }
+  }
+});
+
+  if(bUseRecent) bUseRecent.addEventListener('click', function(){ applyFixToHidden(recent); setSaveChoice('recent'); });
+  if(bUseBest)   bUseBest  .addEventListener('click', function(){ applyFixToHidden(best);   setSaveChoice('best'); });
+  if(bReset)     bReset    .addEventListener('click', function(){ resetAll(); setSaveChoice(null); });
+
+  var mtr = byId('map-to-recent'), mtb = byId('map-to-best');
+  if(mtr) mtr.addEventListener('click', function(){ ensureMap(); if (recent) map.setView([recent.lat, recent.lng], 18); });
+  if(mtb) mtb.addEventListener('click', function(){ ensureMap(); if (best)   map.setView([best.lat, best.lng], 18); });
+
+  var locTab = document.querySelector('[data-tab="loc"]');
+  if(locTab) locTab.addEventListener('click', ensureMap);
+
   setRunningUI(false);
   updateRecentUI();
   updateBestUI(false);
 })();
 
-// ===== Autosave core (place above the debounced listeners) =====
-const SAVE_KEY = 'ara_field_v1';
+  (function(){
+  function goToLocationTab(){
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+    tabs.forEach(function(t){ t.classList.remove('active'); });
+    var locTab = document.querySelector('.tab[data-tab="loc"]');
+    if(locTab) locTab.classList.add('active');
+
+    Array.prototype.slice.call(document.querySelectorAll('.tabpane'))
+      .forEach(function(p){ p.classList.remove('active'); });
+
+    var pane = document.getElementById('pane-loc');
+    if(pane) pane.classList.add('active');
+
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  var pill = document.getElementById('acc-pill-global');
+  var dot  = document.getElementById('loc-tab-dot');
+  if(pill) pill.addEventListener('click', goToLocationTab);
+  if(dot)  dot.addEventListener('click', goToLocationTab);
+})();
+// Make the header accuracy pill and tab dot clickable (opens location tab)//
+
+/* ---------------- Autosave (core, hardened) ---------------- */
+var SAVE_KEY = 'ara_field_v1';
 
 function getFormState(){
-  return {
-    // unit/mode
-    inputUnit,
-    calcMode,
-    // basics
-    basics: {
-      name:      $('#treeName')?.value || '',
-      species:   $('#species')?.value || '',
-      condition: $('#condition')?.value || '',
-      type:      $('#treeType')?.value || ''
-    },
-    // circumference
-    singleC: $('#singleC')?.value || '',
-    multi:   { values: $$('#mt-list input[type="number"]').map(i=>i.value || '') },
-    // height
-    height: {
-      angle: $('#h-angle')?.value || '',
-      dist:  $('#h-dist')?.value  || '',
-      eye:   $('#h-eye')?.value   || ''
-    },
-    // canopy
-    spread: {
-      major: $('#spreadMajor')?.value || '',
-      minor: $('#spreadMinor')?.value || ''
-    },
-    // notes
-    notes: $('#notes')?.value || '',
-    // location (hidden fields populated by “Save recent/best”)
-    location: {
-      lat: $('#lat')?.value || '',
-      lng: $('#lng')?.value || '',
-      acc: $('#acc')?.value || '',
-      alt: $('#loc-saved-alt')?.dataset?.val || '',
-      ts:  $('#loc-saved-ts')?.dataset?.ts  || ''
-    },
-    // description html
-    desc: ($('#desc')?.innerHTML && $('#desc').innerHTML !== '—') ? $('#desc').innerHTML : ''
-  };
+  try {
+    return {
+      inputUnit: inputUnit, calcMode: calcMode,
+      basics: {
+        name:      byId('treeName')?.value || '',
+        species:   byId('species')?.value || '',
+        condition: byId('condition')?.value || '',
+        type:      byId('treeType')?.value || ''
+      },
+      singleC: byId('singleC')?.value || '',
+      multi:   { values: $all('#mt-list input[type="number"]').map(i => i.value || '') },
+      height:  { angle: byId('h-angle')?.value || '', dist: byId('h-dist')?.value || '', eye: byId('h-eye')?.value || '' },
+      spread:  { major: byId('spreadMajor')?.value || '', minor: byId('spreadMinor')?.value || '' },
+      notes:   byId('notes')?.value || '',
+      location: {
+        lat: byId('lat')?.value || '',
+        lng: byId('lng')?.value || '',
+        acc: byId('acc')?.value || '',
+        alt: (byId('loc-saved-alt')?.dataset?.val) || '',
+        ts:  (byId('loc-saved-ts')?.dataset?.ts)  || ''
+      },
+      // NEW: persist the computed results as plain JSON
+      results: {
+        lastHeight: lastHeight || null,
+        lastSingle: lastSingle || null,
+        lastMulti:  lastMulti  || null,
+        lastSpread: lastSpread || null
+      },
+      // NEW: persist what the location cards/map show
+      locRuntime: (typeof window.locExportRuntime === 'function') ? window.locExportRuntime() : null,
+      desc: (byId('desc') && byId('desc').innerHTML && byId('desc').innerHTML !== '—') ? byId('desc').innerHTML : ''
+    };
+  } catch(e){ console.warn('getFormState failed', e); return null; }
 }
 
 function setFormState(st){
-  if(!st) return;
+  try{
+    if(!st) return;
+    if(st.inputUnit && st.inputUnit !== inputUnit) setUnit(st.inputUnit);
+    if(st.calcMode  && st.calcMode  !== calcMode)  setCalcMode(st.calcMode);
 
-  // unit & mode
-  if(st.inputUnit && st.inputUnit !== inputUnit) setUnit(st.inputUnit);
-  if(st.calcMode  && st.calcMode  !== calcMode)  setCalcMode(st.calcMode);
+    byId('treeName')  && (byId('treeName').value  = st.basics?.name || '');
+    byId('species')   && (byId('species').value   = st.basics?.species || '');
+    byId('condition') && (byId('condition').value = st.basics?.condition || '');
+    byId('treeType')  && (byId('treeType').value  = st.basics?.type || '');
+    updateTypeVisibility();
 
-  // basics
-  if($('#treeName'))  $('#treeName').value  = st.basics?.name ?? '';
-  if($('#species'))   $('#species').value   = st.basics?.species ?? '';
-  if($('#condition')) $('#condition').value = st.basics?.condition ?? '';
-  if($('#treeType'))  $('#treeType').value  = st.basics?.type ?? '';
-  updateTypeVisibility();
+    byId('singleC') && (byId('singleC').value = st.singleC || '');
 
-  // circumference
-  if($('#singleC')) $('#singleC').value = st.singleC ?? '';
-  if($('#mt-list')){
-    const list = $('#mt-list');
-    list.innerHTML = '';
-    let count = 0;
-    const vals = Array.isArray(st.multi?.values) ? st.multi.values : [];
-    if(vals.length){
-      vals.forEach(v => { addMtRow(v); count++; });
+    if(byId('mt-list')){
+      var list=byId('mt-list'); list.innerHTML='';
+      var vals=(st.multi && Array.isArray(st.multi.values)) ? st.multi.values : [];
+      if(vals.length){ vals.forEach(v => addMtRow(v)); } else { addMtRow(); addMtRow(); }
     }
-    if(count === 0){ addMtRow(); addMtRow(); }
-  }
 
-  // height
-  if($('#h-angle')) $('#h-angle').value = st.height?.angle ?? '';
-  if($('#h-dist'))  $('#h-dist').value  = st.height?.dist  ?? '';
-  if($('#h-eye'))   $('#h-eye').value   = st.height?.eye   ?? '';
+    byId('h-angle') && (byId('h-angle').value = st.height?.angle || '');
+    byId('h-dist')  && (byId('h-dist').value  = st.height?.dist  || '');
+    byId('h-eye')   && (byId('h-eye').value   = st.height?.eye   || '');
 
-  // canopy
-  if($('#spreadMajor')) $('#spreadMajor').value = st.spread?.major ?? '';
-  if($('#spreadMinor')) $('#spreadMinor').value = st.spread?.minor ?? '';
+    byId('spreadMajor') && (byId('spreadMajor').value = st.spread?.major || '');
+    byId('spreadMinor') && (byId('spreadMinor').value = st.spread?.minor || '');
 
-  // notes
-  if($('#notes')) { $('#notes').value = st.notes ?? ''; autoGrow($('#notes')); }
+    if(byId('notes')){ byId('notes').value = st.notes || ''; autoGrow(byId('notes')); }
 
-  // location
-  if(st.location){
-    if($('#lat')) $('#lat').value = st.location.lat || '';
-    if($('#lng')) $('#lng').value = st.location.lng || '';
-    if($('#acc')) $('#acc').value = st.location.acc || '';
-    if($('#loc-saved-alt')) $('#loc-saved-alt').dataset.val = st.location.alt || '';
-    if($('#loc-saved-ts'))  $('#loc-saved-ts').dataset.ts  = st.location.ts  || '';
-  }
+    if(st.location){
+      byId('lat') && (byId('lat').value = st.location.lat || '');
+      byId('lng') && (byId('lng').value = st.location.lng || '');
+      byId('acc') && (byId('acc').value = st.location.acc || '');
+      var sa=byId('loc-saved-alt'); sa?.dataset && (sa.dataset.val = st.location.alt || '');
+      var stp=byId('loc-saved-ts'); stp?.dataset && (stp.dataset.ts  = st.location.ts  || '');
+    }
 
-  // description
-  if($('#desc')){
-    if(st.desc){ $('#desc').innerHTML = st.desc; $('#copyDesc')?.removeAttribute('disabled'); $('#shareLink')?.removeAttribute('disabled'); }
-    else { $('#desc').innerHTML = '—'; $('#copyDesc')?.setAttribute('disabled', ''); $('#shareLink')?.setAttribute('disabled', ''); }
-  }
-
-  // refresh computed UI
-  updateResultsPanel();
-  updateCopyButtons();
+    if(byId('desc')){
+      if(st.desc){ byId('desc').innerHTML = st.desc; copyDesc?.removeAttribute('disabled'); shareBtn?.removeAttribute('disabled'); }
+      else { byId('desc').innerHTML = '—'; copyDesc?.setAttribute('disabled',''); shareBtn?.setAttribute('disabled',''); }
+    }
+// NEW: restore computed results (so Final measurements show immediately)
+if (st.results) {
+  lastHeight = st.results.lastHeight ?? null;
+  lastSingle = st.results.lastSingle ?? null;
+  lastMulti  = st.results.lastMulti  ?? null;
+  lastSpread = st.results.lastSpread ?? null;
 }
 
+// NEW: restore the Location cards + map markers
+if (st.locRuntime && typeof window.locImportRuntime === 'function') {
+  window.locImportRuntime(st.locRuntime);
+  // NEW: ensure global pill reflects restored runtime (even if hidden inputs are blank)
+if (typeof paintGlobalAcc === 'function') {
+  var b = st.locRuntime && st.locRuntime.best;
+  var r = st.locRuntime && st.locRuntime.recent;
+  if (b && Number.isFinite(b.acc)) {
+    paintGlobalAcc(b.acc, { state:'ok' });
+  } else if (r && Number.isFinite(r.acc)) {
+    paintGlobalAcc(r.acc, { state:'ok' });
+  } else {
+    // we have no fix in autosave; leave it 'off' until user starts tracking
+    paintGlobalAcc(NaN, { state:'off' });
+  }
+}
+}
+
+    updateResultsPanel(); updateCopyButtons();
+    
+  } catch(e){ console.warn('setFormState failed', e); }
+}
 function saveState(){
   try{
-    localStorage.setItem(SAVE_KEY, JSON.stringify(getFormState()));
+    var st = getFormState();
+    if (st) localStorage.setItem(SAVE_KEY, JSON.stringify(st));
   }catch(e){ console.warn('saveState failed', e); }
 }
-
 function loadState(){
   try{
-    const raw = localStorage.getItem(SAVE_KEY);
+    var raw = localStorage.getItem(SAVE_KEY);
     if(!raw){
-      // First load: ensure multi has 2 rows if needed
-      if($('#treeType')?.value === 'Multi trunked tree' && $('#mt-list')?.children.length === 0){
-        addMtRow(); addMtRow();
-      }
+      if(byId('treeType')?.value==='Multi trunked tree' && byId('mt-list') && byId('mt-list').children.length===0){ addMtRow(); addMtRow(); }
       return;
     }
-    const st = JSON.parse(raw);
-    setFormState(st);
+    setFormState(JSON.parse(raw));
   }catch(e){ console.warn('loadState failed', e); }
 }
-  
-// Debounced autosave for any field change
-let _asTimer = null;
 
+var _asTimer = null;
 function autoSaveSoon(){
-  if (_asTimer) clearTimeout(_asTimer);
-  _asTimer = setTimeout(() => {
-    if (!window.ARA_RESETTING) {
-      try { saveState(); } catch {}
-    }
-  }, 250);
+  try{
+    if (_asTimer) clearTimeout(_asTimer);
+    _asTimer = setTimeout(function(){
+      if (!window.ARA_RESETTING) saveState();
+    }, 250);
+  }catch(e){ console.warn('autoSaveSoon failed', e); }
 }
 
-document.addEventListener('input',  autoSaveSoon, {capture:true});
-document.addEventListener('change', autoSaveSoon, {capture:true});
-window.addEventListener('beforeunload', () => {
-  if (!window.ARA_RESETTING) {
-    try { saveState(); } catch {}
+/* Defer attaching listeners until DOM is ready, so earlier hiccups don’t kill autosave/reset */
+document.addEventListener('DOMContentLoaded', function(){
+  document.addEventListener('input',  autoSaveSoon, {capture:true});
+  document.addEventListener('change', autoSaveSoon, {capture:true});
+  loadState();
+
+  /* ---------------- Reset form (safe) ---------------- */
+  var resetFormResults = byId('resetFormResults');
+  if (resetFormResults){
+    resetFormResults.onclick = function(){
+      window.ARA_RESETTING = true;
+      try{
+        if (_asTimer) clearTimeout(_asTimer);
+        localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit: inputUnit, calcMode: calcMode }));
+      }catch(e){ /* ignore */ }
+      // Hard refresh to clear any transient runtime state
+      location.replace(location.href.split('#')[0]);
+    };
   }
 });
 
-// hydrate form on load
-loadState();
-  
-// --- Reset Form Button (Results tab) ---
-const resetFormResults = $('#resetFormResults');
-if (resetFormResults){
-  resetFormResults.onclick = () => {
-    // 1) Tell autosave to back off
-    window.ARA_RESETTING = true;
-
-    // 2) Stop any queued autosave timers
-    if (typeof _asTimer !== 'undefined' && _asTimer) {
-      clearTimeout(_asTimer);
-    }
-
-    // 3) Keep current measurement unit + mode
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit, calcMode }));
-    } catch {}
-
-    // 4) Reload cleanly (no history restore)
-    location.replace(location.href);
-  };
-}
-// === ARA safe autosave + reset shim (drop-in, non-destructive) ===
-(function(){
-  // Keep existing flag if present
-  window.ARA_RESETTING = !!window.ARA_RESETTING;
-
-  // Fallback for $ if not already defined
-  const $ = window.$ || (s => document.querySelector(s));
-
-  // Use existing SAVE_KEY if defined
-  const SAVE_KEY = window.SAVE_KEY || 'ara_field_v1';
-
-  // Install autosave listeners once (guarded)
-  if (!window.__ARA_AUTOSAVE_INSTALLED__) {
-    window.__ARA_AUTOSAVE_INSTALLED__ = true;
-
-    let _asTimer = null;
-    function autoSaveSoon(){
-      if (_asTimer) clearTimeout(_asTimer);
-      _asTimer = setTimeout(() => {
-        if (!window.ARA_RESETTING && typeof window.saveState === 'function') {
-          try { window.saveState(); } catch {}
-        }
-      }, 250);
-    }
-
-    // Global input/change autosave
-    document.addEventListener('input',  autoSaveSoon, {capture:true});
-    document.addEventListener('change', autoSaveSoon, {capture:true});
-
-    // Save on navigate away (unless resetting)
-    window.addEventListener('beforeunload', () => {
-      if (!window.ARA_RESETTING && typeof window.saveState === 'function') {
-        try { window.saveState(); } catch {}
-      }
-    });
-
-    // Hydrate on load if you have loadState()
-    if (typeof window.loadState === 'function') {
-      try { window.loadState(); } catch {}
-    }
-
-    // Expose timer so reset can cancel it
-    window.__ARA_AS_TIMER__ = _asTimer;
-  }
-
-  // Wire Reset Form button safely (once)
-  const resetBtn = $('#resetFormResults');
-  if (resetBtn && !resetBtn.__wired) {
-    resetBtn.__wired = true;
-    resetBtn.addEventListener('click', () => {
-      // 1) Tell autosave to back off
-      window.ARA_RESETTING = true;
-
-      // 2) Kill any pending debounced save
-      if (window.__ARA_AS_TIMER__) {
-        clearTimeout(window.__ARA_AS_TIMER__);
-        window.__ARA_AS_TIMER__ = null;
-      }
-
-      // 3) Preserve unit/mode if available
-      try {
-        const unit = window.inputUnit || 'm';
-        const mode = window.calcMode || 'manual';
-        localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit: unit, calcMode: mode }));
-      } catch {}
-
-      // 4) Hard reload without bfcache history restore
-      location.replace(location.href);
-    });
-  }
-})();
-
+/* Optional: log the first unhandled error (helps find silent blockers) */
+window.addEventListener('error', function(e){
+  console.warn('Unhandled error:', e.message, 'at', e.filename+':'+e.lineno+':'+e.colno);
+});
 </script>
 </body>
 </html>
