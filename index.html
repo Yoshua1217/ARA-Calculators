@@ -1889,11 +1889,13 @@ function autoSaveSoon(){
   }catch(e){ console.warn('autoSaveSoon failed', e); }
 }
 
-  /* ---------------- Connectivity card (online/offline) ---------------- */
+/* ---------------- Connectivity card (online/offline) ---------------- */
+/* Paint “Connectivity” card + map hint */
 function connNowISO(){
   var d=new Date(); var p=n=>String(n).padStart(2,'0');
   return p(d.getHours())+':'+p(d.getMinutes());
 }
+
 function setConnUI(isOnline){
   var card   = document.getElementById('conn-card');
   var label  = document.getElementById('conn-label');
@@ -1924,9 +1926,8 @@ function setConnUI(isOnline){
   }
 }
 
-// --- Robust connectivity probe for Android WebView ---
-
-// Lightweight image probe (CORS-free). If it loads within timeout, we're online.
+/* --- Robust connectivity probe for Android WebView / airplane mode --- */
+/* Lightweight image probe (CORS-free). If it loads within timeout, we're online. */
 function probeOnline(timeout = 2500){
   return new Promise((resolve) => {
     let settled = false;
@@ -1945,43 +1946,47 @@ function probeOnline(timeout = 2500){
   });
 }
 
-// Active check: consider ONLINE only if navigator.onLine AND probe both say true
-async function checkConnectivity(reason){
+/* Active check: consider ONLINE only if navigator.onLine AND probe say true */
+async function checkConnectivity(_reason){
   const basic = (navigator.onLine === true);
   let probeOK = false;
   try { probeOK = await probeOnline(); } catch { probeOK = false; }
   const isOnline = basic && probeOK;
-  setConnUI(isOnline); // reuse your existing painter
+  setConnUI(isOnline);
+  return isOnline;
 }
 
-// Wire up events
-window.addEventListener('online',  () => checkConnectivity('online-event'));
-window.addEventListener('offline', () => checkConnectivity('offline-event'));
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) checkConnectivity('visible');
-});
+/* Foreground polling control (paused when hidden) */
+let _connTimer = null;
+function startConnPolling(){
+  if (_connTimer) return;
+  _connTimer = setInterval(() => checkConnectivity('poll'), 15000);
+}
+function stopConnPolling(){
+  if (_connTimer){ clearInterval(_connTimer); _connTimer = null; }
+}
 
-// Foreground polling (covers airplane-mode toggles that don’t fire events)
-let _connTimer = setInterval(() => checkConnectivity('poll'), 15000);
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { clearInterval(_connTimer); }
-  else { _connTimer = setInterval(() => checkConnectivity('poll'), 15000); }
-});
-
-// Hook up the “Re-check” button and do the first paint
-document.addEventListener('DOMContentLoaded', function(){
+/* Single public init: call this ONCE from your existing DOMContentLoaded */
+function initConnectivity(){
+  // Button click
   var btn = document.getElementById('conn-recheck');
-  if(btn) btn.addEventListener('click', () => checkConnectivity('manual'));
+  if(btn) btn.addEventListener('click', function(){ checkConnectivity('manual'); });
+
+  // OS/network events
+  window.addEventListener('online',  function(){ checkConnectivity('online-event');  });
+  window.addEventListener('offline', function(){ checkConnectivity('offline-event'); });
+
+  // Pause/resume polling on tab visibility
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) stopConnPolling();
+    else { startConnPolling(); checkConnectivity('visible'); }
+  });
+
+  // First paint + start polling
   checkConnectivity('startup');
-});
+  startConnPolling();
+}
 
-});
-
-/* Defer attaching listeners until DOM is ready, so earlier hiccups don’t kill autosave/reset */
-document.addEventListener('DOMContentLoaded', function(){
-  document.addEventListener('input',  autoSaveSoon, {capture:true});
-  document.addEventListener('change', autoSaveSoon, {capture:true});
-  loadState();
 
   /* ---------------- Reset form (safe) ---------------- */
   var resetFormResults = byId('resetFormResults');
@@ -1996,6 +2001,9 @@ document.addEventListener('DOMContentLoaded', function(){
       location.replace(location.href.split('#')[0]);
     };
   }
+  // Connectivity: wire up events + initial check
+initConnectivity();
+
 });
 
 </script>
