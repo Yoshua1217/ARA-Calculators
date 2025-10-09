@@ -321,11 +321,34 @@
   border:1px solid rgba(0,0,0,.25);
   vertical-align:middle;
 }
-/* Dot colors re-use the same classes
-.acc-dot.acc-grey  { background:#404957; }
-.acc-dot.acc-amber { background:#7a5a15; }
-.acc-dot.acc-green { background:#1b5e2b; }
-.acc-dot.acc-red   { background:#7a2020; } */
+  
+/* Connectivity card (medium border) */
+.conn-card{
+  border: 2px solid var(--border);   /* medium thickness */
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.conn-card .topline{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-bottom:8px;
+}
+.conn-card .status{
+  font-weight:800;
+}
+.conn-card .tiny{
+  color: var(--muted);
+}
+
+/* State colors */
+.conn-online{ border-color: var(--ok); }
+.conn-offline{ border-color: var(--danger); }
+
+/* Re-check button spacing to match your UI */
+#conn-recheck{ margin-top:8px; }
+
+/* Map offline callout card below the map */
+#map-offline-card{ display:none; }
+
 
 </style>
 
@@ -402,6 +425,20 @@
         <label for="notes" style="margin-top:10px;">Notes</label>
         <textarea id="notes" placeholder="Observations, access notes, landmarks, hazards…"></textarea>
         <div class="tiny">Notes appear in the generated description.</div>
+              <!-- Connectivity card -->
+      <div id="conn-card" class="card conn-card conn-online" style="margin-top:12px;">
+        <div class="block">
+          <div class="topline">
+            <h3 style="margin:0;">Connectivity</h3>
+            <div class="tiny">Last checked: <span id="conn-checked">—</span></div>
+          </div>
+          <p id="conn-label" class="status">You’re online. Map tiles stream normally and email/share are enabled.</p>
+          <div class="tiny">Autosave is local and safe.</div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="conn-recheck" class="btn-ghost">Re-check</button>
+          </div>
+        </div>
+      </div>
       </div>
     </div>
   </section>
@@ -457,6 +494,14 @@
           <button type="button" id="map-to-recent" class="btn-ghost">Recenter to recent</button>
           <button type="button" id="map-to-best"   class="btn-ghost">Recenter to best</button>
         </div>
+        <!-- Shown only when offline -->
+<div id="map-offline-card" class="card" style="margin-top:10px; display:none;">
+  <div class="block">
+    <h3 style="margin:0 0 6px;">Map is offline</h3>
+    <p>Tiles may not load. Areas you viewed earlier might still appear from cache.</p>
+  </div>
+</div>
+
       </div>
     </div>
   </section>
@@ -1373,6 +1418,16 @@ function paintGlobalAcc(accMeters, opts){
     map = L.map('loc-map', { zoomControl:true, attributionControl:false }).setView([53.5444, -113.4909], 11);
     tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
   }
+
+  // Expose a safe dimmer for the tiles so other code can call it
+window.mapSetDim = function(dim){
+  try{
+    if (tiles && typeof tiles.setOpacity === 'function'){
+      tiles.setOpacity(dim ? 0.4 : 1.0);
+    }
+  }catch(e){}
+};
+
   function updateRecentOnMap() {
     if (!map) return;
     if (!recent) {
@@ -1825,6 +1880,59 @@ function autoSaveSoon(){
     }, 250);
   }catch(e){ console.warn('autoSaveSoon failed', e); }
 }
+
+  /* ---------------- Connectivity card (online/offline) ---------------- */
+function connNowISO(){
+  var d=new Date(); var p=n=>String(n).padStart(2,'0');
+  return p(d.getHours())+':'+p(d.getMinutes());
+}
+function setConnUI(isOnline){
+  var card   = document.getElementById('conn-card');
+  var label  = document.getElementById('conn-label');
+  var when   = document.getElementById('conn-checked');
+  var mapWarn= document.getElementById('map-offline-card');
+
+  if(!card || !label || !when) return;
+
+  // Border color via state class
+  card.classList.remove('conn-online','conn-offline');
+  card.classList.add(isOnline ? 'conn-online' : 'conn-offline');
+
+  // Text + timestamp
+  when.textContent = connNowISO();
+  if(isOnline){
+    label.textContent = 'You’re online. Map tiles stream normally and email/share are enabled.';
+  }else{
+    label.textContent = 'You’re offline. GPS still works; map tiles you’ve already viewed may still appear.';
+  }
+
+  // Map visual: dim tiles + show/hide offline card
+  try{
+    if(typeof window.mapSetDim === 'function') window.mapSetDim(!isOnline);
+  }catch(e){}
+
+  if(mapWarn){
+    mapWarn.style.display = isOnline ? 'none' : '';
+  }
+}
+
+function recheckConnectivity(){
+  // Keep it simple and fast: navigator.onLine is enough for UI hinting here.
+  setConnUI(navigator.onLine);
+}
+
+// Live updates from the browser
+window.addEventListener('online',  function(){ setConnUI(true);  });
+window.addEventListener('offline', function(){ setConnUI(false); });
+
+// Hook up the re-check button after DOM is ready
+document.addEventListener('DOMContentLoaded', function(){
+  var btn = document.getElementById('conn-recheck');
+  if(btn) btn.addEventListener('click', recheckConnectivity);
+
+  // Initial paint
+  setConnUI(navigator.onLine);
+});
 
 /* Defer attaching listeners until DOM is ready, so earlier hiccups don’t kill autosave/reset */
 document.addEventListener('DOMContentLoaded', function(){
