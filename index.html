@@ -693,6 +693,11 @@
   </section>
 
 </div>
+<script>
+  if (window.Capacitor?.isNativePlatform?.()) {
+    window.Capacitor.Plugins?.StatusBar?.setOverlaysWebView?.({ overlay: false });
+  }
+</script>
 
 <script>
 /* -------- small helpers (no optional chaining) -------- */
@@ -1957,7 +1962,10 @@ document.addEventListener('DOMContentLoaded', function(){
     };
   }
 });
-/* Location permission */
+
+</script>
+  <script>
+    /* Location permission */
     (async () => {
     const cap = window.Capacitor;
     const geo = cap?.Plugins?.Geolocation;
@@ -1973,6 +1981,6 @@ document.addEventListener('DOMContentLoaded', function(){
       console.warn('Geo permission check/request failed:', err);
     }
   })();
-</script>
+  </script>
 </body>
 </html>
