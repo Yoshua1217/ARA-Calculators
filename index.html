@@ -1964,23 +1964,34 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 </script>
-  <script>
-    /* Location permission */
-    (async () => {
-    const cap = window.Capacitor;
-    const geo = cap?.Plugins?.Geolocation;
-    if (!cap?.isNativePlatform?.() || !geo) return; // Only run on device
+<script>
+(function requestLocationOnceBridgeIsReady(){
+  const cap = window.Capacitor;
+  const geo = cap?.Plugins?.Geolocation;
 
+  if (!cap || !geo) {
+    // Bridge/plugins not injected yet; try again shortly (typical on first paint)
+    return setTimeout(requestLocationOnceBridgeIsReady, 150);
+  }
+  if (!cap.isNativePlatform || !cap.isNativePlatform()) {
+    // Running in a browser preview, not the app—Android dialog won’t appear here
+    return;
+  }
+
+  (async () => {
     try {
       const s = await geo.checkPermissions();
       if (s.location !== 'granted') {
-        await geo.requestPermissions(); // shows Android runtime dialog
+        await geo.requestPermissions(); // should trigger Android’s dialog
       }
-    } catch (err) {
-      // Ignore silently; you can log if you like
-      console.warn('Geo permission check/request failed:', err);
+      // Optional: immediately poke the API to ensure runtime path executed:
+      // await geo.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+    } catch (e) {
+      console.warn('Location permission flow failed:', e);
     }
   })();
-  </script>
+})();
+</script>
+
 </body>
 </html>
