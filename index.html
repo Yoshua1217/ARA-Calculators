@@ -178,6 +178,37 @@
     border-color: transparent;
   }
 
+  /* Match "Open email (optional)" button to others */
+#emailBtn {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+
+#emailBtn:hover:not([aria-disabled="true"]) {
+  background: var(--accent-2);
+  color: #001528;
+}
+
+#emailBtn:active:not([aria-disabled="true"]) {
+  background: #1b6cff;
+  color: #fff;
+  transform: scale(0.98);
+}
+
+#emailBtn[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+
   /* Multi-trunk minor styles */
   .mt-label{font-weight:700}
   .badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#1b6cff;color:#001528;font-size:.75rem;vertical-align:middle}
@@ -681,7 +712,7 @@
           <button type="button" id="genDesc"  class="btn-dim">Generate description</button>
           <button type="button" id="copyDesc" class="btn-ghost" disabled>Copy description</button>
           <button type="button" id="shareLink" class="btn-ghost" disabled>Copy share link</button>
-          <a id="emailBtn" class="btn btn-ghost" href="#" aria-disabled="true">Open email (optional)</a>
+          <a id="emailBtn" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
         </div>
         <div id="desc" class="results" style="margin-top:10px;">—</div>
         <div class="tiny" style="margin-top:6px;">Timestamp uses local 24-hour time.</div>
