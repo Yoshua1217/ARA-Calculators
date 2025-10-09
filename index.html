@@ -1924,22 +1924,57 @@ function setConnUI(isOnline){
   }
 }
 
-function recheckConnectivity(){
-  // Keep it simple and fast: navigator.onLine is enough for UI hinting here.
-  setConnUI(navigator.onLine);
+// --- Robust connectivity probe for Android WebView ---
+
+// Lightweight image probe (CORS-free). If it loads within timeout, we're online.
+function probeOnline(timeout = 2500){
+  return new Promise((resolve) => {
+    let settled = false;
+    const img = new Image();
+    const done = (ok) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(t);
+      img.onload = img.onerror = null;
+      resolve(ok);
+    };
+    const t = setTimeout(() => done(false), timeout);
+    img.onload  = () => done(true);
+    img.onerror = () => done(false);
+    img.src = 'https://tile.openstreetmap.org/0/0/0.png?cb=' + Date.now(); // cache-buster
+  });
 }
 
-// Live updates from the browser
-window.addEventListener('online',  function(){ setConnUI(true);  });
-window.addEventListener('offline', function(){ setConnUI(false); });
+// Active check: consider ONLINE only if navigator.onLine AND probe both say true
+async function checkConnectivity(reason){
+  const basic = (navigator.onLine === true);
+  let probeOK = false;
+  try { probeOK = await probeOnline(); } catch { probeOK = false; }
+  const isOnline = basic && probeOK;
+  setConnUI(isOnline); // reuse your existing painter
+}
 
-// Hook up the re-check button after DOM is ready
+// Wire up events
+window.addEventListener('online',  () => checkConnectivity('online-event'));
+window.addEventListener('offline', () => checkConnectivity('offline-event'));
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkConnectivity('visible');
+});
+
+// Foreground polling (covers airplane-mode toggles that don’t fire events)
+let _connTimer = setInterval(() => checkConnectivity('poll'), 15000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { clearInterval(_connTimer); }
+  else { _connTimer = setInterval(() => checkConnectivity('poll'), 15000); }
+});
+
+// Hook up the “Re-check” button and do the first paint
 document.addEventListener('DOMContentLoaded', function(){
   var btn = document.getElementById('conn-recheck');
-  if(btn) btn.addEventListener('click', recheckConnectivity);
+  if(btn) btn.addEventListener('click', () => checkConnectivity('manual'));
+  checkConnectivity('startup');
+});
 
-  // Initial paint
-  setConnUI(navigator.onLine);
 });
 
 /* Defer attaching listeners until DOM is ready, so earlier hiccups don’t kill autosave/reset */
