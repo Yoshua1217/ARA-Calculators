@@ -25,7 +25,7 @@
   html,body{ height:100% }
   body{
     margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-    padding-top:20px;
+    padding-top:25px;
     background:var(--bg); color:var(--text);
   }
 
@@ -1957,7 +1957,22 @@ document.addEventListener('DOMContentLoaded', function(){
     };
   }
 });
+/* Location permission */
+    (async () => {
+    const cap = window.Capacitor;
+    const geo = cap?.Plugins?.Geolocation;
+    if (!cap?.isNativePlatform?.() || !geo) return; // Only run on device
 
+    try {
+      const s = await geo.checkPermissions();
+      if (s.location !== 'granted') {
+        await geo.requestPermissions(); // shows Android runtime dialog
+      }
+    } catch (err) {
+      // Ignore silently; you can log if you like
+      console.warn('Geo permission check/request failed:', err);
+    }
+  })();
 </script>
 </body>
 </html>
