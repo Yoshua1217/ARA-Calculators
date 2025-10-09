@@ -1962,6 +1962,39 @@ document.addEventListener('DOMContentLoaded', function(){
 window.addEventListener('error', function(e){
   console.warn('Unhandled error:', e.message, 'at', e.filename+':'+e.lineno+':'+e.colno);
 });
+
+  import { Geolocation } from '@capacitor/geolocation';
+
+// Ask once, then call get/watch
+async function ensureLocationPermission() {
+  const status = await Geolocation.checkPermissions();
+  if (status.location === 'granted') return true;
+  const req = await Geolocation.requestPermissions();   // Android shows the OS dialog
+  return req.location === 'granted';
+}
+
+export async function getFix() {
+  const ok = await ensureLocationPermission();
+  if (!ok) throw new Error('Location permission denied');
+
+  const pos = await Geolocation.getCurrentPosition({
+    enableHighAccuracy: true,   // try GPS first
+    timeout: 10000              // ms
+  });
+  // pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.timestamp
+  return pos;
+}
+
+export function watchFix(onUpdate, onError) {
+  return Geolocation.watchPosition(
+    { enableHighAccuracy: true },
+    (pos, err) => {
+      if (err) { onError?.(err); return; }
+      onUpdate?.(pos);
+    }
+  );
+}
+
 </script>
 </body>
 </html>
