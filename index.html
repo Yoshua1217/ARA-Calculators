@@ -1393,20 +1393,144 @@ function extractPlainText(container){
   return items.concat(paras).join('\n').trim();
 }
 
+// Plain-text twin of buildDescription(), same order/spacing
+function buildDescriptionText(){
+  const p = [];
+  const push = (s) => { if (s && s.trim()) p.push(s.trim()); };
+
+  const name = (byId('treeName')?.value || '').trim();
+  const sp   = (byId('species')?.value  || '').trim();
+  const cond = (byId('condition')?.value|| '').trim();
+  const type = (byId('treeType')?.value || '').trim();
+
+  // 1) General
+  (function(){
+    const lines = [];
+    if (name) lines.push(`Tree: ${name}`);
+    if (sp)   lines.push(`Species: ${sp}`);
+    if (cond) lines.push(`Condition: ${cond}`);
+    if (type) lines.push(`Type: ${type}`);
+    if (lines.length) push(lines.join('\n'));
+  })();
+
+  // 2) Location (if saved)
+  (function(){
+    const lat = parseFloat(byId('lat')?.value);
+    const lng = parseFloat(byId('lng')?.value);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    const acc    = parseFloat(byId('acc')?.value);
+    const altTag = byId('loc-saved-alt')?.dataset?.val;
+    const alt    = Number.isFinite(parseFloat(altTag)) ? parseFloat(altTag) : NaN;
+    const tsTag  = byId('loc-saved-ts')?.dataset?.ts;
+    const when   = Number.isFinite(parseInt(tsTag,10)) ? new Date(parseInt(tsTag,10)).toLocaleString() : nowLocal24();
+    const mapsURL= `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+
+    const lines = [
+      `Location`,
+      `- DD: ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+      `- DMS: ${toDMS(lat,true)}  |  ${toDMS(lng,false)}`,
+      `- Altitude: ${Number.isFinite(alt) ? alt.toFixed(1)+' m' : '—'}`,
+      `- Accuracy: ${Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : '±—'}`,
+      `- Recorded: ${when}`,
+      `- Google Maps: ${mapsURL}`
+    ];
+    push(lines.join('\n'));
+  })();
+
+  // 3) Circumference
+  (function(){
+    let lines = [];
+    if (type === 'Single trunk tree' && lastSingle){
+      lines.push('Circumference');
+      lines.push(`- Circumference: ${fmt2(lastSingle.cM)} m (${fmt2(lastSingle.cFt)} ft) → Diameter: ${fmt2(lastSingle.dM)} m (${fmt2(lastSingle.dFt)} ft)`);
+    }
+    if (type === 'Multi trunked tree' && lastMulti){
+      lines.push('Individual trunks (circumference → diameter)');
+      lastMulti.trunks.forEach(t=>{
+        const core = `T${t.index}: ${fmt2(t.cM)} m (${fmt2(t.cFt)} ft) → ${fmt2(t.dM)} m (${fmt2(t.dFt)} ft)`;
+        lines.push(`- ${core}${t.isLargest ? ' (largest)' : ''}`);
+      });
+      const dAvgM = lastMulti.cAvgM/Math.PI, dAvgFt = mToFt(dAvgM);
+      lines.push('Full Tree Circumference (circumference → diameter)');
+      lines.push(`- Equivalent circumference: ${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft) → ${fmt2(lastMulti.dEqM)} m (${fmt2(lastMulti.dEqFt)} ft)`);
+      lines.push(`- Average circumference: ${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft) → ${fmt2(dAvgM)} m (${fmt2(dAvgFt)} ft)`);
+    }
+    if (lines.length) push(lines.join('\n'));
+  })();
+
+  // 4) Height
+  (function(){
+    if (!lastHeight) return;
+    const lines = [
+      'Height',
+      `- Tree height: ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`,
+      `- height = tan(${fmt1(lastHeight.angleDeg)}°) × ${fmt2(lastHeight.dM)} m + ${fmt2(lastHeight.eM)} m = ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`
+    ];
+    push(lines.join('\n'));
+  })();
+
+  // 5) Canopy
+  (function(){
+    if (!lastSpread) return;
+    const lines = ['Canopy spread'];
+    if (Number.isFinite(lastSpread.majorM)) lines.push(`- Major: ${fmt2(lastSpread.majorM)} m (${fmt2(mToFt(lastSpread.majorM))} ft)`);
+    if (Number.isFinite(lastSpread.minorM)) lines.push(`- Minor: ${fmt2(lastSpread.minorM)} m (${fmt2(mToFt(lastSpread.minorM))} ft)`);
+    lines.push(`- Final canopy spread: ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)`);
+    push(lines.join('\n'));
+  })();
+
+  // 6) Notes
+  (function(){
+    const nTxt = (byId('notes')?.value || '').trim();
+    if (!nTxt) return;
+    const lines = ['Notes'].concat(
+      nTxt.split(/\n+/).map(line => `- ${line}`)
+    );
+    push(lines.join('\n'));
+  })();
+
+  // 7) Observation
+  (function(){
+    push(['Observation', `- Recorded: ${nowLocal24()}`].join('\n'));
+  })();
+
+  // join sections with a blank line between
+  return p.join('\n\n') + '\n';
+}
+  
 function generateDescription(){
   ensureOnDemand();
-  var html=buildDescription();
-  if(descBox) descBox.innerHTML=html||'—';
-  if(copyDesc) copyDesc.disabled=!html;
-  if(shareBtn) shareBtn.disabled=!html;
-  if(html){
-    var text=extractPlainText(descBox);
-    var nm=(byId('treeName')&&byId('treeName').value)?byId('treeName').value.trim():'';
-    var subject='ARA Field Nomination'+(nm?' – '+nm:'');
-    if(emailBtn){ emailBtn.href='mailto:?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(text); emailBtn.removeAttribute('aria-disabled'); }
-  } else { if(emailBtn){ emailBtn.setAttribute('aria-disabled','true'); emailBtn.href='#'; } }
+
+  // 1) Build and render the HTML (what you see in-app)
+  var html = buildDescription();
+  if (descBox) descBox.innerHTML = html || '—';
+
+  // 2) Build the plain-text twin for email/copy (identical order & spacing)
+  var text = buildDescriptionText();
+
+  // Enable/disable controls
+  var hasContent = !!html;
+  if (copyDesc) copyDesc.disabled = !hasContent;
+  if (shareBtn) shareBtn.disabled = !hasContent;
+
+  // 3) Email: use the plain-text twin verbatim (mailto only supports plain text)
+  if (emailBtn){
+    if (hasContent){
+      var nm = (byId('treeName')?.value || '').trim();
+      var subject = 'ARA Field Nomination' + (nm ? ' – ' + nm : '');
+      emailBtn.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+      emailBtn.removeAttribute('aria-disabled');
+    } else {
+      emailBtn.setAttribute('aria-disabled','true');
+      emailBtn.href = '#';
+    }
+  }
+
+  // 4) Save after generation
   saveState();
 }
+
 var genDescBtn=byId('genDesc');
 if(genDescBtn) genDescBtn.onclick=generateDescription;
 if(copyDesc) copyDesc.onclick=function(){
