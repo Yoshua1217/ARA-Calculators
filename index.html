@@ -277,6 +277,11 @@
   .tiny{ font-size:.86rem; color:var(--muted) }
   .unit-tag{ color:#cfe0ff; font-weight:800 }
 
+  /* Spacing between generated description sections */
+.desc-section { 
+  margin: 12px 0 10px;
+}
+
   /* Tabs content visibility */
   .tabpane{ display:none }
   .tabpane.active{ display:block }
@@ -1237,114 +1242,157 @@ function ensureOnDemand(){
   if(!lastSpread && (Number.isFinite(parseFloat(spreadMajor && spreadMajor.value))||Number.isFinite(parseFloat(spreadMinor && spreadMinor.value)))) calcSpread();
   if(treeType && treeType.value==='Single trunk tree' && !lastSingle && Number.isFinite(parseFloat(singleC && singleC.value))) recomputeSingle();
 }
-function buildDescription(){
-  var parts=[]; 
-  var name=treeNameInput && treeNameInput.value ? treeNameInput.value.trim() : '';
-  var sp=species && species.value ? species.value.trim() : '';
-  var cond=condition && condition.value ? condition.value.trim() : '';
-  var type=treeType && treeType.value ? treeType.value.trim() : '';
-  var head=document.createElement('div');
-  if(name) head.innerHTML+='<p><strong>Tree</strong>: '+escapeHtml(name)+'</p>';
-  if(sp)   head.innerHTML+='<p><strong>Species</strong>: '+escapeHtml(sp)+'</p>';
-  if(cond) head.innerHTML+='<p><strong>Condition</strong>: '+escapeHtml(cond)+'</p>';
-  if(type) head.innerHTML+='<p><strong>Type</strong>: '+escapeHtml(type)+'</p>';
-  if(head.innerHTML) parts.push(head);
 
-  var meas=document.createElement('div'); var has=false;
+  function buildDescription(){
+  // helpers
+  var parts = [];
+  var add = (html) => { var d=document.createElement('div'); d.className='desc-section'; d.innerHTML=html; parts.push(d); };
 
-  if(type==='Single trunk tree' && lastSingle){
-    has=true;
-    var p1=document.createElement('p'); p1.innerHTML='<strong>Measurements</strong>';
-    var ul=document.createElement('ul');
-    var li=document.createElement('li');
-    li.textContent='Circumference: '+fmt2(lastSingle.cM)+' m ('+fmt2(lastSingle.cFt)+' ft) → Diameter: '+fmt2(lastSingle.dM)+' m ('+fmt2(lastSingle.dFt)+' ft)';
-    ul.appendChild(li); meas.appendChild(p1); meas.appendChild(ul);
-  }
+  // current basics
+  var name = (byId('treeName') && byId('treeName').value || '').trim();
+  var sp   = (byId('species')  && byId('species').value  || '').trim();
+  var cond = (byId('condition')&& byId('condition').value|| '').trim();
+  var type = (byId('treeType') && byId('treeType').value || '').trim();
 
-  if(type==='Multi trunked tree' && lastMulti){
-    has=true;
-    var p1b=document.createElement('p'); p1b.innerHTML='<strong>Individual trunks (circumference → diameter)</strong>';
-    var ul1=document.createElement('ul');
-    lastMulti.trunks.forEach(function(t){
-      var txt='T'+t.index+': '+fmt2(t.cM)+' m ('+fmt2(t.cFt)+' ft) → '+fmt2(t.dM)+' m ('+fmt2(t.dFt)+' ft)';
-      var lii=document.createElement('li');
-      if(t.isLargest){ lii.innerHTML='<strong>'+txt+'</strong>'; } else { lii.textContent=txt; }
-      ul1.appendChild(lii);
-    });
-    var p2=document.createElement('p'); p2.innerHTML='<strong>Full Tree Circumference (circumference → diameter)</strong>';
-    var ul2=document.createElement('ul');
-    var liC=document.createElement('li'); liC.textContent='Equivalent circumference: '+fmt2(lastMulti.cEqM)+' m ('+fmt2(lastMulti.cEqFt)+' ft) → '+fmt2(lastMulti.dEqM)+' m ('+fmt2(lastMulti.dEqFt)+' ft)';
-    var dAvgM=lastMulti.cAvgM/PI, dAvgFt=mToFt(dAvgM);
-    var liA=document.createElement('li'); liA.textContent='Average circumference: '+fmt2(lastMulti.cAvgM)+' m ('+fmt2(lastMulti.cAvgFt)+' ft) → '+fmt2(dAvgM)+' m ('+fmt2(dAvgFt)+' ft)';
-    ul2.appendChild(liC); ul2.appendChild(liA);
-    meas.appendChild(p1b); meas.appendChild(ul1); meas.appendChild(p2); meas.appendChild(ul2);
-  }
+  // ---------- 1) General ----------
+  (function(){
+    var lines = [];
+    if (name) lines.push('<p><strong>Tree</strong>: '+escapeHtml(name)+'</p>');
+    if (sp)   lines.push('<p><strong>Species</strong>: '+escapeHtml(sp)+'</p>');
+    if (cond) lines.push('<p><strong>Condition</strong>: '+escapeHtml(cond)+'</p>');
+    if (type) lines.push('<p><strong>Type</strong>: '+escapeHtml(type)+'</p>');
+    if (lines.length) add(lines.join(''));
+  })();
 
-  if(lastHeight){
-    has=true;
-    var pH=document.createElement('p'); pH.innerHTML='<strong>Height</strong>';
-    var ulH=document.createElement('ul');
-    var liH=document.createElement('li'); liH.textContent='Tree height: '+fmt2(lastHeight.hM)+' m ('+fmt2(lastHeight.hFt)+' ft)';
-    var liF=document.createElement('li'); liF.textContent='height = tan('+fmt1(lastHeight.angleDeg)+'°) × '+fmt2(lastHeight.dM)+' m + '+fmt2(lastHeight.eM)+' m = '+fmt2(lastHeight.hM)+' m ('+fmt2(lastHeight.hFt)+' ft)';
-    ulH.appendChild(liH); ulH.appendChild(liF); meas.appendChild(pH); meas.appendChild(ulH);
-  }
+  // ---------- 2) Location (if saved) ----------
+  (function(){
+    var latEl=byId('lat'), lngEl=byId('lng'), accEl=byId('acc');
+    var latIn=parseFloat(latEl && latEl.value), lngIn=parseFloat(lngEl && lngEl.value);
+    if (!Number.isFinite(latIn) || !Number.isFinite(lngIn)) return;
 
-  if(lastSpread){
-    has=true;
-    var pS=document.createElement('p'); pS.innerHTML='<strong>Canopy spread</strong>';
-    var ulS=document.createElement('ul');
-    if(Number.isFinite(lastSpread.majorM)){ var liMs=document.createElement('li'); liMs.textContent='Major: '+fmt2(lastSpread.majorM)+' m ('+fmt2(mToFt(lastSpread.majorM))+' ft)'; ulS.appendChild(liMs); }
-    if(Number.isFinite(lastSpread.minorM)){ var liMn=document.createElement('li'); liMn.textContent='Minor: '+fmt2(lastSpread.minorM)+' m ('+fmt2(mToFt(lastSpread.minorM))+' ft)'; ulS.appendChild(liMn); }
-    var liMean=document.createElement('li'); liMean.innerHTML='<strong>Final canopy spread: '+fmt2(lastSpread.meanM)+' m ('+fmt2(lastSpread.meanFt)+' ft)</strong>'; ulS.appendChild(liMean);
-    meas.appendChild(pS); meas.appendChild(ulS);
-  }
-
-  if(has) parts.push(meas);
-
-  var nTxt=notesEl && notesEl.value ? notesEl.value.trim() : '';
-  if(nTxt){
-    var n=document.createElement('div');
-    n.innerHTML='<p><strong>Notes</strong></p>';
-    var ulN=document.createElement('ul');
-    nTxt.split(/\n+/).forEach(function(line){ var li=document.createElement('li'); li.textContent=line; ulN.appendChild(li); });
-    n.appendChild(ulN); parts.push(n);
-  }
-
-  // Location (if saved)
-  var latEl=byId('lat'), lngEl=byId('lng'), accEl=byId('acc');
-  var latIn=parseFloat(latEl && latEl.value), lngIn=parseFloat(lngEl && lngEl.value);
-  if (Number.isFinite(latIn) && Number.isFinite(lngIn)) {
     var accIn=parseFloat(accEl && accEl.value);
-    var savedAlt=byId('loc-saved-alt'); var savedTs=byId('loc-saved-ts');
+    var savedAlt=byId('loc-saved-alt'); 
+    var savedTs =byId('loc-saved-ts');
     var altSaved = (savedAlt && savedAlt.dataset && savedAlt.dataset.val) ? parseFloat(savedAlt.dataset.val) : NaN;
-    var tsSaved  = (savedTs && savedTs.dataset && savedTs.dataset.ts) ? parseInt(savedTs.dataset.ts,10) : NaN;
-    var locWhen = Number.isFinite(tsSaved) ? new Date(tsSaved).toLocaleString() : nowLocal24();
+    var tsSaved  = (savedTs  && savedTs.dataset  && savedTs.dataset.ts ) ? parseInt(savedTs.dataset.ts,10) : NaN;
+    var locWhen  = Number.isFinite(tsSaved) ? new Date(tsSaved).toLocaleString() : nowLocal24();
 
-    var loc=document.createElement('div');
-    loc.innerHTML = '<p><strong>Location</strong></p>';
-    var ulL=document.createElement('ul');
+    // make a copy-friendly, clickable Maps URL
+    var mapsURL = 'https://maps.google.com/?q=' + latIn.toFixed(6) + ',' + lngIn.toFixed(6);
 
-    var li1=document.createElement('li'); li1.textContent='DD: '+latIn.toFixed(6)+', '+lngIn.toFixed(6); ulL.appendChild(li1);
-    var li2=document.createElement('li'); li2.textContent='DMS: '+toDMS(latIn,true)+'  |  '+toDMS(lngIn,false); ulL.appendChild(li2);
-    var li3=document.createElement('li'); li3.textContent='Altitude: '+(Number.isFinite(altSaved)?altSaved.toFixed(1)+' m':'—'); ulL.appendChild(li3);
-    var li4=document.createElement('li'); li4.textContent='Accuracy: '+(Number.isFinite(accIn)?'±'+accIn.toFixed(1)+' m':'±—'); ulL.appendChild(li4);
-    var li5=document.createElement('li'); li5.textContent='Recorded: '+locWhen; ulL.appendChild(li5);
+    var html = ''
+      + '<p><strong>Location</strong></p>'
+      + '<ul>'
+      +   '<li>DD: '  + latIn.toFixed(6) + ', ' + lngIn.toFixed(6) + '</li>'
+      +   '<li>DMS: ' + toDMS(latIn, true) + '  |  ' + toDMS(lngIn, false) + '</li>'
+      +   '<li>Altitude: ' + (Number.isFinite(altSaved)? altSaved.toFixed(1)+' m' : '—') + '</li>'
+      +   '<li>Accuracy: ' + (Number.isFinite(accIn)? ('±'+accIn.toFixed(1)+' m') : '±—') + '</li>'
+      +   '<li>Recorded: ' + locWhen + '</li>'
+      +   '<li>Google Maps: <a href="'+mapsURL+'" target="_blank" rel="noopener">'+mapsURL+'</a></li>'
+      + '</ul>';
+    add(html);
+  })();
 
-    loc.appendChild(ulL);
-    parts.push(loc);
-  }
+  // ---------- 3) Circumference (Single / Multi) ----------
+  (function(){
+    var html = '';
+    if (type === 'Single trunk tree' && lastSingle){
+      html += '<p><strong>Circumference</strong></p>'
+           +  '<ul>'
+           +    '<li>Circumference: '+fmt2(lastSingle.cM)+' m ('+fmt2(lastSingle.cFt)+' ft)'
+           +    ' → Diameter: '+fmt2(lastSingle.dM)+' m ('+fmt2(lastSingle.dFt)+' ft)</li>'
+           +  '</ul>';
+    }
+    if (type === 'Multi trunked tree' && lastMulti){
+      var items = lastMulti.trunks.map(function(t){
+        var inner = 'T'+t.index+': '+fmt2(t.cM)+' m ('+fmt2(t.cFt)+' ft) → '+fmt2(t.dM)+' m ('+fmt2(t.dFt)+' ft)';
+        return '<li>'+(t.isLargest?('<strong>'+inner+'</strong>'):inner)+'</li>';
+      }).join('');
+      var dAvgM = lastMulti.cAvgM/PI, dAvgFt = mToFt(dAvgM);
 
-  var obs=document.createElement('div');
-  obs.innerHTML='<p><strong>Observation</strong></p><ul><li>Recorded: '+nowLocal24()+'</li></ul>';
-  parts.push(obs);
+      html += '<p><strong>Individual trunks (circumference → diameter)</strong></p>'
+           +  '<ul>'+items+'</ul>'
+           +  '<p><strong>Full Tree Circumference (circumference → diameter)</strong></p>'
+           +  '<ul>'
+           +    '<li>Equivalent circumference: '+fmt2(lastMulti.cEqM)+' m ('+fmt2(lastMulti.cEqFt)+' ft)'
+           +      ' → '+fmt2(lastMulti.dEqM)+' m ('+fmt2(lastMulti.dEqFt)+' ft)</li>'
+           +    '<li>Average circumference: '+fmt2(lastMulti.cAvgM)+' m ('+fmt2(lastMulti.cAvgFt)+' ft)'
+           +      ' → '+fmt2(dAvgM)+' m ('+fmt2(dAvgFt)+' ft)</li>'
+           +  '</ul>';
+    }
+    if (html) add(html);
+  })();
 
-  var out=document.createElement('div'); parts.forEach(function(p){ out.appendChild(p); }); return out.innerHTML;
+  // ---------- 4) Height ----------
+  (function(){
+    if (!lastHeight) return;
+    var html = ''
+      + '<p><strong>Height</strong></p>'
+      + '<ul>'
+      +   '<li>Tree height: '+fmt2(lastHeight.hM)+' m ('+fmt2(lastHeight.hFt)+' ft)</li>'
+      +   '<li>height = tan('+fmt1(lastHeight.angleDeg)+'°) × '+fmt2(lastHeight.dM)+' m + '
+      +      fmt2(lastHeight.eM)+' m = '+fmt2(lastHeight.hM)+' m ('+fmt2(lastHeight.hFt)+' ft)</li>'
+      + '</ul>';
+    add(html);
+  })();
+
+  // ---------- 5) Canopy ----------
+  (function(){
+    if (!lastSpread) return;
+    var html = ''
+      + '<p><strong>Canopy spread</strong></p>'
+      + '<ul>'
+      +   (Number.isFinite(lastSpread.majorM) ? '<li>Major: '+fmt2(lastSpread.majorM)+' m ('+fmt2(mToFt(lastSpread.majorM))+' ft)</li>' : '')
+      +   (Number.isFinite(lastSpread.minorM) ? '<li>Minor: '+fmt2(lastSpread.minorM)+' m ('+fmt2(mToFt(lastSpread.minorM))+' ft)</li>' : '')
+      +   '<li><strong>Final canopy spread: '+fmt2(lastSpread.meanM)+' m ('+fmt2(lastSpread.meanFt)+' ft)</strong></li>'
+      + '</ul>';
+    add(html);
+  })();
+
+  // ---------- 6) Notes ----------
+  (function(){
+    var nTxt = (notesEl && notesEl.value || '').trim();
+    if (!nTxt) return;
+    var lines = nTxt.split(/\n+/).map(function(line){
+      return '<li>'+escapeHtml(line)+'</li>';
+    }).join('');
+    add('<p><strong>Notes</strong></p><ul>'+lines+'</ul>');
+  })();
+
+  // ---------- 7) Observation ----------
+  (function(){
+    add('<p><strong>Observation</strong></p><ul><li>Recorded: '+nowLocal24()+'</li></ul>');
+  })();
+
+  // join & return
+  var out = document.createElement('div');
+  parts.forEach(function(p){ out.appendChild(p); });
+  return out.innerHTML;
 }
+
 function extractPlainText(container){
-  var items=Array.prototype.slice.call(container.querySelectorAll('li')).map(function(li){ return '- '+li.innerText; });
-  var paras=Array.prototype.slice.call(container.querySelectorAll('p')).map(function(p){ return p.innerText; });
+  if (!container) return '';
+  // clone so we can transform anchors without touching the live DOM
+  var clone = container.cloneNode(true);
+
+  // Convert <a> tags to "text – URL" so the copied text includes links
+  Array.prototype.slice.call(clone.querySelectorAll('a')).forEach(function(a){
+    var url = a.getAttribute('href') || '';
+    var txt = a.textContent || url;
+    var span = document.createElement('span');
+    span.textContent = txt + (url ? ' – ' + url : '');
+    a.replaceWith(span);
+  });
+
+  // Gather bullets and paragraphs
+  var items = Array.prototype.slice.call(clone.querySelectorAll('li'))
+    .map(function(li){ return '- ' + li.textContent; });
+  var paras = Array.prototype.slice.call(clone.querySelectorAll('p'))
+    .map(function(p){ return p.textContent; });
+
   return items.concat(paras).join('\n').trim();
 }
+
 function generateDescription(){
   ensureOnDemand();
   var html=buildDescription();
