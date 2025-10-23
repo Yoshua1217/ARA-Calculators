@@ -1424,7 +1424,9 @@ function buildDescriptionText(){
     const alt    = Number.isFinite(parseFloat(altTag)) ? parseFloat(altTag) : NaN;
     const tsTag  = byId('loc-saved-ts')?.dataset?.ts;
     const when   = Number.isFinite(parseInt(tsTag,10)) ? new Date(parseInt(tsTag,10)).toLocaleString() : nowLocal24();
-    const mapsURL= `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+    const mapsURL= 
+      `<https://maps.google.com/?q=${lat
+      .toFixed(6)},${lng.toFixed(6)}>`;
 
     const lines = [
       `Location`,
