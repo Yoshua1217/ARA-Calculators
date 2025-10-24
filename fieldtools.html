@@ -690,43 +690,49 @@
     </div>
   </section>
 
-  <!-- Results -->
-  <section id="pane-results" class="tabpane">
-    <div class="card">
-      <div class="block">
-        <h2>Final measurements</h2>
-        <div class="results">
-          <p id="res-height">Height: —</p>
-          <p id="res-eqcirc">Equivalent / Entered circumference: —</p>
-          <p id="res-avgcirc" style="display:none;">Average circumference (multi): —</p>
-          <p id="res-spread">Final canopy spread: —</p>
-        </div>
-      </div>
-      <div class="block">
-        <h3>Quick copy <span class="tiny">(ARA form pure numbers in meters)</span></h3>
-        <div class="btn-row">
-          <button type="button" id="copyHeight"  class="btn-ghost" disabled>Copy Height (m)</button>
-          <button type="button" id="copyEqCirc"  class="btn-ghost" disabled>Copy Eq. Circ (m)</button>
-          <button type="button" id="copyAvgCirc" class="btn-ghost" disabled>Copy Avg Circ (m)</button>
-          <button type="button" id="copySpread"  class="btn-ghost" disabled>Copy Canopy (m)</button>
-        </div>
-      </div>
-      <div class="block">
-        <h3>Description</h3>
-        <div class="btn-row">
-          <button type="button" id="genDesc"  class="btn-dim">Generate description</button>
-          <button type="button" id="copyDesc" class="btn-ghost" disabled>Copy description</button>
-          <button type="button" id="shareLink" class="btn-ghost" disabled>Copy share link</button>
-          <a id="emailBtn" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
-        </div>
-        <div id="desc" class="results" style="margin-top:10px;">—</div>
-        <div class="tiny" style="margin-top:6px;">Timestamp uses local 24-hour time.</div>
-      </div>
-      <div class="block">
-        <button type="button" id="resetFormResults" class="btn-ghost danger" title="Reset the form (does not clear the log)">Reset form</button>
+<!-- Results -->
+<section id="pane-results" class="tabpane">
+  <div class="card">
+    <div class="block">
+      <h2 id="results-title">Results</h2>
+
+      <!-- Key measurements (meters with feet in parentheses) -->
+      <div class="results" id="key-measurements" style="margin-top:6px;">
+        <p id="km-circ">Circumference: —</p>
+        <p id="km-height">Height: —</p>
+        <p id="km-canopy">Canopy spread: —</p>
       </div>
     </div>
-  </section>
+
+    <div class="block">
+      <h3>Tree description</h3>
+      <div id="desc" class="results" style="margin-top:10px;">—</div>
+      <div class="tiny" style="margin-top:6px;">Timestamp uses local 24-hour time.</div>
+      <!-- Missing-data notice lives inside the description (at the end) -->
+    </div>
+
+    <div class="block">
+      <h3>Share & copy</h3>
+      <div class="btn-row">
+        <button type="button" id="copyDesc" class="btn-ghost" disabled>Copy description</button>
+        <button type="button" id="shareLink" class="btn-ghost" disabled>Copy share link</button>
+        <a id="emailBtn" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Photos</h3>
+      <div class="note" style="margin-top:6px;">
+        Placeholder for photos (coming soon). This box will show gallery thumbnails once logging is added.
+      </div>
+    </div>
+
+    <div class="block">
+      <button type="button" id="resetFormResults" class="btn-ghost danger" title="Reset the form (does not clear the log)">Reset form</button>
+    </div>
+  </div>
+</section>
+
 
 </div>
 <script>
@@ -761,6 +767,58 @@ function toDMS(dec, isLat){
   return d+'° '+m+"' "+s.toFixed(2)+'" '+hemi;
 }
 
+  function updateKeyMeasurementsBox(){
+  const title = byId('results-title');
+  const name  = byId('treeName')?.value?.trim();
+  if (title) title.textContent = name ? (name + ' — Results') : 'Results';
+
+  const kmCirc   = byId('km-circ');
+  const kmHeight = byId('km-height');
+  const kmCanopy = byId('km-canopy');
+
+  const t = byId('treeType')?.value || '';
+
+  // Circumference line
+  if (t === 'Single trunk tree' && lastSingle){
+    kmCirc && (kmCirc.textContent = `Circumference: ${fmt2(lastSingle.cM)} m (${fmt2(lastSingle.cFt)} ft)`);
+  } else if (t === 'Multi trunked tree' && lastMulti){
+    kmCirc && (kmCirc.textContent = `Equivalent circumference: ${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft)`);
+  } else {
+    kmCirc && (kmCirc.textContent = 'Circumference: —');
+  }
+
+  // Height
+  kmHeight && (kmHeight.textContent =
+    lastHeight ? `Height: ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)` : 'Height: —'
+  );
+
+  // Canopy
+  kmCanopy && (kmCanopy.textContent =
+    lastSpread ? `Canopy spread: ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)` : 'Canopy spread: —'
+  );
+}
+
+function refreshResultsView(){
+  updateResultsPanel();       // keep legacy lines up to date
+  updateKeyMeasurementsBox(); // new “Key measurements” box
+  generateDescription();      // HTML + email/plain text stay in sync
+}
+
+function computeMissingBits(){
+  const missing = [];
+  const t = byId('treeType')?.value || '';
+  if (t === 'Single trunk tree'){
+    if (!lastSingle) missing.push('circumference (single trunk)');
+  } else if (t === 'Multi trunked tree'){
+    if (!lastMulti) missing.push('multi-trunk entry / calculation');
+  } else if (!t){
+    missing.push('tree type');
+  }
+  if (!lastHeight) missing.push('height');
+  if (!lastSpread) missing.push('canopy spread');
+  return missing;
+}
+
 /* ---------------- State ---------------- */
 var inputUnit='m', calcMode='manual';
 var lastSingle=null, lastMulti=null, lastHeight=null, lastSpread=null;
@@ -787,6 +845,7 @@ function setUnit(u){
     if(tt==='Multi trunked tree') calcMulti();
     calcHeight(); calcSpread();
   }
+    refreshResultsView();
   updateResultsPanel(); updateCopyButtons();
 }
 if(unitM) unitM.onclick=function(){ setUnit('m'); };
@@ -830,7 +889,8 @@ function updateTypeVisibility(){
   if(singleBlock) singleBlock.style.display=(t==='Single trunk tree')?'':'none';
   if(mtBlock)     mtBlock.style.display=(t==='Multi trunked tree')?'':'none';
   if (t==='Multi trunked tree' && mtList && mtList.children.length===0){ addMtRow(); addMtRow(); }
-  updateResultsPanel(); updateCopyButtons();
+  // was: updateResultsPanel(); updateCopyButtons();
+  refreshResultsView(); updateCopyButtons();
 }
 if(treeType) treeType.onchange=updateTypeVisibility;
 
@@ -839,6 +899,7 @@ function recomputeSingle(){
   var v=parseFloat(singleC && singleC.value);
   if(Number.isFinite(v)&&v>0){ var cM=toM(v,inputUnit); var dM=cM/PI; lastSingle={cM:cM,cFt:mToFt(cM),dM:dM,dFt:mToFt(dM)}; }
   else lastSingle=null;
+    refreshResultsView();
   updateResultsPanel(); updateCopyButtons();
 }
 if(singleC) singleC.addEventListener('input',function(){ if(calcMode==='auto') recomputeSingle(); });
@@ -948,7 +1009,9 @@ function calcMulti(){
   var valid=items.map(function(inp){ return {inp:inp,val:parseFloat(inp.value),row:inp.closest('.row')} })
     .filter(function(o){ return Number.isFinite(o.val)&&o.val>0; });
   if(valid.length===0){
-    lastMulti=null; if(mtResult) mtResult.textContent='Enter at least one trunk circumference.'; updateResultsPanel(); updateCopyButtons(); return;
+    lastMulti=null; if(mtResult) mtResult.textContent='Enter at least one trunk circumference.';   // was: updateResultsPanel(); updateCopyButtons();
+  refreshResultsView(); updateCopyButtons();
+ return;
   }
   var withD=valid.map(function(r,i){ var cM=toM(r.val,inputUnit); var dM=cM/PI; return {row:r.row,cM:cM,dM:dM,idx:i+1}; });
   var eps=1e-9; var dmax=Math.max.apply(null,withD.map(function(x){return x.dM;}));
@@ -966,7 +1029,8 @@ function calcMulti(){
     cAvgM:cAvgM, cAvgFt:mToFt(cAvgM), tie:maxRows.length>1
   };
   if(mtResult) mtResult.textContent='Calculated '+withD.length+' trunk'+(withD.length>1?'s':'')+'.';
-  updateResultsPanel(); updateCopyButtons();
+  // was: updateResultsPanel(); updateCopyButtons();
+  refreshResultsView(); updateCopyButtons();
 }
 if(mtAdd)    mtAdd.onclick=function(){ addMtRow(); };
 if(mtRemove) mtRemove.onclick=function(){ removeMtRow(); };
@@ -979,9 +1043,11 @@ if(mtClear)  mtClear.onclick=function(){ if(mtBulk) mtBulk.value=''; };
 var hAngle=byId('h-angle'), hDist=byId('h-dist'), hEye=byId('h-eye'), hCalc=byId('h-calc');
 function calcHeight(){
   var a=parseFloat(hAngle && hAngle.value), d=parseFloat(hDist && hDist.value), e=parseFloat(hEye && hEye.value);
-  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null; updateResultsPanel(); updateCopyButtons(); return; }
+  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null;   refreshResultsView();
+updateResultsPanel(); updateCopyButtons(); return; }
   var dM=toM(d,inputUnit), eM=toM(e,inputUnit); var hM=tanDeg(a)*dM+eM;
   lastHeight={hM:hM,hFt:mToFt(hM),angleDeg:Number(a.toFixed(1)),dM:dM,eM:eM};
+    refreshResultsView();
   updateResultsPanel(); updateCopyButtons();
   if(hCalc){ hCalc.classList.add('active'); setTimeout(function(){ hCalc.classList.remove('active'); },900); }
 }
@@ -999,6 +1065,7 @@ function calcSpread(){
 
   if (!Number.isFinite(maj) || !Number.isFinite(min) || maj <= 0 || min <= 0){
     lastSpread = null;
+      refreshResultsView();
     updateResultsPanel();
     updateCopyButtons();
     return;
@@ -1015,7 +1082,7 @@ function calcSpread(){
     meanM: meanM,
     meanFt: mToFt(meanM)
   };
-
+  refreshResultsView();
   updateResultsPanel();
   updateCopyButtons();
 
@@ -1362,6 +1429,15 @@ function ensureOnDemand(){
   // ---------- 7) Observation ----------
   (function(){
     add('<p><strong>Observation</strong></p><ul><li>Recorded: '+nowLocal24()+'</li></ul>');
+  })();
+  // ---------- 8) Missing data notice ----------
+  (function(){
+    var miss = computeMissingBits();
+    if (!miss.length) return;
+    var html = '<p><strong>Missing</strong></p><ul>' +
+      miss.map(m => '<li>' + escapeHtml(m) + '</li>').join('') +
+      '</ul>';
+    add(html);
   })();
 
   // join & return
@@ -2064,6 +2140,8 @@ if (typeof paintGlobalAcc === 'function') {
 }
 
     updateResultsPanel(); updateCopyButtons();
+      updateKeyMeasurementsBox();
+  generateDescription();
     
   } catch(e){ console.warn('setFormState failed', e); }
 }
@@ -2090,6 +2168,7 @@ function autoSaveSoon(){
     if (_asTimer) clearTimeout(_asTimer);
     _asTimer = setTimeout(function(){
       if (!window.ARA_RESETTING) saveState();
+            refreshResultsView();
     }, 250);
   }catch(e){ console.warn('autoSaveSoon failed', e); }
 }
