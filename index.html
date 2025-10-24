@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ancient Roots Alberta</title>
+<style>
+  :root{
+    /* Dark blue palette — same as your app */
+    --bg:#0d1b2a;
+    --bg-elev:#0f2236;
+    --panel:#14253d;
+    --panel-2:#172a47;
+    --text:#e8eef6;
+    --muted:#a9b7c7;
+    --accent:#2ea3ff;
+    --accent-2:#4db2ff;
+    --ok:#1fa37a;
+    --danger:#d93c3c;
+    --border:#1f3553;
+    --radius:14px;
+    --gap:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding-top:35px; /* space for Android status bar, matches your app */
+  }
+
+  /* Top bar (shared look) */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(180deg,#0d1b2a,#0f2236);
+    border-bottom:1px solid var(--border);
+    padding:14px 16px;
+    text-align:center;
+  }
+  .brand{
+    font-weight:800; letter-spacing:.2px; font-size:1.2rem; line-height:1.15;
+    color:#eaf3ff; margin:0;
+  }
+  .subtitle{
+    margin:4px 0 0; font-size:.95rem; color:#9db3cc; font-weight:600;
+  }
+
+  /* Layout */
+  .content{ max-width:900px; margin:0 auto; padding:16px; }
+  .grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:var(--gap);
+  }
+  @media (min-width:720px){
+    .grid{ grid-template-columns:1fr 1fr; }
+  }
+
+  /* Cards (match your style) */
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:0 1px 0 rgba(0,0,0,.12) inset;
+    transition:transform .08s ease;
+  }
+  .card:active{ transform:scale(.99); }
+  .block{ padding:16px 18px; }
+  h2{ margin:0 0 8px; font-size:1.15rem; color:#d6e6ff; }
+  p{ margin:6px 0; }
+  .muted{ color:var(--muted) }
+
+  /* Action card */
+  .app-card{
+    display:block; text-decoration:none; color:inherit;
+    border:1px solid var(--border);
+  }
+  .app-card:hover{
+    border-color:#376aa0; box-shadow:0 0 0 1px #376aa0 inset;
+  }
+  .app-row{
+    display:flex; align-items:center; gap:12px;
+  }
+  .emoji{
+    font-size:1.6rem; line-height:1; width:2rem; text-align:center;
+  }
+  .badge{
+    display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px;
+    background:#1b6cff; color:#001528; font-size:.75rem; font-weight:800; vertical-align:middle;
+  }
+  .btn, button{
+    padding:10px 14px; border:0; border-radius:10px; cursor:pointer;
+    background:var(--accent-2); color:#001528; font-weight:700;
+  }
+  .btn-ghost{
+    background:var(--panel-2); color:var(--text); border:1px solid var(--border);
+  }
+  .tiny{ font-size:.86rem; color:var(--muted) }
+
+  /* Connectivity card (same as tools page) */
+  .conn-card{
+    border:2px solid var(--border);  /* medium thickness per your preference */
+    border-radius:var(--radius);
+    background:var(--panel);
+  }
+  .conn-card .topline{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-bottom:8px;
+  }
+  .conn-card .status{ font-weight:800; }
+  .conn-online{ border-color:var(--ok); }
+  .conn-offline{ border-color:var(--danger); }
+  #conn-recheck{ margin-top:8px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="topbar">
+  <h1 class="brand">Ancient Roots Alberta</h1>
+  <div class="subtitle">Preserving Alberta’s heritage trees</div>
+</div>
+
+<!-- Main -->
+<div class="content">
+  <div class="grid">
+
+    <!-- ARA Field Tools -->
+    <a class="card app-card" href="fieldtools.html">
+      <div class="block">
+        <div class="app-row">
+          <div class="emoji">🌲</div>
+          <div>
+            <h2>ARA Field Tools <span class="badge">Live</span></h2>
+            <p class="muted">Measure, record, and generate heritage tree data (height, circumference, canopy, GPS).</p>
+          </div>
+        </div>
+      </div>
+    </a>
+
+    <!-- Room for Improvement (placeholder) -->
+    <div class="card">
+      <div class="block">
+        <div class="app-row">
+          <div class="emoji">💡</div>
+          <div>
+            <h2>Room for Improvement</h2>
+            <p class="muted">Share feedback and ideas for future updates. (Coming soon)</p>
+          </div>
+        </div>
+        <!-- Optional mailto action; safe to remove -->
+        <div style="margin-top:10px;">
+          <a class="btn-ghost" href="mailto:ancientroots@yourdomain.example?subject=ARA%20Feedback">Send feedback</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- (You can add more cards here later) -->
+
+  </div>
+
+  <!-- Connectivity (bottom) -->
+  <div id="conn-card" class="card conn-card conn-online" style="margin-top:16px;">
+    <div class="block">
+      <div class="topline">
+        <h2 style="margin:0;">Connectivity</h2>
+        <div class="tiny">Last checked: <span id="conn-checked">—</span></div>
+      </div>
+      <p id="conn-label" class="status">You’re online. Map tiles stream normally and email/share are enabled.</p>
+      <div class="tiny">Autosave is local and safe.</div>
+      <div style="margin-top:8px;">
+        <button type="button" id="conn-recheck" class="btn-ghost">Re-check</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <p class="tiny" style="text-align:center; margin-top:16px; opacity:.8;">
+    Part of the Ancient Roots Alberta Project — © 2025
+  </p>
+</div>
+
+<script>
+/* ---------------- Connectivity (same behavior as your tools page) ---------------- */
+function connNowISO(){
+  var d=new Date(); var p=n=>String(n).padStart(2,'0');
+  return p(d.getHours())+':'+p(d.getMinutes());
+}
+function setConnUI(isOnline){
+  var card  = document.getElementById('conn-card');
+  var label = document.getElementById('conn-label');
+  var when  = document.getElementById('conn-checked');
+  if(!card || !label || !when) return;
+
+  card.classList.remove('conn-online','conn-offline');
+  card.classList.add(isOnline ? 'conn-online' : 'conn-offline');
+
+  when.textContent = connNowISO();
+  label.textContent = isOnline
+    ? 'You’re online. Map tiles stream normally and email/share are enabled.'
+    : 'You’re offline. Features that need data will be limited.';
+
+  // No map on the home page, so no dimming here.
+}
+
+/* Image probe that works in Android WebView / airplane mode */
+function probeOnline(timeout=2500){
+  return new Promise((resolve)=>{
+    let doneFlag=false;
+    const img=new Image();
+    const done=(ok)=>{ if(doneFlag) return; doneFlag=true; clearTimeout(t); img.onload=img.onerror=null; resolve(ok); };
+    const t=setTimeout(()=>done(false), timeout);
+    img.onload=()=>done(true);
+    img.onerror=()=>done(false);
+    img.src='https://tile.openstreetmap.org/0/0/0.png?cb='+Date.now();
+  });
+}
+
+/* Decide online only if navigator.onLine AND probe succeed */
+async function checkConnectivity(){
+  const basic=(navigator.onLine===true);
+  let probeOK=false;
+  try{ probeOK=await probeOnline(); }catch{ probeOK=false; }
+  const isOnline=basic && probeOK;
+  setConnUI(isOnline);
+  return isOnline;
+}
+
+let _connTimer=null;
+function startConnPolling(){
+  if(_connTimer) return;
+  _connTimer=setInterval(checkConnectivity,15000);
+}
+function stopConnPolling(){
+  if(_connTimer){ clearInterval(_connTimer); _connTimer=null; }
+}
+
+function initConnectivity(){
+  var btn=document.getElementById('conn-recheck');
+  if(btn) btn.addEventListener('click', checkConnectivity);
+
+  window.addEventListener('online',  checkConnectivity);
+  window.addEventListener('offline', checkConnectivity);
+
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden) stopConnPolling();
+    else { startConnPolling(); checkConnectivity(); }
+  });
+
+  checkConnectivity();
+  startConnPolling();
+}
+
+/* If this runs inside Capacitor, make sure the status bar doesn’t overlap */
+if (window.Capacitor?.isNativePlatform?.()) {
+  window.Capacitor.Plugins?.StatusBar?.setOverlaysWebView?.({ overlay:false });
+}
+
+/* Kick things off */
+document.addEventListener('DOMContentLoaded', initConnectivity);
+</script>
+
+</body>
+</html>
