@@ -182,6 +182,8 @@
     }
     return [];
   }
+console.log('Loaded log data:', loadLog());
+alert('Loaded items: ' + loadLog().length);
 
   // 2) Safe getters (avoid crashes if fields moved/renamed)
   function getTitle(item){
