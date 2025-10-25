@@ -326,9 +326,9 @@
         const Log_KEY = 'ara_field_v1_log';  // must match log.html & field tools save code
         if (!id) throw new Error('No id in URL');
 
-        const list = JSON.parse(localStorage.getItem(KEY) || '[]');
+        const list = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
         const next = list.filter(entry => String(entry.id) !== String(id));
-        localStorage.setItem(KEY, JSON.stringify(next));
+        localStorage.setItem(Log_KEY, JSON.stringify(next));
 
         // back to log after deletion
         location.href = 'log.html';
@@ -340,7 +340,7 @@
 </script>
 <script>
 (function () {
-  // helpers
+  // ---------- helpers ----------
   const $ = sel => document.querySelector(sel);
   const set = (sel, val) => { const el = $(sel); if (el) el.textContent = (val ?? '—'); };
   const setHTML = (sel, html) => { const el = $(sel); if (el) el.innerHTML = html || '—'; };
@@ -348,7 +348,7 @@
   const fmt1 = v => Number.isFinite(v) ? v.toFixed(1) : '—';
   const mToFt = m => m * 3.28084;
 
-  // accuracy color buckets (text color only, per your palette)
+  // accuracy → text color
   function accClass(m){
     if (!Number.isFinite(m)) return 'acc-grey';
     if (m <= 5)  return 'acc-green';
@@ -363,161 +363,119 @@
     el.textContent = Number.isFinite(meters) ? `±${meters.toFixed(1)} m` : '±—';
   }
 
-  // read id from URL and fetch entry from log
+  // DMS
+  function toDMS(dec, isLat){
+    if (!Number.isFinite(dec)) return '—';
+    const hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
+    const v = Math.abs(dec);
+    const d = Math.floor(v);
+    const m = Math.floor((v - d) * 60);
+    const s = ((v - d) * 60 - m) * 60;
+    return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
+  }
+
+  // ---------- load entry ----------
   const params = new URLSearchParams(location.search);
   const id = params.get('id');
   const LOG_KEY = 'ara_field_v1_log';
+
   let entries = [];
   try { entries = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch {}
-  const entry = entries.find(e => e && e.id === id);
+  const entry = entries.find(e => e && String(e.id) === String(id));
+  if (!entry){ alert('Entry not found.'); return; }
 
-  if (!entry){
-    alert('Entry not found.'); 
-    return;
-  }
-
-  // SHAPE SHORTCUTS
   const b = entry.basics || {};             // name, species, condition, type
   const r = entry.results || {};            // lastSingle, lastMulti, lastHeight, lastSpread
-  const lastSingle = r.lastSingle || null;  // single trunk calc snapshot
-  const lastMulti  = r.lastMulti  || null;  // multi trunk calc snapshot
+  const lastSingle = r.lastSingle || null;
+  const lastMulti  = r.lastMulti  || null;
   const lastHeight = r.lastHeight || null;
   const lastSpread = r.lastSpread || null;
 
-  // HEADER
-  set('#title-name', b.name || 'Tree');
-  // If you show the full header line "ARA – {tree}", keep this as-is; buttons moved to the row below per your last tweak.
-
-  // ===== General panel
+  // ---------- GENERAL ----------
   set('#gen-name', b.name || '—');
   set('#gen-species', b.species || '—');
   set('#gen-condition', b.condition || '—');
   set('#gen-type', b.type || '—');
 
-  // ===== Location panel (you said this already works, leaving here for completeness)
+  // header subtitle (already set earlier for title text)
+  if (b.name) {
+    const hdr = document.getElementById('treeNameHdr');
+    if (hdr) hdr.textContent = b.name;
+  }
+
+  // ---------- LOCATION ----------
   if (entry.location){
     const lat = parseFloat(entry.location.lat);
     const lng = parseFloat(entry.location.lng);
-    set('#loc-dd', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—');
 
-    // simple DMS helper
-    function toDMS(dec, isLat){
-      if (!Number.isFinite(dec)) return '—';
-      const hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
-      const v = Math.abs(dec);
-      const d = Math.floor(v);
-      const m = Math.floor((v - d) * 60);
-      const s = ((v - d) * 60 - m) * 60;
-      return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
-    }
+    set('#loc-dd', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—');
     set('#loc-dms', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat,true)}  |  ${toDMS(lng,false)}` : '—');
+
+    const alt = parseFloat(entry.location.alt);
+    set('#loc-alt', Number.isFinite(alt) ? `${alt.toFixed(1)} m` : '—');
 
     const acc = parseFloat(entry.location.acc);
     paintAccuracyText('#loc-acc', acc);
 
-    // recorded time (ts may be string)
     const ts = entry.location.ts ? new Date(parseInt(entry.location.ts,10)) : null;
-    set('#loc-when', ts ? ts.toLocaleString() : '—');
+    set('#loc-time', ts ? ts.toLocaleString() : '—');
 
-    // maps link text (anchor href should already be in markup)
-    const a = document.querySelector('#loc-maplink');
-    if (a && Number.isFinite(lat) && Number.isFinite(lng)){
+    // maps link (your HTML has <div id="loc-maps">—</div>)
+    if (Number.isFinite(lat) && Number.isFinite(lng)){
       const url = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
-      a.href = url;
-      a.textContent = url;
+      setHTML('#loc-maps', `<a href="${url}" target="_blank" rel="noopener">${url}</a>`);
+    } else {
+      setHTML('#loc-maps', '—');
     }
   }
 
-  // ===== Circumference panel(s)
-  const isMulti = (b.type === 'Multi trunked tree');
-  const singleCard = $('#card-circ-single');
-  const multiCard  = $('#card-circ-multi');
+  // ---------- CIRCUMFERENCE ----------
+  // Your markup has single set of fields: #c-circ, #c-diam, #c-avg, #c-largest
+  if (b.type === 'Multi trunked tree' && lastMulti){
+    // show equivalent & average
+    set('#c-circ', `${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft)`);
+    set('#c-diam', `${fmt2(lastMulti.dEqM)} m (${fmt2(lastMulti.dEqFt)} ft)`);
+    set('#c-avg',  `${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft)`);
 
-  if (singleCard) singleCard.style.display = isMulti ? 'none' : '';
-  if (multiCard)  multiCard.style.display  = isMulti ? '' : 'none';
-
-  if (!isMulti && lastSingle){
-    set('#single-circ', `${fmt2(lastSingle.cM)} m (${fmt2(mToFt(lastSingle.cM))} ft)`);
-    set('#single-diam', `${fmt2(lastSingle.dM)} m (${fmt2(mToFt(lastSingle.dM))} ft)`);
+    // largest trunk note
+    const trunkNote = (lastMulti.trunks || []).filter(t => t.isLargest).map(t => `T${t.index}`).join(', ');
+    set('#c-largest', trunkNote ? `Largest: ${trunkNote}` : '—');
+  } else if (b.type === 'Single trunk tree' && lastSingle){
+    // entered single trunk
+    set('#c-circ', `${fmt2(lastSingle.cM)} m (${fmt2(lastSingle.cFt)} ft)`);
+    set('#c-diam', `${fmt2(lastSingle.dM)} m (${fmt2(lastSingle.dFt)} ft)`);
+    set('#c-avg',  '—');
+    set('#c-largest', '—');
+  } else {
+    set('#c-circ','—'); set('#c-diam','—'); set('#c-avg','—'); set('#c-largest','—');
   }
 
-  if (isMulti && lastMulti){
-    // top aggregates
-    set('#multi-eqcirc', `${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft)`);
-    set('#multi-eqdiam', `${fmt2(lastMulti.dEqM)} m (${fmt2(lastMulti.dEqFt)} ft)`);
-    const dAvgM = lastMulti.cAvgM / Math.PI;
-    set('#multi-avgcirc', `${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft)`);
-    set('#multi-avgdiam', `${fmt2(dAvgM)} m (${fmt2(mToFt(dAvgM))} ft)`);
-
-    // trunk list
-    const list = $('#multi-trunk-list');
-    if (list){
-      list.innerHTML = '';
-      (lastMulti.trunks || []).forEach(t => {
-        const li = document.createElement('li');
-        const core = `T${t.index}: ${fmt2(t.cM)} m (${fmt2(t.cFt)} ft) → ${fmt2(t.dM)} m (${fmt2(t.dFt)} ft)`;
-        li.textContent = t.isLargest ? `${core} (largest)` : core;
-        list.appendChild(li);
-      });
-    }
-  }
-
-  // ===== Height panel
+  // ---------- HEIGHT ----------
   if (lastHeight){
-    set('#height-main', `${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`);
-    set('#height-eq',   `height = tan(${fmt1(lastHeight.angleDeg)}°) × ${fmt2(lastHeight.dM)} m + ${fmt2(lastHeight.eM)} m`);
+    set('#h-final', `${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`);
+    set('#h-angle', fmt1(lastHeight.angleDeg));
+    set('#h-dist',  `${fmt2(lastHeight.dM)} m (${fmt2(mToFt(lastHeight.dM))} ft)`);
+    set('#h-eye',   `${fmt2(lastHeight.eM)} m (${fmt2(mToFt(lastHeight.eM))} ft)`);
+  } else {
+    set('#h-final','—'); set('#h-angle','—'); set('#h-dist','—'); set('#h-eye','—');
   }
 
-  // ===== Canopy panel
+  // ---------- CANOPY ----------
   if (lastSpread){
-    set('#can-major', Number.isFinite(lastSpread.majorM) ? `${fmt2(lastSpread.majorM)} m (${fmt2(mToFt(lastSpread.majorM))} ft)` : '—');
-    set('#can-minor', Number.isFinite(lastSpread.minorM) ? `${fmt2(lastSpread.minorM)} m (${fmt2(mToFt(lastSpread.minorM))} ft)` : '—');
-    set('#can-mean',  `${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)`);
-  }
-
-  // ===== Notes panel
-  set('#notes-box', (entry.notes && entry.notes.trim()) ? entry.notes : '—');
-
-  // ===== Description panel (rich HTML saved from the results page)
-  if (entry.desc){
-    setHTML('#desc-html', entry.desc);
+    set('#s-major', Number.isFinite(lastSpread.majorM) ? `${fmt2(lastSpread.majorM)} m (${fmt2(mToFt(lastSpread.majorM))} ft)` : '—');
+    set('#s-minor', Number.isFinite(lastSpread.minorM) ? `${fmt2(lastSpread.minorM)} m (${fmt2(mToFt(lastSpread.minorM))} ft)` : '—');
+    set('#s-final', `${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)`);
   } else {
-    setHTML('#desc-html', '—');
+    set('#s-major','—'); set('#s-minor','—'); set('#s-final','—');
   }
 
-  // ===== Remove button (kept from your previous overlay flow, same logic)
-  const removeBtn = $('#removeFromLog');
-  if (removeBtn){
-    removeBtn.addEventListener('click', function(){
-      const ok = confirm('Remove this tree from the log? This cannot be undone.');
-      if (!ok) return;
-      const idx = entries.findIndex(e => e && e.id === id);
-      if (idx >= 0){
-        entries.splice(idx, 1);
-        localStorage.setItem(LOG_KEY, JSON.stringify(entries));
-      }
-      // Go back to log list
-      location.href = 'log.html';
-    });
-  }
+  // ---------- NOTES ----------
+  set('#notes', (entry.notes && entry.notes.trim()) ? entry.notes : '—');
+
+  // (optional) Description HTML if you later add a panel for it:
+  // if (entry.desc) setHTML('#desc-html', entry.desc);
+
 })();
-
-  function paintAcc(meters){
-  const el = document.getElementById('d-loc-acc');
-  if(!el) return;
-  el.classList.remove('acc-green','acc-amber','acc-grey');
-  let cls = 'acc-grey';
-  if (Number.isFinite(meters)) {
-    if (meters <= 5) cls = 'acc-green';
-    else if (meters < 20) cls = 'acc-amber';
-    else cls = 'acc-grey';
-    el.textContent = `±${meters.toFixed(1)} m`;
-  } else {
-    el.textContent = '±—';
-  }
-  el.classList.add(cls);
-}
-
 </script>
 </body>
 </html>
