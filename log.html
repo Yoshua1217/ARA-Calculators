@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ARA Tree Log</title>
+<style>
+  :root{
+    --bg:#0d1b2a; --bg-elev:#0f2236; --panel:#14253d; --panel-2:#172a47;
+    --text:#e8eef6; --muted:#a9b7c7; --accent:#2ea3ff; --accent-2:#4db2ff;
+    --ok:#1fa37a; --danger:#d93c3c; --border:#1f3553; --radius:14px; --gap:14px;
+  }
+  *{ box-sizing:border-box }
+  html,body{ height:100% }
+  body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+
+  /* Top bar */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(180deg, #0d1b2a, #0f2236);
+    border-bottom:1px solid var(--border);
+    padding:10px 14px;
+  }
+  .brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; line-height:1.1; padding-left:2px; }
+  .content{ padding:14px; max-width:1000px; margin:0 auto; }
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:var(--gap); }
+  .card .block{ padding:16px 18px; }
+  h2{ margin:0 0 8px; font-size:1.2rem; }
+  h3{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
+  label{ display:block; font-weight:700; margin:10px 0 6px; }
+  input[type="text"], select{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--panel-2); color:var(--text); font-size:1rem;
+  }
+  .btn{ padding:10px 14px; border:0; border-radius:10px; cursor:pointer; color:#001528; background:var(--accent-2); font-weight:700; text-decoration:none; display:inline-block; }
+  .btn-ghost{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
+  .btn-danger{ background:var(--danger); color:#fff; }
+  .btn:disabled, .btn[aria-disabled="true"]{ opacity:.6; pointer-events:none; }
+
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); }
+  @media (max-width:780px){ .row{ grid-template-columns:1fr } }
+
+  /* Acc dots (reuse your classes/colors) */
+  .acc-dot{ display:inline-block; width:10px; height:10px; margin-left:6px; border-radius:50%; border:1px solid rgba(0,0,0,.25); vertical-align:middle; }
+  .acc-grey{ background:#46505e; color:#e2e8f0; }
+  .acc-amber{ background:#ffb300; color:#2b1a00; }
+  .acc-green{ background:#1b5e2b; color:#e6fff2; }
+  .acc-red{ background:#7a2020; color:#ffdede; }
+
+  /* Log layout */
+  .log-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:2px 0 10px; }
+  .log-title{ font-weight:900; font-size:1.2rem; letter-spacing:.2px; }
+  .log-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+
+  .log-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--gap); margin-top: 10px; }
+  .log-card{ background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: transform .08s ease, border-color .2s ease, background .2s ease;}
+  .log-card:hover{ transform: translateY(-1px); border-color:#2a4370; background:var(--panel-2); }
+  .log-card .row1{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .log-card .name{ font-weight:800; font-size:1.02rem; line-height:1.2; }
+  .log-card .meta{ color: var(--muted); font-size:.92rem; line-height:1.25; }
+  .km{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .km .chip{ background:#0f2236; border:1px solid var(--border); border-radius:999px; padding:3px 8px; font-size:.86rem; color:#d7e8ff; font-weight:700; }
+
+  /* Detail */
+  .hidden{ display:none !important; }
+  .detail-wrap{ display:flex; flex-direction:column; gap:12px; }
+  .detail-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .detail-title{ font-weight:900; font-size:1.35rem; }
+  .detail-sub{ color:var(--muted); }
+  .detail-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .detail-section{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); }
+  .detail-section .block{ padding:16px 18px; }
+  .results{ background:#0b1a2f; border:1px solid var(--border); border-radius:12px; padding:12px; }
+  .kv{ display:grid; grid-template-columns: 180px 1fr; gap:8px; font-size:.98rem; }
+  @media (max-width:600px){ .kv{ grid-template-columns:1fr; } }
+
+  /* Connectivity card lookalike (optional) */
+  .conn-card{ border: 2px solid var(--border); border-radius: var(--radius); background: var(--panel); }
+  .conn-card .topline{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .conn-online{ border-color: var(--ok); }
+  .conn-offline{ border-color: var(--danger); }
+</style>
+</head>
+<body>
+  <div class="topbar"><div class="brand">ARA Tree Log</div></div>
+  <div class="content">
+
+    <!-- LIST PAGE -->
+    <section id="page-log">
+      <div class="log-header">
+        <div class="log-title">Ancient Roots Alberta — Tree Log</div>
+        <div class="log-actions">
+          <a href="index.html" class="btn-ghost">Back to tools</a>
+          <button type="button" id="log-clear-all" class="btn-danger">Delete all</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="block">
+          <div class="row" style="grid-template-columns:2fr 1fr;">
+            <div>
+              <label for="log-search">Search</label>
+              <input id="log-search" type="text" placeholder="Search by name, species, notes…">
+            </div>
+            <div>
+              <label for="log-sort">Sort</label>
+              <select id="log-sort">
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="alpha">A → Z</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="log-grid" class="log-grid"></div>
+
+      <div id="conn-card-log" class="card conn-card" style="margin-top:12px;">
+        <div class="block">
+          <div class="topline">
+            <h3 style="margin:0;">Connectivity</h3>
+            <div class="tiny">Last checked: <span id="conn-checked-log">—</span></div>
+          </div>
+          <p id="conn-label-log" class="status tiny">—</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DETAIL PAGE -->
+    <section id="page-log-detail" class="hidden">
+      <div class="detail-wrap">
+        <div class="detail-head">
+          <div>
+            <div id="detail-title" class="detail-title">Tree</div>
+            <div id="detail-sub" class="detail-sub">—</div>
+          </div>
+          <div class="detail-actions">
+            <button type="button" id="detail-back" class="btn-ghost">Back to log</button>
+            <button type="button" id="detail-edit" class="btn">Open in editor</button>
+            <button type="button" id="detail-copy" class="btn-ghost">Copy description</button>
+            <a id="detail-email" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
+            <button type="button" id="detail-delete" class="btn-danger">Delete</button>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="block">
+            <h3 style="margin:0 0 8px;">Key measurements</h3>
+            <div id="detail-kv" class="kv"></div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="block">
+            <h3 style="margin:0 0 8px;">Description</h3>
+            <div id="detail-desc" class="results">—</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+<script>
+/* -------- Shared storage helpers (same keys/schema as main) -------- */
+const LOG_KEY = 'ARA_FIELD_LOG_V1';
+function readLog(){
+  try { return JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); }
+  catch { return []; }
+}
+function writeLog(arr){
+  try { localStorage.setItem(LOG_KEY, JSON.stringify(arr || [])); } catch {}
+}
+const FT_PER_M = 3.28084;
+
+/* -------- Router: # (empty)=list, #id=detail -------- */
+function atDetail(){ return location.hash && location.hash.length > 1; }
+function currentId(){ return location.hash.replace(/^#/, ''); }
+function goList(){ location.hash = ''; }
+function goDetail(id){ location.hash = '#' + id; }
+
+/* -------- Paint list grid -------- */
+function renderLogGrid(){
+  const grid = document.getElementById('log-grid');
+  const q = (document.getElementById('log-search')?.value || '').trim().toLowerCase();
+  const sort = document.getElementById('log-sort')?.value || 'newest';
+  let list = readLog();
+
+  if (q){
+    list = list.filter(e=>{
+      const hay = [
+        e.title,
+        e.basics?.species,
+        e.basics?.name,
+        e.description?.text
+      ].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  if (sort === 'newest') list.sort((a,b)=> b.createdAt - a.createdAt);
+  else if (sort === 'oldest') list.sort((a,b)=> a.createdAt - b.createdAt);
+  else if (sort === 'alpha') list.sort((a,b)=> (a.title||'').localeCompare(b.title||''));
+
+  grid.innerHTML = '';
+  if (!list.length){
+    const empty = document.createElement('div');
+    empty.className = 'card';
+    empty.innerHTML = '<div class="block">No trees saved yet.</div>';
+    grid.appendChild(empty);
+    return;
+  }
+
+  list.forEach(e=>{
+    const card = document.createElement('div');
+    card.className = 'log-card';
+    card.onclick = ()=> goDetail(e.id);
+
+    const row1 = document.createElement('div');
+    row1.className = 'row1';
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = e.title || 'Untitled tree';
+
+    const dot = document.createElement('span');
+    dot.className = 'acc-dot acc-' + (e.accuracy?.bucket || 'grey');
+    dot.title = 'Accuracy ' + (e.accuracy?.label || 'low');
+
+    row1.appendChild(name); row1.appendChild(dot);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const sp = e.basics?.species || 'Species: —';
+    const when = new Date(e.createdAt).toLocaleString();
+    meta.textContent = `${sp} • ${when}`;
+
+    const km = document.createElement('div');
+    km.className = 'km';
+    const addChip = (label, valM)=>{
+      if (!Number.isFinite(valM)) return;
+      const chip = document.createElement('div');
+      chip.className='chip';
+      chip.textContent = `${label}: ${valM.toFixed(2)} m (${(valM*FT_PER_M).toFixed(2)} ft)`;
+      km.appendChild(chip);
+    };
+    addChip('C', e.keyMeasurements?.circumferenceM);
+    addChip('H', e.keyMeasurements?.heightM);
+    addChip('Canopy', e.keyMeasurements?.canopyM);
+
+    card.appendChild(row1);
+    card.appendChild(meta);
+    card.appendChild(km);
+    grid.appendChild(card);
+  });
+}
+
+/* -------- Paint detail -------- */
+function renderDetail(id){
+  const list = readLog();
+  const e = list.find(x=>x.id===id);
+  if (!e){ goList(); return; }
+
+  document.getElementById('detail-title').textContent = e.title || 'Untitled tree';
+  const accDot = `<span class="acc-dot acc-${e.accuracy?.bucket || 'grey'}" title="Accuracy ${e.accuracy?.label || 'low'}"></span>`;
+  const sp = e.basics?.species || 'Species: —';
+  const when = new Date(e.createdAt).toLocaleString();
+  document.getElementById('detail-sub').innerHTML = `${sp} • ${when} ${accDot}`;
+
+  const kv = document.getElementById('detail-kv');
+  kv.innerHTML = '';
+  const rows = [];
+  const km = e.keyMeasurements || {};
+  if (Number.isFinite(km.circumferenceM)) rows.push(['Circumference', `${km.circumferenceM.toFixed(2)} m (${(km.circumferenceM*FT_PER_M).toFixed(2)} ft)`]);
+  if (Number.isFinite(km.heightM))        rows.push(['Height', `${km.heightM.toFixed(2)} m (${(km.heightM*FT_PER_M).toFixed(2)} ft)`]);
+  if (Number.isFinite(km.canopyM))        rows.push(['Canopy spread', `${km.canopyM.toFixed(2)} m (${(km.canopyM*FT_PER_M).toFixed(2)} ft)`]);
+
+  const loc = e.location || {};
+  if (Number.isFinite(loc.lat) && Number.isFinite(loc.lng)){
+    const mapsURL = `https://maps.google.com/?q=${loc.lat.toFixed(6)},${loc.lng.toFixed(6)}`;
+    rows.push(['Location (DD)', `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)} — <a href="${mapsURL}" target="_blank" rel="noopener">Google Maps</a>`]);
+  }
+  if (Number.isFinite(loc.alt)) rows.push(['Altitude', `${loc.alt.toFixed(1)} m`]);
+  if (Number.isFinite(loc.acc)) rows.push(['Accuracy', `±${loc.acc.toFixed(1)} m`]);
+  if (loc.recordedAt) rows.push(['Recorded', new Date(loc.recordedAt).toLocaleString()]);
+  if (!rows.length) rows.push(['—', 'No measurements saved.']);
+
+  rows.forEach(([k,v])=>{
+    const kEl = document.createElement('div'); kEl.textContent = k;
+    const vEl = document.createElement('div'); vEl.innerHTML = v;
+    kv.appendChild(kEl); kv.appendChild(vEl);
+  });
+
+  document.getElementById('detail-desc').innerHTML = e.description?.html || '—';
+
+  // actions
+  const emailA = document.getElementById('detail-email');
+  const subject = 'ARA Field Nomination' + (e.title ? ' – ' + e.title : '');
+  const body = e.description?.text || '';
+  if (body) {
+    emailA.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    emailA.removeAttribute('aria-disabled');
+  } else {
+    emailA.href = '#';
+    emailA.setAttribute('aria-disabled','true');
+  }
+
+  document.getElementById('detail-copy').onclick = ()=>{
+    if (!body) return;
+    (navigator.clipboard?.writeText ? navigator.clipboard.writeText(body) : Promise.resolve()).then(()=>{
+      const btn = document.getElementById('detail-copy');
+      const old = btn.textContent; btn.textContent='Copied ✓';
+      setTimeout(()=>btn.textContent=old, 900);
+    });
+  };
+
+  document.getElementById('detail-delete').onclick = ()=>{
+    if (!confirm('Delete this entry?')) return;
+    const idx = list.findIndex(x=>x.id===id);
+    if (idx>=0){ list.splice(idx,1); writeLog(list); }
+    goList();
+  };
+
+  document.getElementById('detail-edit').onclick = ()=>{
+    // hand off to main app
+    localStorage.setItem('ARA_EDIT_ID', e.id);
+    location.href = 'index.html';
+  };
+}
+
+/* -------- Mini connectivity probe (optional match to your main) -------- */
+function connNowISO(){
+  const d=new Date(); const p=n=>String(n).padStart(2,'0');
+  return p(d.getHours())+':'+p(d.getMinutes());
+}
+function paintLogConnectivityCard(){
+  const label = document.getElementById('conn-label-log');
+  const when  = document.getElementById('conn-checked-log');
+  const card  = document.getElementById('conn-card-log');
+  when.textContent = connNowISO();
+  // simple check
+  const img = new Image(); let done=false;
+  const end = (ok)=>{
+    if (done) return; done=true;
+    label.textContent = ok ? 'Online — email/sharing enabled.' : 'Offline — still usable; maps may be cached only.';
+    card.classList.remove('conn-online','conn-offline');
+    card.classList.add(ok ? 'conn-online' : 'conn-offline');
+  };
+  const t = setTimeout(()=>end(false), 2500);
+  img.onload = ()=>{ clearTimeout(t); end(true); };
+  img.onerror= ()=>{ clearTimeout(t); end(false); };
+  img.src='https://tile.openstreetmap.org/0/0/0.png?cb=' + Date.now();
+}
+
+/* -------- Router wiring -------- */
+function handleRoute(){
+  const listSec = document.getElementById('page-log');
+  const detSec  = document.getElementById('page-log-detail');
+  if (!atDetail()){
+    listSec.classList.remove('hidden');
+    detSec.classList.add('hidden');
+    renderLogGrid();
+    paintLogConnectivityCard();
+  } else {
+    listSec.classList.add('hidden');
+    detSec.classList.remove('hidden');
+    renderDetail(currentId());
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('log-search')?.addEventListener('input', renderLogGrid);
+  document.getElementById('log-sort')?.addEventListener('change', renderLogGrid);
+  document.getElementById('log-clear-all')?.addEventListener('click', ()=>{
+    const n = readLog().length;
+    if (!n) return;
+    if (confirm(`Delete all ${n} entr${n===1?'y':'ies'}? This cannot be undone.`)){
+      writeLog([]); renderLogGrid();
+    }
+  });
+  document.getElementById('detail-back')?.addEventListener('click', ()=> goList());
+
+  handleRoute();
+});
+window.addEventListener('hashchange', handleRoute);
+</script>
+</body>
+</html>
