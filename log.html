@@ -164,81 +164,78 @@
 
 <script>
 (function(){
-  const GRID_ID = 'log-grid';
-  const GRID = document.getElementById(GRID_ID);
+  const GRID = document.getElementById('log-grid');
 
-  // 1) Load with key fallbacks (unchanged; keep your key list)
+  /* ---------- storage (supports new + legacy) ---------- */
   function loadLog(){
     const keys = ['ara_tree_log_v1','ara_tree_log','ARA_TREE_LOG_V1'];
     for (const k of keys){
-      try{
+      try {
         const raw = localStorage.getItem(k);
-        if(!raw) continue;
+        if (!raw) continue;
         const data = JSON.parse(raw);
-        if(Array.isArray(data)) return data;
-      }catch(e){ console.warn('Could not parse log for key', k, e); }
+        if (Array.isArray(data)) return data;
+      } catch(e){ console.warn('parse failed for',k,e); }
     }
     return [];
   }
 
-  // REMOVE THESE TWO LINES IF PRESENT:
-  // console.log('Loaded log data:', loadLog());
-  // alert('Loaded items: ' + loadLog().length);
+  /* ---------- schema helpers (new + legacy) ---------- */
+  const getTitle = it =>
+    (it.title ?? it?.basics?.name ?? it.name ?? it.treeName ?? 'Untitled').trim() || 'Untitled';
 
-  // 2) Safe getters that understand both old and new schemas
-  function getTitle(item){
-    // new: item.title or item.basics.name
-    const t = item.title ?? item?.basics?.name ?? item.name ?? item.treeName;
-    return (t || 'Untitled').trim() || 'Untitled';
+  const getSpecies = it =>
+    (it?.basics?.species ?? it.species ?? it.sp ?? '').trim();
+
+  function getSortTs(it){
+    if (Number.isFinite(it.createdAt)) return it.createdAt;
+    if (Number.isFinite(it.ts))        return it.ts;
+    if (Number.isFinite(it.timestamp)) return it.timestamp;
+    if (Number.isFinite(it?.meta?.ts)) return it.meta.ts;
+    const iso = it.when || it.date;
+    const t = iso ? Date.parse(iso) : NaN;
+    return Number.isFinite(t) ? t : 0;
   }
-  function getSpecies(item){
-    // new: item.basics.species
-    const s = item?.basics?.species ?? item.species ?? item.sp;
-    return (s || '').trim();
-  }
-  function getWhen(item){
-    // new: item.createdAt
-    const t = Number.isFinite(item.createdAt) ? item.createdAt
-            : Number.isFinite(item.ts)        ? item.ts
-            : Number.isFinite(item.timestamp) ? item.timestamp
-            : Number.isFinite(item?.meta?.ts) ? item.meta.ts
-            : null;
-    if (Number.isFinite(t)) return new Date(t).toLocaleString();
-    const iso = item.when || item.date || '';
-    return iso ? new Date(iso).toLocaleString() : '—';
-  }
-  function getAcc(item){
-    // new: item.accuracy.meters
-    const acc = Number(item?.accuracy?.meters);
-    if (Number.isFinite(acc)) return acc;
-    const legacy = Number(item?.location?.acc ?? item?.location?.accuracy ?? item.acc);
+
+  const getWhen = it => {
+    const t = getSortTs(it);
+    return t ? new Date(t).toLocaleString() : '—';
+  };
+
+  function getAccMeters(it){
+    const v = Number(it?.accuracy?.meters);
+    if (Number.isFinite(v)) return v;
+    const legacy = Number(it?.location?.acc ?? it?.location?.accuracy ?? it.acc);
     return Number.isFinite(legacy) ? legacy : null;
   }
-  function accClass(acc){
-    if (!Number.isFinite(acc)) return 'acc-grey';
-    if (acc <= 5)  return 'acc-green';
-    if (acc < 20)  return 'acc-amber';
+  function accClass(m){
+    if (!Number.isFinite(m)) return 'acc-grey';
+    if (m <= 5) return 'acc-green';
+    if (m < 20) return 'acc-amber';
     return 'acc-grey';
   }
 
-  // 3) Render cards (kept, but sort uses getWhen’s numeric source)
-  function render(){
-    if (!GRID){ console.warn(`#${GRID_ID} not found on log.html`); return; }
+  const getDescHtml = it =>
+    it.descHtml ?? it.desc ?? it.descriptionHtml ?? null; // our generator saved HTML
+  const getDescText = it =>
+    it.descText ?? it.descriptionText ?? it.plainText ?? null;
 
-    const items = loadLog()
-      .filter(Boolean)
-      .map((it) => ({it, sortTs:
-        Number.isFinite(it.createdAt) ? it.createdAt :
-        Number.isFinite(it.ts)        ? it.ts :
-        Number.isFinite(it.timestamp) ? it.timestamp :
-        Number.isFinite(it?.meta?.ts) ? it.meta.ts : 0
-      }))
-      .sort((a,b) => b.sortTs - a.sortTs)
-      .map(x => x.it);
+  function escapeHtml(s){
+    return String(s||'')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  /* ---------- views ---------- */
+  function renderList(){
+    const data = loadLog()
+      .map(it => ({it, ts:getSortTs(it)}))
+      .sort((a,b)=>b.ts-a.ts)
+      .map(x=>x.it);
 
     GRID.innerHTML = '';
 
-    if (!items.length){
+    if (!data.length){
       GRID.innerHTML = `
         <div class="card" style="padding:14px; border:1px dashed var(--border); border-radius:12px;">
           <div class="tiny">No trees saved yet.</div>
@@ -249,24 +246,26 @@
 
     const frag = document.createDocumentFragment();
 
-    items.forEach((item, idx) => {
+    data.forEach((item, idx)=>{
       const title   = getTitle(item);
       const species = getSpecies(item);
       const when    = getWhen(item);
-      const acc     = getAcc(item);
+      const acc     = getAccMeters(item);
 
-      const card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'card';
-      card.style.cursor = 'pointer';
-      card.style.textAlign = 'left';
-      card.innerHTML = `
+      // Make the whole card a link so it always “clicks”
+      const a = document.createElement('a');
+      a.href = `?idx=${idx}`;
+      a.style.textDecoration = 'none';
+      a.style.color = 'inherit';
+      a.className = 'card';
+      a.innerHTML = `
         <div class="block" style="padding:14px 16px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <div class="brand" style="font-size:1rem; font-weight:800; letter-spacing:.2px;">
               ${escapeHtml(title)}
             </div>
-            <span class="acc-dot ${accClass(acc)}" title="${Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : 'No accuracy saved'}"></span>
+            <span class="acc-dot ${accClass(acc)}"
+                  title="${Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : 'No accuracy saved'}"></span>
           </div>
           <div class="tiny" style="margin-top:6px;">
             ${species ? escapeHtml(species) : '<span style="opacity:.6">Species —</span>'}
@@ -276,28 +275,66 @@
           </div>
         </div>
       `;
-      card.addEventListener('click', () => {
-        const q = new URLSearchParams();
-        q.set('idx', String(idx));
-        location.href = 'log.html?' + q.toString();
-      });
-      frag.appendChild(card);
+      frag.appendChild(a);
     });
 
     GRID.appendChild(frag);
   }
 
-  function escapeHtml(s){
-    return String(s || '')
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-      .replace(/'/g,'&#39;');
+  function renderDetail(idx){
+    const all = loadLog();
+    const item = all[idx];
+    if (!item){ renderList(); return; }
+
+    const title   = getTitle(item);
+    const species = getSpecies(item);
+    const when    = getWhen(item);
+    const acc     = getAccMeters(item);
+    const descH   = getDescHtml(item);
+    const descT   = getDescText(item);
+
+    GRID.innerHTML = `
+      <div class="card" style="margin-bottom:var(--gap);">
+        <div class="block" style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="brand" style="font-size:1.15rem; font-weight:800;">
+            ${escapeHtml(title)}
+          </div>
+          <div>
+            <a class="btn btn-ghost" href="log.html" style="text-decoration:none;">Back to log</a>
+          </div>
+        </div>
+        <div class="block" style="padding-top:0;">
+          <div class="tiny" style="display:flex; align-items:center; gap:8px;">
+            <span>${species ? escapeHtml(species) : '—'}</span>
+            <span>·</span>
+            <span>${when}</span>
+            <span>·</span>
+            <span class="acc-pill ${accClass(acc)}">${Number.isFinite(acc) ? ('±'+acc.toFixed(1)+' m') : 'no acc'}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="block">
+          <h3>Description</h3>
+          <div id="detail-desc" class="results" style="margin-top:8px;">—</div>
+        </div>
+      </div>
+    `;
+
+    // inject description content (HTML if we have it; otherwise plain text)
+    const box = document.getElementById('detail-desc');
+    if (descH){ box.innerHTML = descH; }
+    else if (descT){ box.textContent = descT; }
+    else { box.textContent = '—'; }
   }
 
-  // kick off the render
-  render();
+  /* ---------- tiny router ---------- */
+  const params = new URLSearchParams(location.search);
+  const idx = params.get('idx');
+  if (idx !== null) renderDetail(parseInt(idx,10));
+  else renderList();
 })();
 </script>
-
 </body>
 </html>
