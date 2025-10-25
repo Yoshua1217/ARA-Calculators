@@ -167,47 +167,53 @@
   const GRID_ID = 'log-grid';
   const GRID = document.getElementById(GRID_ID);
 
-  // 1) Load with key fallbacks
-  function loadLog() {
+  // 1) Load with key fallbacks (unchanged; keep your key list)
+  function loadLog(){
     const keys = ['ara_tree_log_v1','ara_tree_log','ARA_TREE_LOG_V1'];
-    for (const k of keys) {
-      try {
+    for (const k of keys){
+      try{
         const raw = localStorage.getItem(k);
-        if (!raw) continue;
+        if(!raw) continue;
         const data = JSON.parse(raw);
-        if (Array.isArray(data)) return data;
-      } catch (e) {
-        console.warn('Could not parse log for key', k, e);
-      }
+        if(Array.isArray(data)) return data;
+      }catch(e){ console.warn('Could not parse log for key', k, e); }
     }
     return [];
   }
-console.log('Loaded log data:', loadLog());
-alert('Loaded items: ' + loadLog().length);
 
-  // 2) Safe getters (avoid crashes if fields moved/renamed)
+  // REMOVE THESE TWO LINES IF PRESENT:
+  // console.log('Loaded log data:', loadLog());
+  // alert('Loaded items: ' + loadLog().length);
+
+  // 2) Safe getters that understand both old and new schemas
   function getTitle(item){
-    return (item.name || item.treeName || 'Untitled').trim() || 'Untitled';
+    // new: item.title or item.basics.name
+    const t = item.title ?? item?.basics?.name ?? item.name ?? item.treeName;
+    return (t || 'Untitled').trim() || 'Untitled';
   }
   function getSpecies(item){
-    return (item.species || item.sp || '').trim();
+    // new: item.basics.species
+    const s = item?.basics?.species ?? item.species ?? item.sp;
+    return (s || '').trim();
   }
   function getWhen(item){
-    // prefer numeric timestamp in ms; else try ISO/string
-    const t = Number.isFinite(item.ts) ? item.ts
+    // new: item.createdAt
+    const t = Number.isFinite(item.createdAt) ? item.createdAt
+            : Number.isFinite(item.ts)        ? item.ts
             : Number.isFinite(item.timestamp) ? item.timestamp
-            : (item.meta && Number.isFinite(item.meta.ts) ? item.meta.ts : null);
+            : Number.isFinite(item?.meta?.ts) ? item.meta.ts
+            : null;
     if (Number.isFinite(t)) return new Date(t).toLocaleString();
     const iso = item.when || item.date || '';
     return iso ? new Date(iso).toLocaleString() : '—';
   }
   function getAcc(item){
-    const acc =
-      (item.location && (parseFloat(item.location.acc) || parseFloat(item.location.accuracy))) ??
-      parseFloat(item.acc) ?? NaN;
-    return Number.isFinite(acc) ? acc : null;
+    // new: item.accuracy.meters
+    const acc = Number(item?.accuracy?.meters);
+    if (Number.isFinite(acc)) return acc;
+    const legacy = Number(item?.location?.acc ?? item?.location?.accuracy ?? item.acc);
+    return Number.isFinite(legacy) ? legacy : null;
   }
-
   function accClass(acc){
     if (!Number.isFinite(acc)) return 'acc-grey';
     if (acc <= 5)  return 'acc-green';
@@ -215,23 +221,24 @@ alert('Loaded items: ' + loadLog().length);
     return 'acc-grey';
   }
 
-  // 3) Render cards
-  function render() {
-    if (!GRID) {
-      console.warn(`#${GRID_ID} not found on log.html`);
-      return;
-    }
+  // 3) Render cards (kept, but sort uses getWhen’s numeric source)
+  function render(){
+    if (!GRID){ console.warn(`#${GRID_ID} not found on log.html`); return; }
+
     const items = loadLog()
       .filter(Boolean)
-      .sort((a,b) => {
-        const ta = Number.isFinite(a.ts) ? a.ts : (a.meta?.ts || 0);
-        const tb = Number.isFinite(b.ts) ? b.ts : (b.meta?.ts || 0);
-        return tb - ta; // newest first
-      });
+      .map((it) => ({it, sortTs:
+        Number.isFinite(it.createdAt) ? it.createdAt :
+        Number.isFinite(it.ts)        ? it.ts :
+        Number.isFinite(it.timestamp) ? it.timestamp :
+        Number.isFinite(it?.meta?.ts) ? it.meta.ts : 0
+      }))
+      .sort((a,b) => b.sortTs - a.sortTs)
+      .map(x => x.it);
 
     GRID.innerHTML = '';
 
-    if (!items.length) {
+    if (!items.length){
       GRID.innerHTML = `
         <div class="card" style="padding:14px; border:1px dashed var(--border); border-radius:12px;">
           <div class="tiny">No trees saved yet.</div>
@@ -240,7 +247,6 @@ alert('Loaded items: ' + loadLog().length);
       return;
     }
 
-    // Build fragment to avoid reflow thrash
     const frag = document.createDocumentFragment();
 
     items.forEach((item, idx) => {
@@ -254,7 +260,6 @@ alert('Loaded items: ' + loadLog().length);
       card.className = 'card';
       card.style.cursor = 'pointer';
       card.style.textAlign = 'left';
-
       card.innerHTML = `
         <div class="block" style="padding:14px 16px;">
           <div style="display:flex; align-items:center; gap:8px;">
@@ -271,40 +276,26 @@ alert('Loaded items: ' + loadLog().length);
           </div>
         </div>
       `;
-
-      // Open details view (same page) using a simple modal/overlay, or navigate with query param
       card.addEventListener('click', () => {
-        // If you already built a detail modal, call it here:
-        // openTreeDetails(item);
-
-        // Simple navigation: put index in query so log-details can read it
         const q = new URLSearchParams();
         q.set('idx', String(idx));
         location.href = 'log.html?' + q.toString();
       });
-
       frag.appendChild(card);
     });
 
     GRID.appendChild(frag);
   }
 
-  // Small HTML escaper for titles/species
   function escapeHtml(s){
     return String(s || '')
-      .replace(/&/g,'&amp;')
-      .replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
       .replace(/'/g,'&#39;');
   }
 
-  // 4) Init on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', render, { once: true });
-  } else {
-    render();
-  }
+  // kick off the render
+  render();
 })();
 </script>
 
