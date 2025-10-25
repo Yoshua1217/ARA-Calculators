@@ -6,335 +6,409 @@
 <title>ARA Tree Log</title>
 <style>
   :root{
-    --bg:#0d1b2a; --bg-elev:#0f2236; --panel:#14253d; --panel-2:#172a47;
-    --text:#e8eef6; --muted:#a9b7c7; --accent:#2ea3ff; --accent-2:#4db2ff;
-    --ok:#1fa37a; --danger:#d93c3c; --border:#1f3553; --radius:14px; --gap:14px;
+    /* Dark blue palette (same as app) */
+    --bg:#0d1b2a;
+    --bg-elev:#0f2236;
+    --panel:#14253d;
+    --panel-2:#172a47;
+    --text:#e8eef6;
+    --muted:#a9b7c7;
+    --accent:#2ea3ff;
+    --accent-2:#4db2ff;
+    --ok:#1fa37a;
+    --danger:#d93c3c;
+    --border:#1f3553;
+    --radius:14px;
+    --gap:14px;
   }
   *{ box-sizing:border-box }
   html,body{ height:100% }
-  body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text);
+  }
 
   /* Top bar */
   .topbar{
     position:sticky; top:0; z-index:50;
-    background:linear-gradient(180deg, #0d1b2a, #0f2236);
+    background:linear-gradient(180deg,#0d1b2a,#0f2236);
     border-bottom:1px solid var(--border);
     padding:10px 14px;
   }
-  .brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; line-height:1.1; padding-left:2px; }
+  .brand{ font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff; }
+
+  /* Page container */
   .content{ padding:14px; max-width:1000px; margin:0 auto; }
-  .card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:var(--gap); }
-  .card .block{ padding:16px 18px; }
-  h2{ margin:0 0 8px; font-size:1.2rem; }
-  h3{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
-  label{ display:block; font-weight:700; margin:10px 0 6px; }
-  input[type="text"], select{
-    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
-    background:var(--panel-2); color:var(--text); font-size:1rem;
+
+  /* Controls row */
+  .controls{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:10px 0 14px; }
+  .btn, button, a.btn{
+    padding:10px 14px; border:0; border-radius:10px; cursor:pointer; color:#001528;
+    background:var(--accent-2); font-weight:700; text-decoration:none; display:inline-block;
   }
-  .btn{ padding:10px 14px; border:0; border-radius:10px; cursor:pointer; color:#001528; background:var(--accent-2); font-weight:700; text-decoration:none; display:inline-block; }
   .btn-ghost{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
   .btn-danger{ background:var(--danger); color:#fff; }
   .btn:disabled, .btn[aria-disabled="true"]{ opacity:.6; pointer-events:none; }
 
-  .row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); }
-  @media (max-width:780px){ .row{ grid-template-columns:1fr } }
+  /* Gallery grid */
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--gap);
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px;
+    cursor:pointer;
+    transition: transform .08s ease;
+  }
+  .card:active{ transform:scale(.99); }
+  .card h3{
+    margin:0 0 6px;
+    font-size:1.05rem;
+    display:flex; align-items:center; gap:8px;
+  }
+  .muted{ color:var(--muted); font-size:.92rem; }
+  .row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
 
-  /* Acc dots (reuse your classes/colors) */
-  .acc-dot{ display:inline-block; width:10px; height:10px; margin-left:6px; border-radius:50%; border:1px solid rgba(0,0,0,.25); vertical-align:middle; }
-  .acc-grey{ background:#46505e; color:#e2e8f0; }
-  .acc-amber{ background:#ffb300; color:#2b1a00; }
-  .acc-green{ background:#1b5e2b; color:#e6fff2; }
-  .acc-red{ background:#7a2020; color:#ffdede; }
+  /* Accuracy dot (same palette as app) */
+  .acc-dot{ width:10px; height:10px; border-radius:50%; display:inline-block; border:1px solid rgba(0,0,0,.25); }
+  .acc-grey{ background:#46505e; }
+  .acc-amber{ background:#ffb300; }
+  .acc-green{ background:#1b5e2b; }
 
-  /* Log layout */
-  .log-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:2px 0 10px; }
-  .log-title{ font-weight:900; font-size:1.2rem; letter-spacing:.2px; }
-  .log-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  /* Empty state */
+  .empty{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px;
+    text-align:center;
+    color:#cfe0ff;
+  }
 
-  .log-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--gap); margin-top: 10px; }
-  .log-card{ background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: transform .08s ease, border-color .2s ease, background .2s ease;}
-  .log-card:hover{ transform: translateY(-1px); border-color:#2a4370; background:var(--panel-2); }
-  .log-card .row1{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
-  .log-card .name{ font-weight:800; font-size:1.02rem; line-height:1.2; }
-  .log-card .meta{ color: var(--muted); font-size:.92rem; line-height:1.25; }
-  .km{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-  .km .chip{ background:#0f2236; border:1px solid var(--border); border-radius:999px; padding:3px 8px; font-size:.86rem; color:#d7e8ff; font-weight:700; }
+  /* Full-screen modal (detail view) */
+  .modal{
+    position:fixed; inset:0; display:none; z-index:100;
+    background:rgba(4,10,18,.75);
+    backdrop-filter: blur(2px);
+  }
+  .modal.show{ display:block; }
+  .sheet{
+    position:absolute; inset:0;
+    max-width:1000px; margin:0 auto;
+    background:var(--bg-elev);
+    border-left:1px solid var(--border);
+    border-right:1px solid var(--border);
+    overflow:auto;
+  }
+  .sheet-header{
+    position:sticky; top:0; z-index:5;
+    background:linear-gradient(180deg,#0d1b2a,#0f2236);
+    border-bottom:1px solid var(--border);
+    padding:12px 14px;
+  }
+  .sheet-title{ font-weight:900; margin:0; }
+  .sheet-body{ padding:14px; display:grid; gap:14px; }
 
-  /* Detail */
-  .hidden{ display:none !important; }
-  .detail-wrap{ display:flex; flex-direction:column; gap:12px; }
-  .detail-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .detail-title{ font-weight:900; font-size:1.35rem; }
-  .detail-sub{ color:var(--muted); }
-  .detail-actions{ display:flex; gap:8px; flex-wrap:wrap; }
-  .detail-section{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); }
-  .detail-section .block{ padding:16px 18px; }
+  .box{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px 18px;
+  }
+  .box h4{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
   .results{ background:#0b1a2f; border:1px solid var(--border); border-radius:12px; padding:12px; }
-  .kv{ display:grid; grid-template-columns: 180px 1fr; gap:8px; font-size:.98rem; }
-  @media (max-width:600px){ .kv{ grid-template-columns:1fr; } }
+  .results p{ margin:6px 0; }
 
-  /* Connectivity card lookalike (optional) */
-  .conn-card{ border: 2px solid var(--border); border-radius: var(--radius); background: var(--panel); }
-  .conn-card .topline{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
-  .conn-online{ border-color: var(--ok); }
-  .conn-offline{ border-color: var(--danger); }
+  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; }
+
+  /* Inline chips row under title in modal */
+  .chips{ display:flex; gap:10px; flex-wrap:wrap; color:#cfe0ff; font-size:.95rem; }
+  .chip{ background:#10253f; border:1px solid var(--border); border-radius:999px; padding:6px 10px; }
+
+  /* Footer spacer so content doesn't hit bottom */
+  .spacer{ height:16px; }
 </style>
 </head>
 <body>
-  <div class="topbar"><div class="brand">ARA Tree Log</div></div>
-  <div class="content">
 
-    <!-- LIST PAGE -->
-    <section id="page-log">
-      <div class="log-header">
-        <div class="log-title">Ancient Roots Alberta — Tree Log</div>
-        <div class="log-actions">
-          <a href="index.html" class="btn-ghost">Back to tools</a>
-          <button type="button" id="log-clear-all" class="btn-danger">Delete all</button>
-        </div>
-      </div>
+<!-- Top bar -->
+<div class="topbar">
+  <div class="brand">ARA Tree Log</div>
+</div>
 
-      <div class="card">
-        <div class="block">
-          <div class="row" style="grid-template-columns:2fr 1fr;">
-            <div>
-              <label for="log-search">Search</label>
-              <input id="log-search" type="text" placeholder="Search by name, species, notes…">
-            </div>
-            <div>
-              <label for="log-sort">Sort</label>
-              <select id="log-sort">
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="alpha">A → Z</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="log-grid" class="log-grid"></div>
-
-      <div id="conn-card-log" class="card conn-card" style="margin-top:12px;">
-        <div class="block">
-          <div class="topline">
-            <h3 style="margin:0;">Connectivity</h3>
-            <div class="tiny">Last checked: <span id="conn-checked-log">—</span></div>
-          </div>
-          <p id="conn-label-log" class="status tiny">—</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- DETAIL PAGE -->
-    <section id="page-log-detail" class="hidden">
-      <div class="detail-wrap">
-        <div class="detail-head">
-          <div>
-            <div id="detail-title" class="detail-title">Tree</div>
-            <div id="detail-sub" class="detail-sub">—</div>
-          </div>
-          <div class="detail-actions">
-            <button type="button" id="detail-back" class="btn-ghost">Back to log</button>
-            <button type="button" id="detail-edit" class="btn">Open in editor</button>
-            <button type="button" id="detail-copy" class="btn-ghost">Copy description</button>
-            <a id="detail-email" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
-            <button type="button" id="detail-delete" class="btn-danger">Delete</button>
-          </div>
-        </div>
-
-        <div class="detail-section">
-          <div class="block">
-            <h3 style="margin:0 0 8px;">Key measurements</h3>
-            <div id="detail-kv" class="kv"></div>
-          </div>
-        </div>
-
-        <div class="detail-section">
-          <div class="block">
-            <h3 style="margin:0 0 8px;">Description</h3>
-            <div id="detail-desc" class="results">—</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
+<div class="content">
+  <div class="controls">
+    <a class="btn-ghost" href="fieldtools.html">← Back to Field Tools</a>
+    <button id="refreshBtn" class="btn-ghost">Refresh</button>
   </div>
 
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty" style="display:none;">No entries yet. Save a tree from the Results page to see it here.</div>
+</div>
+
+<!-- Full-screen modal -->
+<div id="detailModal" class="modal" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="sheet-header">
+      <div class="row">
+        <h2 id="detailTitle" class="sheet-title">Tree</h2>
+        <button id="closeModal" class="btn-ghost">Close</button>
+      </div>
+    </div>
+
+    <div class="sheet-body">
+      <!-- Chips row -->
+      <div class="chips" id="detailChips">
+        <!-- filled dynamically -->
+      </div>
+
+      <!-- Key measurements -->
+      <div class="box" id="detailKM" style="display:none;">
+        <h4>Key measurements</h4>
+        <div class="results" id="kmWrap">
+          <p id="kmCirc">Circumference: —</p>
+          <p id="kmHeight">Height: —</p>
+          <p id="kmCanopy">Canopy spread: —</p>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="box">
+        <h4>Tree description</h4>
+        <div id="detailDesc" class="results">—</div>
+        <div class="muted" style="margin-top:6px;">This is the same description you saw on the Results page.</div>
+      </div>
+
+      <!-- Actions -->
+      <div class="box">
+        <h4>Actions</h4>
+        <div class="btn-row">
+          <button id="copyBtn" class="btn-ghost" disabled>Copy description</button>
+          <a id="emailBtn" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
+          <button id="removeBtn" class="btn-danger">Remove from log</button>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+    </div>
+  </div>
+</div>
+
 <script>
-(function(){
-  const GRID = document.getElementById('log-grid');
-
-  /* ---------- storage (supports new + legacy) ---------- */
-  function loadLog(){
-    const keys = ['ara_tree_log_v1','ara_tree_log','ARA_TREE_LOG_V1'];
-    for (const k of keys){
-      try {
-        const raw = localStorage.getItem(k);
-        if (!raw) continue;
-        const data = JSON.parse(raw);
-        if (Array.isArray(data)) return data;
-      } catch(e){ console.warn('parse failed for',k,e); }
-    }
-    return [];
+/* ---------- Storage helpers ---------- */
+const LOG_KEYS = ['ara_field_v1_logs','ara_field_v1_log']; // prefer plural; fall back to singular
+function loadAllLogs(){
+  for (const k of LOG_KEYS){
+    try{
+      const raw = localStorage.getItem(k);
+      if (!raw) continue;
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return { key:k, items:arr };
+    }catch(e){}
   }
+  return { key: LOG_KEYS[0], items: [] };
+}
+function saveAllLogs(key, items){
+  try{ localStorage.setItem(key, JSON.stringify(items)); }catch(e){}
+}
 
-  /* ---------- schema helpers (new + legacy) ---------- */
-  const getTitle = it =>
-    (it.title ?? it?.basics?.name ?? it.name ?? it.treeName ?? 'Untitled').trim() || 'Untitled';
+/* ---------- Accuracy bucket (same thresholds as app) ---------- */
+function accBucket(m){
+  if(!Number.isFinite(m)) return 'grey';
+  if(m <= 5) return 'green';
+  if(m < 20) return 'amber';
+  return 'grey';
+}
 
-  const getSpecies = it =>
-    (it?.basics?.species ?? it.species ?? it.sp ?? '').trim();
+/* ---------- Plain text extractor for emails/copy ---------- */
+function htmlToText(html){
+  const div = document.createElement('div');
+  div.innerHTML = html || '';
+  // convert anchors to "text – URL"
+  div.querySelectorAll('a').forEach(a=>{
+    const url = a.getAttribute('href') || '';
+    const txt = a.textContent || url;
+    const span = document.createElement('span');
+    span.textContent = txt + (url ? ' – ' + url : '');
+    a.replaceWith(span);
+  });
+  const items = Array.from(div.querySelectorAll('li')).map(li => '- ' + li.textContent);
+  const paras = Array.from(div.querySelectorAll('p')).map(p => p.textContent);
+  return [...items, ...paras].join('\n').trim();
+}
 
-  function getSortTs(it){
-    if (Number.isFinite(it.createdAt)) return it.createdAt;
-    if (Number.isFinite(it.ts))        return it.ts;
-    if (Number.isFinite(it.timestamp)) return it.timestamp;
-    if (Number.isFinite(it?.meta?.ts)) return it.meta.ts;
-    const iso = it.when || it.date;
-    const t = iso ? Date.parse(iso) : NaN;
-    return Number.isFinite(t) ? t : 0;
+/* ---------- UI refs ---------- */
+const grid = document.getElementById('grid');
+const emptyEl = document.getElementById('empty');
+const refreshBtn = document.getElementById('refreshBtn');
+
+/* Modal refs */
+const modal = document.getElementById('detailModal');
+const closeModalBtn = document.getElementById('closeModal');
+const detailTitle = document.getElementById('detailTitle');
+const detailChips = document.getElementById('detailChips');
+const detailDesc  = document.getElementById('detailDesc');
+const detailKMBox = document.getElementById('detailKM');
+const kmCirc = document.getElementById('kmCirc');
+const kmHeight = document.getElementById('kmHeight');
+const kmCanopy = document.getElementById('kmCanopy');
+const copyBtn = document.getElementById('copyBtn');
+const emailBtn = document.getElementById('emailBtn');
+const removeBtn = document.getElementById('removeBtn');
+
+/* ---------- Render gallery ---------- */
+let STORE_KEY = LOG_KEYS[0];
+let entries = [];
+
+function render(){
+  grid.innerHTML = '';
+  // newest first
+  const sorted = [...entries].sort((a,b)=> (b.ts||0) - (a.ts||0));
+  if (sorted.length === 0){
+    emptyEl.style.display = '';
+    return;
   }
+  emptyEl.style.display = 'none';
 
-  const getWhen = it => {
-    const t = getSortTs(it);
-    return t ? new Date(t).toLocaleString() : '—';
+  sorted.forEach((e, idx)=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.id = e.id || String(idx);
+
+    // accuracy dot
+    const acc = Number.isFinite(e.acc) ? e.acc : (Number.isFinite(e.locationAcc) ? e.locationAcc : NaN);
+    const bucket = 'acc-' + accBucket(acc);
+
+    const title = document.createElement('h3');
+    title.innerHTML = `<span class="acc-dot ${bucket}"></span>${escapeHtml(e.name || 'Untitled tree')}`;
+
+    const species = document.createElement('div');
+    species.className = 'muted';
+    species.textContent = e.species ? e.species : '—';
+
+    const when = document.createElement('div');
+    when.className = 'muted';
+    const ts = e.ts || Date.now();
+    when.textContent = new Date(ts).toLocaleString();
+
+    card.appendChild(title);
+    card.appendChild(species);
+    card.appendChild(when);
+
+    card.addEventListener('click', ()=>openDetail(e));
+    grid.appendChild(card);
+  });
+}
+
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+/* ---------- Detail view ---------- */
+let currentId = null;
+
+function openDetail(entry){
+  currentId = entry.id;
+  detailTitle.textContent = entry.name || 'Tree';
+
+  // chips: species, timestamp, accuracy
+  detailChips.innerHTML = '';
+  const chip = (label, value) => {
+    if (!value) return;
+    const d = document.createElement('span');
+    d.className = 'chip';
+    d.textContent = `${label}: ${value}`;
+    detailChips.appendChild(d);
   };
+  chip('Species', entry.species || '—');
+  chip('Recorded', new Date(entry.ts || Date.now()).toLocaleString());
+  if (Number.isFinite(entry.acc)) chip('Accuracy', `±${entry.acc.toFixed(1)} m`);
 
-  function getAccMeters(it){
-    const v = Number(it?.accuracy?.meters);
-    if (Number.isFinite(v)) return v;
-    const legacy = Number(it?.location?.acc ?? it?.location?.accuracy ?? it.acc);
-    return Number.isFinite(legacy) ? legacy : null;
-  }
-  function accClass(m){
-    if (!Number.isFinite(m)) return 'acc-grey';
-    if (m <= 5) return 'acc-green';
-    if (m < 20) return 'acc-amber';
-    return 'acc-grey';
-  }
-
-  const getDescHtml = it =>
-    it.descHtml ?? it.desc ?? it.descriptionHtml ?? null; // our generator saved HTML
-  const getDescText = it =>
-    it.descText ?? it.descriptionText ?? it.plainText ?? null;
-
-  function escapeHtml(s){
-    return String(s||'')
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  // key measurements (if present)
+  const km = entry.km || entry.key || null;
+  if (km && (km.circ || km.height || km.canopy)){
+    detailKMBox.style.display = '';
+    kmCirc.textContent   = 'Circumference: ' + (km.circ || '—');
+    kmHeight.textContent = 'Height: ' + (km.height || '—');
+    kmCanopy.textContent = 'Canopy spread: ' + (km.canopy || '—');
+  } else {
+    detailKMBox.style.display = 'none';
   }
 
-  /* ---------- views ---------- */
-  function renderList(){
-    const data = loadLog()
-      .map(it => ({it, ts:getSortTs(it)}))
-      .sort((a,b)=>b.ts-a.ts)
-      .map(x=>x.it);
+  // description HTML
+  const html = entry.descHtml || entry.desc || '';
+  detailDesc.innerHTML = html && html.trim() ? html : '—';
 
-    GRID.innerHTML = '';
-
-    if (!data.length){
-      GRID.innerHTML = `
-        <div class="card" style="padding:14px; border:1px dashed var(--border); border-radius:12px;">
-          <div class="tiny">No trees saved yet.</div>
-          <div class="tiny" style="margin-top:6px;">Use <strong>Save to log</strong> on the Results page, then come back here.</div>
-        </div>`;
-      return;
-    }
-
-    const frag = document.createDocumentFragment();
-
-    data.forEach((item, idx)=>{
-      const title   = getTitle(item);
-      const species = getSpecies(item);
-      const when    = getWhen(item);
-      const acc     = getAccMeters(item);
-
-      // Make the whole card a link so it always “clicks”
-      const a = document.createElement('a');
-      a.href = `?idx=${idx}`;
-      a.style.textDecoration = 'none';
-      a.style.color = 'inherit';
-      a.className = 'card';
-      a.innerHTML = `
-        <div class="block" style="padding:14px 16px;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <div class="brand" style="font-size:1rem; font-weight:800; letter-spacing:.2px;">
-              ${escapeHtml(title)}
-            </div>
-            <span class="acc-dot ${accClass(acc)}"
-                  title="${Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : 'No accuracy saved'}"></span>
-          </div>
-          <div class="tiny" style="margin-top:6px;">
-            ${species ? escapeHtml(species) : '<span style="opacity:.6">Species —</span>'}
-          </div>
-          <div class="tiny" style="margin-top:2px; color: var(--muted);">
-            ${when}
-          </div>
-        </div>
-      `;
-      frag.appendChild(a);
-    });
-
-    GRID.appendChild(frag);
+  // actions state
+  const hasDesc = !!(html && html.trim());
+  copyBtn.disabled = !hasDesc;
+  if (hasDesc){
+    const subject = 'ARA Tree Log – ' + (entry.name || '');
+    const body = htmlToText(html);
+    emailBtn.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    emailBtn.removeAttribute('aria-disabled');
+  } else {
+    emailBtn.href = '#';
+    emailBtn.setAttribute('aria-disabled','true');
   }
 
-  function renderDetail(idx){
-    const all = loadLog();
-    const item = all[idx];
-    if (!item){ renderList(); return; }
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+}
 
-    const title   = getTitle(item);
-    const species = getSpecies(item);
-    const when    = getWhen(item);
-    const acc     = getAccMeters(item);
-    const descH   = getDescHtml(item);
-    const descT   = getDescText(item);
+function closeDetail(){
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+  currentId = null;
+}
 
-    GRID.innerHTML = `
-      <div class="card" style="margin-bottom:var(--gap);">
-        <div class="block" style="display:flex; justify-content:space-between; align-items:center;">
-          <div class="brand" style="font-size:1.15rem; font-weight:800;">
-            ${escapeHtml(title)}
-          </div>
-          <div>
-            <a class="btn btn-ghost" href="log.html" style="text-decoration:none;">Back to log</a>
-          </div>
-        </div>
-        <div class="block" style="padding-top:0;">
-          <div class="tiny" style="display:flex; align-items:center; gap:8px;">
-            <span>${species ? escapeHtml(species) : '—'}</span>
-            <span>·</span>
-            <span>${when}</span>
-            <span>·</span>
-            <span class="acc-pill ${accClass(acc)}">${Number.isFinite(acc) ? ('±'+acc.toFixed(1)+' m') : 'no acc'}</span>
-          </div>
-        </div>
-      </div>
+closeModalBtn.addEventListener('click', closeDetail);
+modal.addEventListener('click', (e)=>{ if(e.target === modal) closeDetail(); });
 
-      <div class="card">
-        <div class="block">
-          <h3>Description</h3>
-          <div id="detail-desc" class="results" style="margin-top:8px;">—</div>
-        </div>
-      </div>
-    `;
+copyBtn.addEventListener('click', ()=>{
+  const html = detailDesc.innerHTML.trim();
+  if(!html) return;
+  const txt = htmlToText(html);
+  (navigator.clipboard?.writeText ? navigator.clipboard.writeText(txt)
+    : new Promise(res=>{ const t=document.createElement('textarea'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); res(); })
+  ).then(()=>{
+    const old = copyBtn.textContent;
+    copyBtn.textContent = 'Copied ✓';
+    setTimeout(()=> copyBtn.textContent = old, 1000);
+  });
+});
 
-    // inject description content (HTML if we have it; otherwise plain text)
-    const box = document.getElementById('detail-desc');
-    if (descH){ box.innerHTML = descH; }
-    else if (descT){ box.textContent = descT; }
-    else { box.textContent = '—'; }
+removeBtn.addEventListener('click', ()=>{
+  if (!currentId) return;
+  if (!confirm('Remove this tree from the log? This cannot be undone.')) return;
+  const idx = entries.findIndex(e => String(e.id) === String(currentId));
+  if (idx >= 0){
+    entries.splice(idx,1);
+    saveAllLogs(STORE_KEY, entries);
   }
+  closeDetail();
+  render();
+});
 
-  /* ---------- tiny router ---------- */
-  const params = new URLSearchParams(location.search);
-  const idx = params.get('idx');
-  if (idx !== null) renderDetail(parseInt(idx,10));
-  else renderList();
-})();
+/* ---------- Boot ---------- */
+function boot(){
+  const loaded = loadAllLogs();
+  STORE_KEY = loaded.key;
+  // normalize: ensure each entry has an id
+  entries = (loaded.items || []).map((e,i)=>{
+    if (!e) return null;
+    if (e.id === undefined || e.id === null) e.id = e.ts || (Date.now() + i);
+    return e;
+  }).filter(Boolean);
+  render();
+}
+
+refreshBtn.addEventListener('click', boot);
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeDetail(); });
+
+boot();
 </script>
 </body>
 </html>
