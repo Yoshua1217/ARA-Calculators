@@ -311,6 +311,319 @@
 })();
 </script>
 
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ARA – Tree</title>
+<style>
+  :root{
+    /* Same palette as Field Tools */
+    --bg:#0d1b2a;
+    --bg-elev:#0f2236;
+    --panel:#14253d;
+    --panel-2:#172a47;
+    --text:#e8eef6;
+    --muted:#a9b7c7;
+    --accent:#2ea3ff;
+    --accent-2:#4db2ff;
+    --ok:#1fa37a;
+    --danger:#d93c3c;
+    --border:#1f3553;
+    --radius:14px;
+    --gap:14px;
+  }
+  *{ box-sizing:border-box }
+  html,body{ height:100% }
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text);
+  }
+
+  /* Sticky header */
+ /* Header layout */
+.topbar{
+  position: sticky; top: 0; z-index: 50;
+  background: linear-gradient(180deg, #0d1b2a, #0f2236);
+  border-bottom: 1px solid var(--border);
+}
+.topbar .wrap{ max-width:1000px; margin:0 auto; padding:12px 14px; }
+.page-title{
+  margin:0 0 8px; font-size:1.15rem; font-weight:800; color:#eaf3ff;
+  letter-spacing:.2px;
+}
+
+/* Small action row under the title */
+.subheader-actions{
+  display:flex; gap:8px; flex-wrap:wrap;
+}
+.btn{ display:inline-flex; align-items:center; justify-content:center;
+  font-weight:700; border-radius:10px; border:0; cursor:pointer;
+  background:var(--accent-2); color:#001528; padding:10px 14px;
+  text-decoration:none; user-select:none;
+}
+.btn-ghost{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
+.btn-sm{ padding:6px 10px; font-size:.92rem; }
+
+/* Danger button (matches Reset style from Field Tools) */
+.btn-danger{
+  background:#e53935; color:#fff; border:3px solid #6b0e0e;
+}
+.btn-danger:hover{ background:#d32f2f; border-color:#8e0000; transform:translateY(-1px); }
+.btn-danger:active{ background:#8e0000; border-color:#5c0000; transform:scale(.98); }
+
+/* Make action rows in the page look tidy */
+.actions-row{ display:flex; flex-wrap:wrap; gap:10px; }
+
+
+  /* Page content */
+  .content{ padding:14px; max-width:1000px; margin:0 auto; }
+
+  /* Panel cards */
+  .card{
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:var(--radius); margin-bottom:var(--gap);
+  }
+  .card .block{ padding:16px 18px; }
+  h2{ margin:0 0 8px; font-size:1.2rem; }
+  h3{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
+
+  /* Measurement grid */
+  .grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:12px;
+  }
+  @media (max-width:780px){ .grid{ grid-template-columns:1fr } }
+
+  .row{
+    padding:10px 12px; border:1px solid var(--border); border-radius:10px;
+    background:var(--panel-2);
+  }
+  .label{ color:var(--muted); font-size:.92rem; margin-bottom:4px }
+  .value{ font-weight:800; letter-spacing:.2px }
+
+  .muted{ color:var(--muted) }
+  .tiny{ font-size:.86rem; color:var(--muted) }
+
+  /* Section header style for “Description” look */
+  .section-title{
+    font-size:1.15rem; font-weight:900; text-decoration:underline;
+    text-underline-offset:3px; margin-bottom:8px; color:#eaf3ff;
+  }
+
+  /* Footer action bar (optional later) */
+  .footer-actions{
+    display:flex; gap:10px; flex-wrap:wrap;
+  }
+
+  /* ---- Accuracy text colors ----
+.acc-text-green { color:#1b5e2b; }
+.acc-text-amber { color:#ffb300; }
+.acc-text-grey  { color:#a9b7c7; } */
+
+  /* Accuracy text color helpers (match app palette) */
+.acc-grey  { color: #e2e8f0; }  /* neutral */
+.acc-amber { color: #ffb300; }  /* 5–20 m */
+.acc-green { color: #1b5e2b; }  /* ≤5 m */
+
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="topbar">
+  <div class="wrap">
+   <h1 class="page-title" id="page-title">
+      ARA — <span>Tree name</span>
+    </h1>
+
+    <div class="subheader-actions">
+      <a id="btnBackToLog"  href="log.html"   class="btn btn-ghost btn-sm">← Return to Log</a>
+      <a id="btnBackHome"   href="index.html" class="btn btn-ghost btn-sm">Return Home</a>
+    </div>
+  </div>
+</header>
+
+
+<!-- Content -->
+<div class="content">
+
+  <!-- GENERAL -->
+  <section class="card">
+    <div class="block">
+      <div class="section-title">General</div>
+      <div class="grid">
+        <div class="row">
+          <div class="label">Tree name</div>
+          <div class="value" id="gen-name">—</div>
+        </div>
+        <div class="row">
+          <div class="label">Species</div>
+          <div class="value" id="gen-species">—</div>
+        </div>
+        <div class="row">
+          <div class="label">Condition</div>
+          <div class="value" id="gen-condition">—</div>
+        </div>
+        <div class="row">
+          <div class="label">Type</div>
+          <div class="value" id="gen-type">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOCATION -->
+  <section class="card">
+    <div class="block">
+      <div class="section-title">Location</div>
+      <div class="grid">
+        <div class="row">
+          <div class="label">DD (lat, lng)</div>
+          <div class="value" id="loc-dd">—, —</div>
+        </div>
+        <div class="row">
+          <div class="label">DMS</div>
+          <div class="value" id="loc-dms">—</div>
+        </div>
+        <div class="row">
+          <div class="label">Altitude</div>
+          <div class="value" id="loc-alt">—</div>
+        </div>
+        <div class="row">
+          <div class="label">Accuracy</div>
+          <div class="value" id="loc-acc">±— m</div>
+        </div>
+       <div class="row">
+          <div class="label">Recorded</div>
+          <div class="value" id="loc-recorded">—</div>
+        </div>
+        <div class="row">
+          <div class="label">Google Maps</div>
+          <div class="value" id="loc-maps">—</div>
+        </div>
+      </div>
+      <div class="tiny" style="margin-top:8px;">Map will appear below in a later pass.</div>
+    </div>
+  </section>
+
+  <!-- CIRCUMFERENCE -->
+  <section class="card">
+    <div class="block">
+      <div class="section-title">Circumference</div>
+      
+<div class="grid">
+        <div class="row">
+          <div class="label">Entered/Equivalent circumference</div>
+          <div class="value" id="circ-entered">—</div>         </div>
+        <div class="row">
+          <div class="label">Diameter (from circumference)</div>
+          <div class="value" id="circ-diameter">—</div>         </div>
+        
+                <div class="row" id="row-circ-avg"> 
+          <div class="label">Average circumference (multi)</div>
+          <div class="value" id="circ-avg">—</div>         </div>
+        
+                <div class="row" id="row-circ-largest">
+          <div class="label">Largest trunk note</div>
+          <div class="value" id="circ-largest">—</div>         </div>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- HEIGHT -->
+  <section class="card">
+    <div class="block">
+      <div class="section-title">Height</div>
+      <div class="grid">
+<div class="row">
+          <div class="label">Tree height</div>
+          <div class="value" id="h-height">—</div>         
+        </div>
+        <div class="row">
+          <div class="label">Angle (°)</div>
+          <div class="value" id="h-angle">—</div>
+        </div>
+        <div class="row">
+          <div class="label">Distance to trunk</div>
+          <div class="value" id="h-dist">—</div>
+        </div>
+        <div class="row">
+          <div class="label">Eye height</div>
+          <div class="value" id="h-eye">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CANOPY -->
+  <section class="card">
+    <div class="block">
+      <div class="section-title">Canopy spread</div>
+     <div class="grid">
+        <div class="row">
+          <div class="label">Major axis</div>
+          <div class="value" id="c-major">—</div>         </div>
+        <div class="row">
+          <div class="label">Minor axis</div>
+          <div class="value" id="c-minor">—</div>         </div>
+        <div class="row">
+          <div class="label">Final canopy spread</div>
+          <div class="value" id="c-mean">—</div>         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOTES -->
+  <section class="card">
+    <div class="block">
+      <div class="section-title">Notes</div>
+     <div class="row" style="padding:14px;">
+        <div class="value" id="notes-body">—</div>       </div>
+    </div>
+  </section>
+
+  <!-- ACTIONS (future: copy/email/remove) -->
+  <section class="card">
+    <div class="block">
+      <h3>Actions</h3>
+      <div class="footer-actions" style="margin-top:8px;">
+        <button class="btn btn-ghost" disabled>Copy description</button>
+        <button class="btn btn-ghost" disabled>Open email</button>
+        <button id="removeFromLog" class="btn btn-danger">Remove from log</button>
+      </div>
+      <div class="tiny" style="margin-top:6px;">(Buttons disabled for now – aesthetics first.)</div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  const removeBtn = document.getElementById('removeFromLog');
+  if (!removeBtn) return;
+
+  removeBtn.addEventListener('click', function(){
+    if (!confirm('Are you sure you want to remove this tree from the log? This cannot be undone.')) return;
+
+    try{
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      const LOG_KEY = params.get('k') || 'ara_field_v1_log';
+      if (!id) throw new Error('No id in URL');
+
+      const list = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      const next = list.filter(entry => String(entry.id) !== String(id));
+      localStorage.setItem(LOG_KEY, JSON.stringify(next));
+      location.href = 'log.html';
+    }catch(err){
+      alert('Could not remove this entry. ' + (err && err.message ? err.message : err));
+    }
+  });
+})();
+</script>
+
 <script>
 (function(){
   /* ---------- tiny helpers and Utilities ---------- */
@@ -510,5 +823,7 @@
 
 })();
 </script>
+</body>
+</html>
 </body>
 </html>
