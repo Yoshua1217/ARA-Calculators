@@ -163,226 +163,148 @@
   </div>
 
 <script>
-/* -------- Shared storage helpers (same keys/schema as main) -------- */
-const LOG_KEY = 'ARA_FIELD_LOG_V1';
-function readLog(){
-  try { return JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); }
-  catch { return []; }
-}
-function writeLog(arr){
-  try { localStorage.setItem(LOG_KEY, JSON.stringify(arr || [])); } catch {}
-}
-const FT_PER_M = 3.28084;
+(function(){
+  const GRID_ID = 'log-grid';
+  const GRID = document.getElementById(GRID_ID);
 
-/* -------- Router: # (empty)=list, #id=detail -------- */
-function atDetail(){ return location.hash && location.hash.length > 1; }
-function currentId(){ return location.hash.replace(/^#/, ''); }
-function goList(){ location.hash = ''; }
-function goDetail(id){ location.hash = '#' + id; }
-
-/* -------- Paint list grid -------- */
-function renderLogGrid(){
-  const grid = document.getElementById('log-grid');
-  const q = (document.getElementById('log-search')?.value || '').trim().toLowerCase();
-  const sort = document.getElementById('log-sort')?.value || 'newest';
-  let list = readLog();
-
-  if (q){
-    list = list.filter(e=>{
-      const hay = [
-        e.title,
-        e.basics?.species,
-        e.basics?.name,
-        e.description?.text
-      ].join(' ').toLowerCase();
-      return hay.includes(q);
-    });
-  }
-
-  if (sort === 'newest') list.sort((a,b)=> b.createdAt - a.createdAt);
-  else if (sort === 'oldest') list.sort((a,b)=> a.createdAt - b.createdAt);
-  else if (sort === 'alpha') list.sort((a,b)=> (a.title||'').localeCompare(b.title||''));
-
-  grid.innerHTML = '';
-  if (!list.length){
-    const empty = document.createElement('div');
-    empty.className = 'card';
-    empty.innerHTML = '<div class="block">No trees saved yet.</div>';
-    grid.appendChild(empty);
-    return;
-  }
-
-  list.forEach(e=>{
-    const card = document.createElement('div');
-    card.className = 'log-card';
-    card.onclick = ()=> goDetail(e.id);
-
-    const row1 = document.createElement('div');
-    row1.className = 'row1';
-    const name = document.createElement('div');
-    name.className = 'name';
-    name.textContent = e.title || 'Untitled tree';
-
-    const dot = document.createElement('span');
-    dot.className = 'acc-dot acc-' + (e.accuracy?.bucket || 'grey');
-    dot.title = 'Accuracy ' + (e.accuracy?.label || 'low');
-
-    row1.appendChild(name); row1.appendChild(dot);
-
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    const sp = e.basics?.species || 'Species: —';
-    const when = new Date(e.createdAt).toLocaleString();
-    meta.textContent = `${sp} • ${when}`;
-
-    const km = document.createElement('div');
-    km.className = 'km';
-    const addChip = (label, valM)=>{
-      if (!Number.isFinite(valM)) return;
-      const chip = document.createElement('div');
-      chip.className='chip';
-      chip.textContent = `${label}: ${valM.toFixed(2)} m (${(valM*FT_PER_M).toFixed(2)} ft)`;
-      km.appendChild(chip);
-    };
-    addChip('C', e.keyMeasurements?.circumferenceM);
-    addChip('H', e.keyMeasurements?.heightM);
-    addChip('Canopy', e.keyMeasurements?.canopyM);
-
-    card.appendChild(row1);
-    card.appendChild(meta);
-    card.appendChild(km);
-    grid.appendChild(card);
-  });
-}
-
-/* -------- Paint detail -------- */
-function renderDetail(id){
-  const list = readLog();
-  const e = list.find(x=>x.id===id);
-  if (!e){ goList(); return; }
-
-  document.getElementById('detail-title').textContent = e.title || 'Untitled tree';
-  const accDot = `<span class="acc-dot acc-${e.accuracy?.bucket || 'grey'}" title="Accuracy ${e.accuracy?.label || 'low'}"></span>`;
-  const sp = e.basics?.species || 'Species: —';
-  const when = new Date(e.createdAt).toLocaleString();
-  document.getElementById('detail-sub').innerHTML = `${sp} • ${when} ${accDot}`;
-
-  const kv = document.getElementById('detail-kv');
-  kv.innerHTML = '';
-  const rows = [];
-  const km = e.keyMeasurements || {};
-  if (Number.isFinite(km.circumferenceM)) rows.push(['Circumference', `${km.circumferenceM.toFixed(2)} m (${(km.circumferenceM*FT_PER_M).toFixed(2)} ft)`]);
-  if (Number.isFinite(km.heightM))        rows.push(['Height', `${km.heightM.toFixed(2)} m (${(km.heightM*FT_PER_M).toFixed(2)} ft)`]);
-  if (Number.isFinite(km.canopyM))        rows.push(['Canopy spread', `${km.canopyM.toFixed(2)} m (${(km.canopyM*FT_PER_M).toFixed(2)} ft)`]);
-
-  const loc = e.location || {};
-  if (Number.isFinite(loc.lat) && Number.isFinite(loc.lng)){
-    const mapsURL = `https://maps.google.com/?q=${loc.lat.toFixed(6)},${loc.lng.toFixed(6)}`;
-    rows.push(['Location (DD)', `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)} — <a href="${mapsURL}" target="_blank" rel="noopener">Google Maps</a>`]);
-  }
-  if (Number.isFinite(loc.alt)) rows.push(['Altitude', `${loc.alt.toFixed(1)} m`]);
-  if (Number.isFinite(loc.acc)) rows.push(['Accuracy', `±${loc.acc.toFixed(1)} m`]);
-  if (loc.recordedAt) rows.push(['Recorded', new Date(loc.recordedAt).toLocaleString()]);
-  if (!rows.length) rows.push(['—', 'No measurements saved.']);
-
-  rows.forEach(([k,v])=>{
-    const kEl = document.createElement('div'); kEl.textContent = k;
-    const vEl = document.createElement('div'); vEl.innerHTML = v;
-    kv.appendChild(kEl); kv.appendChild(vEl);
-  });
-
-  document.getElementById('detail-desc').innerHTML = e.description?.html || '—';
-
-  // actions
-  const emailA = document.getElementById('detail-email');
-  const subject = 'ARA Field Nomination' + (e.title ? ' – ' + e.title : '');
-  const body = e.description?.text || '';
-  if (body) {
-    emailA.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-    emailA.removeAttribute('aria-disabled');
-  } else {
-    emailA.href = '#';
-    emailA.setAttribute('aria-disabled','true');
-  }
-
-  document.getElementById('detail-copy').onclick = ()=>{
-    if (!body) return;
-    (navigator.clipboard?.writeText ? navigator.clipboard.writeText(body) : Promise.resolve()).then(()=>{
-      const btn = document.getElementById('detail-copy');
-      const old = btn.textContent; btn.textContent='Copied ✓';
-      setTimeout(()=>btn.textContent=old, 900);
-    });
-  };
-
-  document.getElementById('detail-delete').onclick = ()=>{
-    if (!confirm('Delete this entry?')) return;
-    const idx = list.findIndex(x=>x.id===id);
-    if (idx>=0){ list.splice(idx,1); writeLog(list); }
-    goList();
-  };
-
-  document.getElementById('detail-edit').onclick = ()=>{
-    // hand off to main app
-    localStorage.setItem('ARA_EDIT_ID', e.id);
-    location.href = 'index.html';
-  };
-}
-
-/* -------- Mini connectivity probe (optional match to your main) -------- */
-function connNowISO(){
-  const d=new Date(); const p=n=>String(n).padStart(2,'0');
-  return p(d.getHours())+':'+p(d.getMinutes());
-}
-function paintLogConnectivityCard(){
-  const label = document.getElementById('conn-label-log');
-  const when  = document.getElementById('conn-checked-log');
-  const card  = document.getElementById('conn-card-log');
-  when.textContent = connNowISO();
-  // simple check
-  const img = new Image(); let done=false;
-  const end = (ok)=>{
-    if (done) return; done=true;
-    label.textContent = ok ? 'Online — email/sharing enabled.' : 'Offline — still usable; maps may be cached only.';
-    card.classList.remove('conn-online','conn-offline');
-    card.classList.add(ok ? 'conn-online' : 'conn-offline');
-  };
-  const t = setTimeout(()=>end(false), 2500);
-  img.onload = ()=>{ clearTimeout(t); end(true); };
-  img.onerror= ()=>{ clearTimeout(t); end(false); };
-  img.src='https://tile.openstreetmap.org/0/0/0.png?cb=' + Date.now();
-}
-
-/* -------- Router wiring -------- */
-function handleRoute(){
-  const listSec = document.getElementById('page-log');
-  const detSec  = document.getElementById('page-log-detail');
-  if (!atDetail()){
-    listSec.classList.remove('hidden');
-    detSec.classList.add('hidden');
-    renderLogGrid();
-    paintLogConnectivityCard();
-  } else {
-    listSec.classList.add('hidden');
-    detSec.classList.remove('hidden');
-    renderDetail(currentId());
-  }
-}
-
-document.addEventListener('DOMContentLoaded', ()=>{
-  document.getElementById('log-search')?.addEventListener('input', renderLogGrid);
-  document.getElementById('log-sort')?.addEventListener('change', renderLogGrid);
-  document.getElementById('log-clear-all')?.addEventListener('click', ()=>{
-    const n = readLog().length;
-    if (!n) return;
-    if (confirm(`Delete all ${n} entr${n===1?'y':'ies'}? This cannot be undone.`)){
-      writeLog([]); renderLogGrid();
+  // 1) Load with key fallbacks
+  function loadLog() {
+    const keys = ['ara_tree_log_v1','ara_tree_log','ARA_TREE_LOG_V1'];
+    for (const k of keys) {
+      try {
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        const data = JSON.parse(raw);
+        if (Array.isArray(data)) return data;
+      } catch (e) {
+        console.warn('Could not parse log for key', k, e);
+      }
     }
-  });
-  document.getElementById('detail-back')?.addEventListener('click', ()=> goList());
+    return [];
+  }
 
-  handleRoute();
-});
-window.addEventListener('hashchange', handleRoute);
+  // 2) Safe getters (avoid crashes if fields moved/renamed)
+  function getTitle(item){
+    return (item.name || item.treeName || 'Untitled').trim() || 'Untitled';
+  }
+  function getSpecies(item){
+    return (item.species || item.sp || '').trim();
+  }
+  function getWhen(item){
+    // prefer numeric timestamp in ms; else try ISO/string
+    const t = Number.isFinite(item.ts) ? item.ts
+            : Number.isFinite(item.timestamp) ? item.timestamp
+            : (item.meta && Number.isFinite(item.meta.ts) ? item.meta.ts : null);
+    if (Number.isFinite(t)) return new Date(t).toLocaleString();
+    const iso = item.when || item.date || '';
+    return iso ? new Date(iso).toLocaleString() : '—';
+  }
+  function getAcc(item){
+    const acc =
+      (item.location && (parseFloat(item.location.acc) || parseFloat(item.location.accuracy))) ??
+      parseFloat(item.acc) ?? NaN;
+    return Number.isFinite(acc) ? acc : null;
+  }
+
+  function accClass(acc){
+    if (!Number.isFinite(acc)) return 'acc-grey';
+    if (acc <= 5)  return 'acc-green';
+    if (acc < 20)  return 'acc-amber';
+    return 'acc-grey';
+  }
+
+  // 3) Render cards
+  function render() {
+    if (!GRID) {
+      console.warn(`#${GRID_ID} not found on log.html`);
+      return;
+    }
+    const items = loadLog()
+      .filter(Boolean)
+      .sort((a,b) => {
+        const ta = Number.isFinite(a.ts) ? a.ts : (a.meta?.ts || 0);
+        const tb = Number.isFinite(b.ts) ? b.ts : (b.meta?.ts || 0);
+        return tb - ta; // newest first
+      });
+
+    GRID.innerHTML = '';
+
+    if (!items.length) {
+      GRID.innerHTML = `
+        <div class="card" style="padding:14px; border:1px dashed var(--border); border-radius:12px;">
+          <div class="tiny">No trees saved yet.</div>
+          <div class="tiny" style="margin-top:6px;">Use <strong>Save to log</strong> on the Results page, then come back here.</div>
+        </div>`;
+      return;
+    }
+
+    // Build fragment to avoid reflow thrash
+    const frag = document.createDocumentFragment();
+
+    items.forEach((item, idx) => {
+      const title   = getTitle(item);
+      const species = getSpecies(item);
+      const when    = getWhen(item);
+      const acc     = getAcc(item);
+
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'card';
+      card.style.cursor = 'pointer';
+      card.style.textAlign = 'left';
+
+      card.innerHTML = `
+        <div class="block" style="padding:14px 16px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="brand" style="font-size:1rem; font-weight:800; letter-spacing:.2px;">
+              ${escapeHtml(title)}
+            </div>
+            <span class="acc-dot ${accClass(acc)}" title="${Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : 'No accuracy saved'}"></span>
+          </div>
+          <div class="tiny" style="margin-top:6px;">
+            ${species ? escapeHtml(species) : '<span style="opacity:.6">Species —</span>'}
+          </div>
+          <div class="tiny" style="margin-top:2px; color: var(--muted);">
+            ${when}
+          </div>
+        </div>
+      `;
+
+      // Open details view (same page) using a simple modal/overlay, or navigate with query param
+      card.addEventListener('click', () => {
+        // If you already built a detail modal, call it here:
+        // openTreeDetails(item);
+
+        // Simple navigation: put index in query so log-details can read it
+        const q = new URLSearchParams();
+        q.set('idx', String(idx));
+        location.href = 'log.html?' + q.toString();
+      });
+
+      frag.appendChild(card);
+    });
+
+    GRID.appendChild(frag);
+  }
+
+  // Small HTML escaper for titles/species
+  function escapeHtml(s){
+    return String(s || '')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  // 4) Init on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', render, { once: true });
+  } else {
+    render();
+  }
+})();
 </script>
+
 </body>
 </html>
