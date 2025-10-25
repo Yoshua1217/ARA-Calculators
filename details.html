@@ -29,35 +29,40 @@
   }
 
   /* Sticky header */
-  .topbar{
-    position:sticky; top:0; z-index:50;
-    background:linear-gradient(180deg, #0d1b2a, #0f2236);
-    border-bottom:1px solid var(--border);
-    padding:10px 14px;
-  }
-  .topbar-inner{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
-  }
-  .brand-wrap{
-    display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
-  }
-  .brand { font-weight:800; letter-spacing:.2px; font-size:1.05rem; color:#eaf3ff }
-  .title {
-    font-weight:800; color:#eaf3ff; letter-spacing:.2px;
-  }
-  .title .dash{ opacity:.7 }
-  .header-actions{
-    display:flex; gap:8px; flex-wrap:wrap;
-  }
-  a.btn, button.btn{
-    padding:10px 14px; border-radius:10px; border:1px solid var(--border);
-    background:var(--panel-2); color:var(--text); font-weight:700;
-    text-decoration:none; cursor:pointer;
-  }
-  a.btn:hover, button.btn:hover{ background:var(--accent-2); color:#001528 }
-  .btn-ghost{ background:var(--panel-2) }
-  .btn-danger{ background:var(--danger); border-color:#7c1f1f; color:#fff }
-  .btn-danger:hover{ filter:brightness(1.05) }
+ /* Header layout */
+.topbar{
+  position: sticky; top: 0; z-index: 50;
+  background: linear-gradient(180deg, #0d1b2a, #0f2236);
+  border-bottom: 1px solid var(--border);
+}
+.topbar .wrap{ max-width:1000px; margin:0 auto; padding:12px 14px; }
+.page-title{
+  margin:0 0 8px; font-size:1.15rem; font-weight:800; color:#eaf3ff;
+  letter-spacing:.2px;
+}
+
+/* Small action row under the title */
+.subheader-actions{
+  display:flex; gap:8px; flex-wrap:wrap;
+}
+.btn{ display:inline-flex; align-items:center; justify-content:center;
+  font-weight:700; border-radius:10px; border:0; cursor:pointer;
+  background:var(--accent-2); color:#001528; padding:10px 14px;
+  text-decoration:none; user-select:none;
+}
+.btn-ghost{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
+.btn-sm{ padding:6px 10px; font-size:.92rem; }
+
+/* Danger button (matches Reset style from Field Tools) */
+.btn-danger{
+  background:#e53935; color:#fff; border:3px solid #6b0e0e;
+}
+.btn-danger:hover{ background:#d32f2f; border-color:#8e0000; transform:translateY(-1px); }
+.btn-danger:active{ background:#8e0000; border-color:#5c0000; transform:scale(.98); }
+
+/* Make action rows in the page look tidy */
+.actions-row{ display:flex; flex-wrap:wrap; gap:10px; }
+
 
   /* Page content */
   .content{ padding:14px; max-width:1000px; margin:0 auto; }
@@ -102,18 +107,19 @@
 <body>
 
 <!-- Header -->
-<div class="topbar">
-  <div class="topbar-inner">
-    <div class="brand-wrap">
-      <div class="brand">ARA</div>
-      <div class="title"><span class="dash">–</span> <span id="treeTitle">Tree</span></div>
-    </div>
-    <div class="header-actions">
-      <a class="btn btn-ghost" href="log.html">Back to Log</a>
-      <a class="btn btn-ghost" href="fieldtools.html">Back to Field Tools</a>
+<header class="topbar">
+  <div class="wrap">
+    <h1 class="page-title">
+      ARA — <span id="treeNameHdr">Tree name</span>
+    </h1>
+
+    <div class="subheader-actions">
+      <a id="btnBackToLog"  href="log.html"   class="btn btn-ghost btn-sm">← Return to Log</a>
+      <a id="btnBackHome"   href="index.html" class="btn btn-ghost btn-sm">Return Home</a>
     </div>
   </div>
-</div>
+</header>
+
 
 <!-- Content -->
 <div class="content">
@@ -262,10 +268,10 @@
   <section class="card">
     <div class="block">
       <h3>Actions</h3>
-      <div class="footer-actions">
+      <div class="footer-actions" style="margin-top:8px;">
         <button class="btn btn-ghost" disabled>Copy description</button>
         <button class="btn btn-ghost" disabled>Open email</button>
-        <button class="btn btn-danger" disabled>Remove from log</button>
+        <button id="removeFromLog" class="btn btn-danger">Remove from log</button>
       </div>
       <div class="tiny" style="margin-top:6px;">(Buttons disabled for now – aesthetics first.)</div>
     </div>
@@ -274,10 +280,53 @@
 </div>
 
 <script>
-  // Minimal nicety: show the tree name from ?name= in the header
-  const params = new URLSearchParams(location.search);
-  const nm = (params.get('name') || '').trim();
-  if(nm) document.getElementById('treeTitle').textContent = nm;
+  // --- Header: set tree name from ?name= ---
+  (function(){
+    const params = new URLSearchParams(location.search);
+    const name = (params.get('name') || '').trim();
+    const hdr = document.getElementById('treeNameHdr');
+    if (hdr && name) hdr.textContent = name;
+  })();
+
+  // --- Return to Log: prefer history back if you arrived from log.html ---
+  (function(){
+    const btnBackToLog = document.getElementById('btnBackToLog');
+    if (!btnBackToLog) return;
+    btnBackToLog.addEventListener('click', function(e){
+      if (document.referrer && /log\.html(\?|#|$)/.test(document.referrer)){
+        e.preventDefault();
+        history.back();
+      }
+    });
+  })();
+
+  // --- Remove from log (with confirm) ---
+  (function(){
+    const removeBtn = document.getElementById('removeFromLog');
+    if (!removeBtn) return;
+
+    removeBtn.addEventListener('click', function(){
+      const ok = confirm('Are you sure you want to remove this tree from the log? This cannot be undone.');
+      if (!ok) return;
+
+      try{
+        const params = new URLSearchParams(location.search);
+        const id = params.get('id');
+        const KEY = 'ara_field_v1_log';  // must match log.html & field tools save code
+        if (!id) throw new Error('No id in URL');
+
+        const list = JSON.parse(localStorage.getItem(KEY) || '[]');
+        const next = list.filter(entry => String(entry.id) !== String(id));
+        localStorage.setItem(KEY, JSON.stringify(next));
+
+        // back to log after deletion
+        location.href = 'log.html';
+      }catch(err){
+        alert('Could not remove this entry. ' + (err && err.message ? err.message : err));
+      }
+    });
+  })();
 </script>
+
 </body>
 </html>
