@@ -102,6 +102,12 @@
   .footer-actions{
     display:flex; gap:10px; flex-wrap:wrap;
   }
+
+  /* ---- Accuracy text colors ---- */
+.acc-text-green { color:#1b5e2b; }
+.acc-text-amber { color:#ffb300; }
+.acc-text-grey  { color:#a9b7c7; }
+
 </style>
 </head>
 <body>
@@ -326,6 +332,230 @@
       }
     });
   })();
+</script>
+<script>
+/* ---------- Utilities ---------- */
+const FT_PER_M = 3.28084;
+const mToFt = m => m * FT_PER_M;
+const fmt2 = x => Number.isFinite(x) ? x.toFixed(2) : '—';
+const fmt1 = x => Number.isFinite(x) ? x.toFixed(1) : '—';
+const toDMS = (dec, isLat) => {
+  if (!Number.isFinite(dec)) return '—';
+  const hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
+  let v = Math.abs(dec);
+  const d = Math.floor(v); v = (v - d) * 60;
+  const m = Math.floor(v); const s = (v - m) * 60;
+  return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
+};
+const params = new URLSearchParams(location.search);
+const LOG_KEY = params.get('k') || 'ara_field_v1_log';
+
+/* ---------- Load the record ---------- */
+function loadSelectedEntry() {
+  let all = [];
+  try {
+    all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+    if (!Array.isArray(all)) all = [];
+  } catch {}
+
+  const id = params.get('id');
+  const idxParam = params.get('idx');
+
+  if (id != null) {
+    const found = all.find(e => String(e.id) === String(id));
+    return { entry: found || null, all };
+  }
+
+  if (idxParam != null) {
+    const i = parseInt(idxParam, 10);
+    const found = Number.isInteger(i) ? all[i] : null;
+    return { entry: found || null, all, idx: i };
+  }
+
+  return { entry: null, all };
+}
+
+/* ---------- Accuracy color ---------- */
+function paintAccText(el, meters) {
+  if (!el) return;
+  el.classList.remove('acc-text-green', 'acc-text-amber', 'acc-text-grey');
+  if (!Number.isFinite(meters)) {
+    el.classList.add('acc-text-grey');
+    el.textContent = '±—';
+    return;
+  }
+  if (meters <= 5)       el.classList.add('acc-text-green');
+  else if (meters < 20)  el.classList.add('acc-text-amber');
+  else                   el.classList.add('acc-text-grey');
+
+  el.textContent = `±${fmt1(meters)} m`;
+}
+
+/* ---------- Populate UI ---------- */
+function fillDetails(entry) {
+  // Title
+  const treeName = entry?.basics?.name || '—';
+  document.getElementById('tree-name-title').textContent = treeName;
+
+  // General
+  document.getElementById('gen-name').textContent      = entry?.basics?.name || '—';
+  document.getElementById('gen-species').textContent   = entry?.basics?.species || '—';
+  document.getElementById('gen-condition').textContent = entry?.basics?.condition || '—';
+  const type = entry?.basics?.type || '—';
+  document.getElementById('gen-type').textContent = type;
+
+  // Location
+  const lat = parseFloat(entry?.location?.lat);
+  const lng = parseFloat(entry?.location?.lng);
+  const acc = parseFloat(entry?.location?.acc);
+  const alt = parseFloat(entry?.location?.alt);
+  const ts  = entry?.location?.ts ? new Date(parseInt(entry.location.ts,10)).toLocaleString() : '—';
+
+  document.getElementById('loc-dd').textContent  =
+    (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—';
+  document.getElementById('loc-dms').textContent =
+    (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat,true)}  |  ${toDMS(lng,false)}` : '—';
+  document.getElementById('loc-alt').textContent = Number.isFinite(alt) ? `${fmt1(alt)} m` : '—';
+  paintAccText(document.getElementById('loc-acc'), acc);
+  document.getElementById('loc-ts').textContent  = ts;
+
+  // Panels show/hide for trunk type
+  const isMulti = (type === 'Multi trunked tree');
+  document.getElementById('panel-single').style.display = isMulti ? 'none' : '';
+  document.getElementById('panel-multi').style.display  = isMulti ? '' : 'none';
+
+  // Single-trunk values (if present)
+  const st = entry?.results?.lastSingle;
+  document.getElementById('st-c').textContent = st ? `${fmt2(st.cM)} m (${fmt2(st.cFt)} ft)` : '—';
+  document.getElementById('st-d').textContent = st ? `${fmt2(st.dM)} m (${fmt2(st.dFt)} ft)` : '—';
+
+  // Multi-trunk values (if present)
+  const mt = entry?.results?.lastMulti;
+  if (mt) {
+    document.getElementById('mt-ceq').textContent = `${fmt2(mt.cEqM)} m (${fmt2(mt.cEqFt)} ft)`;
+    document.getElementById('mt-deq').textContent = `${fmt2(mt.dEqM)} m (${fmt2(mt.dEqFt)} ft)`;
+    const dAvgM = (mt.cAvgM ?? NaN) / Math.PI;
+    const dAvgFt = mToFt(dAvgM);
+    document.getElementById('mt-cavg').textContent = `${fmt2(mt.cAvgM)} m (${fmt2(mt.cAvgFt)} ft)`;
+    document.getElementById('mt-davg').textContent = `${fmt2(dAvgM)} m (${fmt2(dAvgFt)} ft)`;
+
+    const list = document.createElement('ul');
+    (mt.trunks || []).forEach(t => {
+      const li = document.createElement('li');
+      const core = `T${t.index}: ${fmt2(t.cM)} m (${fmt2(t.cFt)} ft) → ${fmt2(t.dM)} m (${fmt2(t.dFt)} ft)`;
+      li.innerHTML = t.isLargest ? `<strong>${core}</strong>` : core;
+      list.appendChild(li);
+    });
+    const holder = document.getElementById('mt-trunks');
+    holder.innerHTML = '';
+    holder.appendChild(list);
+  } else {
+    document.getElementById('mt-ceq').textContent = '—';
+    document.getElementById('mt-deq').textContent = '—';
+    document.getElementById('mt-cavg').textContent = '—';
+    document.getElementById('mt-davg').textContent = '—';
+    document.getElementById('mt-trunks').textContent = '—';
+  }
+
+  // Height
+  const ht = entry?.results?.lastHeight;
+  if (ht) {
+    document.getElementById('h-val').textContent   = `${fmt2(ht.hM)} m (${fmt2(ht.hFt)} ft)`;
+    document.getElementById('h-angle').textContent = `${fmt1(ht.angleDeg)}°`;
+    document.getElementById('h-dist').textContent  = `${fmt2(ht.dM)} m`;
+    document.getElementById('h-eye').textContent   = `${fmt2(ht.eM)} m`;
+  } else {
+    document.getElementById('h-val').textContent   = '—';
+    document.getElementById('h-angle').textContent = '—';
+    document.getElementById('h-dist').textContent  = '—';
+    document.getElementById('h-eye').textContent   = '—';
+  }
+
+  // Canopy
+  const sp = entry?.results?.lastSpread;
+  if (sp) {
+    document.getElementById('cs-major').textContent = Number.isFinite(sp.majorM) ? `${fmt2(sp.majorM)} m (${fmt2(mToFt(sp.majorM))} ft)` : '—';
+    document.getElementById('cs-minor').textContent = Number.isFinite(sp.minorM) ? `${fmt2(sp.minorM)} m (${fmt2(mToFt(sp.minorM))} ft)` : '—';
+    document.getElementById('cs-final').textContent = `${fmt2(sp.meanM)} m (${fmt2(sp.meanFt)} ft)`;
+  } else {
+    document.getElementById('cs-major').textContent = '—';
+    document.getElementById('cs-minor').textContent = '—';
+    document.getElementById('cs-final').textContent = '—';
+  }
+
+  // Notes
+  const notes = (entry?.notes || '').trim();
+  document.getElementById('notes-box').innerHTML = notes
+    ? '<ul>' + notes.split(/\n+/).map(line => `<li>${escapeHtml(line)}</li>`).join('') + '</ul>'
+    : '—';
+
+  // Observation (we use the description timestamp if you stored it;
+  // otherwise fall back to the saved location timestamp or the entry.id)
+  const obsTs =
+    (entry?.descTs ? new Date(entry.descTs).toLocaleString() :
+    entry?.location?.ts ? new Date(parseInt(entry.location.ts,10)).toLocaleString() :
+    entry?.id ? new Date(parseInt(entry.id,10)).toLocaleString() : '—');
+  document.getElementById('obs-ts').textContent = obsTs;
+
+  // Share & copy actions (plain text taken from saved description if present)
+  document.getElementById('btn-email')?.addEventListener('click', () => {
+    const subject = `ARA Field Nomination – ${treeName || 'Tree'}`;
+    const body = (entry?.descText || 'No description available.').trim();
+    const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    location.href = url;
+  });
+  document.getElementById('btn-copy')?.addEventListener('click', () => {
+    const text = (entry?.descText || 'No description available.').trim();
+    navigator.clipboard?.writeText(text).then(()=> {
+      const btn = document.getElementById('btn-copy');
+      const prev = btn.textContent;
+      btn.textContent = 'Copied ✓';
+      setTimeout(()=> btn.textContent = prev, 900);
+    });
+  });
+
+  // Remove
+  document.getElementById('btn-remove')?.addEventListener('click', () => {
+    if (!confirm('Remove this tree from the log? This cannot be undone.')) return;
+
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch {}
+    if (!Array.isArray(list)) list = [];
+
+    // Prefer id match; fallback to idx param
+    const id = params.get('id');
+    const idx = params.get('idx');
+
+    if (id != null) {
+      const ix = list.findIndex(e => String(e.id) === String(id));
+      if (ix >= 0) list.splice(ix, 1);
+    } else if (idx != null) {
+      const i = parseInt(idx, 10);
+      if (Number.isInteger(i) && i >= 0 && i < list.length) list.splice(i, 1);
+    }
+
+    localStorage.setItem(LOG_KEY, JSON.stringify(list));
+    // Back to the log
+    location.href = 'log.html';
+  });
+}
+
+// basic HTML escape for notes
+function escapeHtml(s){
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+/* ---------- Boot ---------- */
+(function init(){
+  const { entry } = loadSelectedEntry();
+  if (!entry) {
+    // Show a simple empty state
+    document.getElementById('tree-name-title').textContent = 'Not found';
+    alert('This entry was not found.');
+    return;
+  }
+  fillDetails(entry);
+})();
 </script>
 
 </body>
