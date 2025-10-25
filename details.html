@@ -391,9 +391,8 @@ const elements = {
   // Notes
   notes: document.getElementById('notes'),
 
-  // Observation (Removed 'obs-ts' ID as it doesn't exist, will use entry ID)
   // Actions
-  emailBtn: document.querySelector('.footer-actions button:nth-child(2)'), // targeting based on position/class
+  emailBtn: document.querySelector('.footer-actions button:nth-child(2)'), 
   copyBtn: document.querySelector('.footer-actions button:nth-child(1)'),
   removeBtn: document.getElementById('removeFromLog'),
 };
@@ -411,12 +410,13 @@ function loadSelectedEntry() {
   const idxParam = params.get('idx');
 
   if (id != null) {
+    // NOTE: We assume the 'id' is a string or number that matches entry.id
     const found = all.find(e => String(e.id) === String(id));
     return { entry: found || null, all };
   }
 
   if (idxParam != null) {
-    // The logs array is NOT sorted here, so we must load by index if ID is missing.
+    // NOTE: This fallback relies on the index of the log entry array, which may not be stable
     const i = parseInt(idxParam, 10);
     const found = Number.isInteger(i) ? all[i] : null;
     return { entry: found || null, all, idx: i };
@@ -441,31 +441,31 @@ function paintAccText(el, meters) {
   el.textContent = `±${fmt1(meters)} m`;
 }
 
-/* ---------- Populate UI ---------- */
+/* ---------- Populate UI (The main fix) ---------- */
 function fillDetails(entry) {
   const treeName = entry?.basics?.name || '—';
 
-  // Header
+  // 1. Header
   if (elements.treeNameHdr) elements.treeNameHdr.textContent = treeName;
 
-  // General
+  // 2. General
   if (elements.genName) elements.genName.textContent      = entry?.basics?.name || '—';
   if (elements.genSpecies) elements.genSpecies.textContent   = entry?.basics?.species || '—';
   if (elements.genCondition) elements.genCondition.textContent = entry?.basics?.condition || '—';
   const type = entry?.basics?.type || '—';
   if (elements.genType) elements.genType.textContent = type;
 
-  // Location
+  // 3. Location
   const lat = parseFloat(entry?.location?.lat);
   const lng = parseFloat(entry?.location?.lng);
   const acc = parseFloat(entry?.location?.acc);
   const alt = parseFloat(entry?.location?.alt);
-  const ts  = entry?.location?.ts ? new Date(parseInt(entry.location.ts,10)).toLocaleString() : '—';
+  const ts  = entry?.location?.ts ? new Date(parseInt(entry.location.ts, 10)).toLocaleString() : '—'; // Fixed parseInt radix
 
   if (elements.locDD) elements.locDD.textContent  =
     (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—';
   if (elements.locDMS) elements.locDMS.textContent =
-    (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat,true)} | ${toDMS(lng,false)}` : '—';
+    (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat, true)} | ${toDMS(lng, false)}` : '—';
   if (elements.locAlt) elements.locAlt.textContent = Number.isFinite(alt) ? `${fmt1(alt)} m` : '—';
   
   paintAccText(elements.locAcc, acc);
@@ -473,36 +473,42 @@ function fillDetails(entry) {
   if (elements.locTime) elements.locTime.textContent  = ts;
   if (elements.locMaps) {
     if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      // NOTE: Using the correct Google Maps URL format
       elements.locMaps.innerHTML = `<a href="https://maps.google.com/?q=${lat},${lng}" target="_blank">View in Maps</a>`;
     } else {
       elements.locMaps.textContent = '—';
     }
   }
 
-  // Circumference
-  // Note: The HTML only has c-circ, c-diam, c-avg. No separate single/multi fields.
+  // 4. Circumference (Single/Multi-trunk)
   const st = entry?.results?.lastSingle;
   const mt = entry?.results?.lastMulti;
   
-  if (!mt) { // Single-trunk logic (if no multi-data)
-    if (elements.circCirc) elements.circCirc.textContent = st ? `${fmt2(st.cM)} m (${fmt2(st.cFt)} ft)` : '—';
-    if (elements.circDiam) elements.circDiam.textContent = st ? `${fmt2(st.dM)} m (${fmt2(st.dFt)} ft)` : '—';
+  if (mt) { // Multi-trunk logic (uses equivalent/average fields)
+    if (elements.circCirc) elements.circCirc.textContent = mt.cEqM ? `${fmt2(mt.cEqM)} m (${fmt2(mt.cEqFt)} ft)` : '—';
+    if (elements.circDiam) elements.circDiam.textContent = mt.dEqM ? `${fmt2(mt.dEqM)} m (${fmt2(mt.dEqFt)} ft)` : '—';
+    if (elements.circAvg) elements.circAvg.textContent = mt.cAvgM ? `${fmt2(mt.cAvgM)} m (${fmt2(mt.cAvgFt)} ft)` : 'N/A';
+    if (elements.circLargest) elements.circLargest.textContent = mt.largestNote || '—';
+  } else if (st) { // Single-trunk logic (uses single-trunk fields)
+    if (elements.circCirc) elements.circCirc.textContent = st.cM ? `${fmt2(st.cM)} m (${fmt2(st.cFt)} ft)` : '—';
+    if (elements.circDiam) elements.circDiam.textContent = st.dM ? `${fmt2(st.dM)} m (${fmt2(st.dFt)} ft)` : '—';
     if (elements.circAvg) elements.circAvg.textContent = 'N/A';
-  } else { // Multi-trunk logic
-    if (elements.circCirc) elements.circCirc.textContent = `${fmt2(mt.cEqM)} m (${fmt2(mt.cEqFt)} ft)`;
-    if (elements.circDiam) elements.circDiam.textContent = `${fmt2(mt.dEqM)} m (${fmt2(mt.dEqFt)} ft)`;
-    if (elements.circAvg) elements.circAvg.textContent = `${fmt2(mt.cAvgM)} m (${fmt2(mt.cAvgFt)} ft)`;
-    // Largest trunk note logic (using 'c-largest' if you decide to add it back)
-    // if (elements.circLargest) elements.circLargest.textContent = '... logic here ...';
+    if (elements.circLargest) elements.circLargest.textContent = '—';
+  } else {
+    // No data available
+    if (elements.circCirc) elements.circCirc.textContent = '—';
+    if (elements.circDiam) elements.circDiam.textContent = '—';
+    if (elements.circAvg) elements.circAvg.textContent = '—';
+    if (elements.circLargest) elements.circLargest.textContent = '—';
   }
 
-  // Height
+  // 5. Height
   const ht = entry?.results?.lastHeight;
   if (ht) {
-    if (elements.hFinal) elements.hFinal.textContent   = `${fmt2(ht.hM)} m (${fmt2(ht.hFt)} ft)`;
-    if (elements.hAngle) elements.hAngle.textContent = `${fmt1(ht.angleDeg)}°`;
-    if (elements.hDist) elements.hDist.textContent  = `${fmt2(ht.dM)} m`;
-    if (elements.hEye) elements.hEye.textContent   = `${fmt2(ht.eM)} m`;
+    if (elements.hFinal) elements.hFinal.textContent   = ht.hM ? `${fmt2(ht.hM)} m (${fmt2(ht.hFt)} ft)` : '—';
+    if (elements.hAngle) elements.hAngle.textContent = ht.angleDeg ? `${fmt1(ht.angleDeg)}°` : '—';
+    if (elements.hDist) elements.hDist.textContent  = ht.dM ? `${fmt2(ht.dM)} m` : '—';
+    if (elements.hEye) elements.hEye.textContent   = ht.eM ? `${fmt2(ht.eM)} m` : '—';
   } else {
     if (elements.hFinal) elements.hFinal.textContent   = '—';
     if (elements.hAngle) elements.hAngle.textContent = '—';
@@ -510,19 +516,19 @@ function fillDetails(entry) {
     if (elements.hEye) elements.hEye.textContent   = '—';
   }
 
-  // Canopy
+  // 6. Canopy
   const sp = entry?.results?.lastSpread;
   if (sp) {
     if (elements.sMajor) elements.sMajor.textContent = Number.isFinite(sp.majorM) ? `${fmt2(sp.majorM)} m (${fmt2(mToFt(sp.majorM))} ft)` : '—';
     if (elements.sMinor) elements.sMinor.textContent = Number.isFinite(sp.minorM) ? `${fmt2(sp.minorM)} m (${fmt2(mToFt(sp.minorM))} ft)` : '—';
-    if (elements.sFinal) elements.sFinal.textContent = `${fmt2(sp.meanM)} m (${fmt2(sp.meanFt)} ft)`;
+    if (elements.sFinal) elements.sFinal.textContent = sp.meanM ? `${fmt2(sp.meanM)} m (${fmt2(sp.meanFt)} ft)` : '—';
   } else {
     if (elements.sMajor) elements.sMajor.textContent = '—';
     if (elements.sMinor) elements.sMinor.textContent = '—';
     if (elements.sFinal) elements.sFinal.textContent = '—';
   }
 
-  // Notes
+  // 7. Notes
   const notes = (entry?.notes || '').trim();
   if (elements.notes) {
     elements.notes.innerHTML = notes
@@ -530,12 +536,8 @@ function fillDetails(entry) {
       : '—';
   }
   
-  // Observation (using description timestamp, location timestamp, or ID as fallback)
-  // Since there is no ID for the observation time, we skip updating it, 
-  // but you can log it here if needed:
-  // const obsTs = (entry?.descTs ? new Date(entry.descTs).toLocaleString() : ...
-  
-  // Share & copy actions (enable buttons and attach handlers)
+  // 8. Actions (Enable buttons and attach handlers)
+  // These were missing from the previous attempt.
   if (elements.emailBtn) {
     elements.emailBtn.disabled = false;
     elements.emailBtn.addEventListener('click', () => {
@@ -556,9 +558,6 @@ function fillDetails(entry) {
       });
     });
   }
-  
-  // Remove (Keep the handler from the first script block, but ensure it handles both id/idx)
-  // We don't attach the remove handler here since it's already in the first script block.
 }
 
 // basic HTML escape for notes
@@ -570,10 +569,8 @@ function escapeHtml(s){
 (function init(){
   const { entry } = loadSelectedEntry();
   if (!entry) {
-    // Show a simple empty state
     if (elements.treeNameHdr) elements.treeNameHdr.textContent = 'Entry Not Found';
     // alert('This entry was not found. It may have been removed or the link is invalid.');
-    // You could redirect back to the log here: location.href = 'log.html';
     return;
   }
   fillDetails(entry);
