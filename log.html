@@ -83,26 +83,6 @@
     color:#cfe0ff;
   }
 
-  /* Modal detail */
-  .modal{position:fixed; inset:0; display:none; background:rgba(0,0,0,.6); backdrop-filter:blur(2px);}
-  .modal.show{display:block;}
-  .sheet{
-    position:absolute; inset:0; max-width:1000px; margin:0 auto;
-    background:var(--bg-elev); border-left:1px solid var(--border); border-right:1px solid var(--border);
-    overflow:auto;
-  }
-  .sheet-header{
-    position:sticky; top:0; background:linear-gradient(180deg,#0d1b2a,#0f2236);
-    border-bottom:1px solid var(--border); padding:12px 14px;
-    display:flex; justify-content:space-between; align-items:center;
-  }
-  .sheet-title{font-weight:900; margin:0;}
-  .sheet-body{padding:14px; display:grid; gap:14px;}
-  .box{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px;}
-  .results{background:#0b1a2f; border:1px solid var(--border); border-radius:12px; padding:12px;}
-  .btn-row{display:flex; flex-wrap:wrap; gap:10px;}
-  .chip{background:#10253f; border:1px solid var(--border); border-radius:999px; padding:6px 10px; color:#cfe0ff;}
-
   /* Tree log grid */
 .log-grid{
   display:grid;
@@ -172,32 +152,10 @@
   <div id="empty" class="empty" style="display:none;">No entries yet. Save a tree from the Results page to see it here.</div>
 </div>
 
-<!-- DETAIL MODAL -->
-<div id="detailModal" class="modal">
-  <div class="sheet">
-    <div class="sheet-header">
-      <h2 id="detailTitle" class="sheet-title">Tree</h2>
-      <button id="closeModal" class="btn">Close</button>
-    </div>
-    <div class="sheet-body">
-      <div id="detailChips" class="btn-row"></div>
-      <div class="box">
-        <h4>Description</h4>
-        <div id="detailDesc" class="results">—</div>
-      </div>
-      <div class="box">
-        <h4>Actions</h4>
-        <div class="btn-row">
-          <button id="copyBtn" class="btn">Copy description</button>
-          <a id="emailBtn" class="btn" href="#" aria-disabled="true">Open email</a>
-          <button id="removeBtn" class="btn-danger">Remove from log</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script>
+  // At the top of your <script> block
+const LOG_KEY = 'ara_field_v1_log'; 
+  
 // ---------- Loader (yours, kept) ----------
 function loadLogs() {
   const preferred = [
@@ -238,20 +196,11 @@ function loadLogs() {
 // ---------- Elements ----------
 const grid        = document.getElementById('grid');
 const empty       = document.getElementById('empty');
-const modal       = document.getElementById('detailModal');
-const closeModal  = document.getElementById('closeModal');
-const detailTitle = document.getElementById('detailTitle');
-const detailDesc  = document.getElementById('detailDesc');
-const detailChips = document.getElementById('detailChips');
-const copyBtn     = document.getElementById('copyBtn');
-const emailBtn    = document.getElementById('emailBtn');
-const removeBtn   = document.getElementById('removeBtn');
 const loadStatus  = document.getElementById('loadStatus');
 
 let logs = [];
 let keyStore = 'ara_field_v1_log';
-let current = null; // currently opened entry
-
+  
 // ---------- Helpers ----------
 function escapeHtml(s){ 
   return String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -288,127 +237,61 @@ function htmlToPlainText(html){
 
 // ---------- Render the gallery ----------
 function render(){
-  if (!grid) return;
+  if (!grid) return;
 
-  if (!Array.isArray(logs) || logs.length === 0){
-    grid.innerHTML = '';
-    if (empty) empty.style.display = '';
-    return;
-  }
-  if (empty) empty.style.display = 'none';
+  if (!Array.isArray(logs) || logs.length === 0){
+    grid.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
 
-  // newest first
-  const sorted = logs.slice().sort((a,b)=>(b?.ts||0)-(a?.ts||0));
+  // newest first
+  const sorted = logs.slice().sort((a,b)=>(b?.ts||0)-(a?.ts||0));
 
-  grid.innerHTML = sorted.map(entry=>{
-    const id      = entry?.id || String(entry?.ts || '');
-    const name    = (entry?.name || 'Untitled').trim();
-    const species = (entry?.species || '').trim();
-    const when    = fmtDate(entry?.ts);
-    const acc     = Number.isFinite(entry?.location?.acc) ? entry.location.acc : NaN;
-    const bucket  = accBucket(acc);
+  // 1. Generate the HTML map without event listeners
+  grid.innerHTML = sorted.map(entry=>{
+    // Note: The map function itself does not easily expose the original array index (i), 
+    // but it's used correctly in the listener attached below.
+    const id      = entry?.id || String(entry?.ts || '');
+    const name    = (entry?.name || 'Untitled').trim();
+    const species = (entry?.species || '').trim();
+    const when    = fmtDate(entry?.ts);
+    const acc     = Number.isFinite(entry?.location?.acc) ? entry.location.acc : NaN;
+    const bucket  = accBucket(acc);
 
-    return `
-      <article class="card" data-id="${escapeHtml(id)}" role="button" tabindex="0" aria-label="Open ${escapeHtml(name)}">
-        <h3>
-          <span>${escapeHtml(name)}</span>
-          <span class="acc-dot acc-${bucket}" title="${Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : 'No accuracy saved'}"></span>
-        </h3>
-        <div class="muted">${escapeHtml(species || '—')}</div>
-        <div class="muted" style="margin-top:6px;">Recorded: ${escapeHtml(when)}</div>
-      </article>
-    `;
-  }).join('');
+    return `
+      <article class="card" data-id="${escapeHtml(id)}" role="button" tabindex="0" aria-label="Open ${escapeHtml(name)}">
+        <h3>
+          <span>${escapeHtml(name)}</span>
+          <span class="acc-dot acc-${bucket}" title="${Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : 'No accuracy saved'}"></span>
+        </h3>
+        <div class="muted">${escapeHtml(species || '—')}</div>
+        <div class="muted" style="margin-top:6px;">Recorded: ${escapeHtml(when)}</div>
+      </article>
+    `;
+  }).join('');
 
-  // Click/keyboard to open modal
-  grid.querySelectorAll('.card').forEach(card=>{
-    card.addEventListener('click', ()=>{
-      const id = card.getAttribute('data-id');
-      const entry = logs.find(e => String(e.id || e.ts) === String(id));
-      if (entry) openEntry(entry);
-    });
-    card.addEventListener('keydown', (e)=>{
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
-    });
-  });
-}
-
-// ---------- Open entry in modal ----------
-function openEntry(entry){
-  current = entry;
-
-  const name    = (entry?.name || 'Untitled').trim();
-  const species = (entry?.species || '').trim();
-  const when    = fmtDate(entry?.ts);
-  const acc     = Number.isFinite(entry?.location?.acc) ? entry.location.acc : NaN;
-  const bucket  = accBucket(acc);
-
-  if (detailTitle) detailTitle.textContent = name || 'Untitled';
-
-  // chips
-  if (detailChips){
-    detailChips.innerHTML = `
-      <span class="chip">${escapeHtml(species || 'Unknown species')}</span>
-      <span class="chip">Recorded: ${escapeHtml(when)}</span>
-      <span class="chip">Accuracy: ${
-        Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : '—'
-      } <span class="acc-dot acc-${bucket}" style="margin-left:6px;"></span></span>
-    `;
-  }
-
-  // description HTML (fall back to plaintext if needed)
-  const descHTML = entry?.descHtml || entry?.desc || '';
-  if (detailDesc) detailDesc.innerHTML = descHTML || '—';
-
-  // email link
-  if (emailBtn){
-    const text = entry?.descText || htmlToPlainText(descHTML || '');
-    const subj = 'ARA Tree Log – ' + (name || 'Untitled');
-    emailBtn.href = 'mailto:?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(text || '');
-    emailBtn.removeAttribute('aria-disabled');
-  }
-
-  // show modal
-  if (modal) modal.classList.add('show');
-}
-
-// ---------- Modal actions ----------
-if (closeModal){
-  closeModal.addEventListener('click', ()=> modal && modal.classList.remove('show'));
-}
-if (copyBtn){
-  copyBtn.addEventListener('click', ()=>{
-    if (!current) return;
-    const html = current.descHtml || current.desc || '';
-    const text = current.descText || htmlToPlainText(html || '');
-    (navigator.clipboard?.writeText
-      ? navigator.clipboard.writeText(text)
-      : new Promise(res=>{
-          const t=document.createElement('textarea');
-          t.value=text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); res();
-        })
-    ).then(()=>{
-      const old = copyBtn.textContent;
-      copyBtn.textContent = 'Copied ✓';
-      setTimeout(()=> copyBtn.textContent = old, 1200);
-    });
-  });
-}
-if (removeBtn){
-  removeBtn.addEventListener('click', ()=>{
-    if (!current) return;
-    const id = String(current.id || current.ts || '');
-    logs = logs.filter(e => String(e.id || e.ts) !== id);
-    try { localStorage.setItem(keyStore, JSON.stringify(logs)); } catch {}
-    modal && modal.classList.remove('show');
-    render();
-    // update status
-    if (loadStatus){
-      loadStatus.textContent = logs.length
-        ? `Loaded ${logs.length} from “${keyStore}”`
-        : `No entries (checked “${keyStore}”)`;
-    }
-  });
+  // 2. Attach the new event listeners
+  grid.querySelectorAll('.card').forEach((card, i)=>{
+    // Get the corresponding entry from the sorted array
+    const entry = sorted[i]; 
+    
+    card.addEventListener('click', () => {
+      // Assumes each entry has a stable `id` set when saved (e.g., Date.now()).
+      // Fallback: if it doesn’t, pass the array index instead as `idx`.
+      const target = entry.id != null
+        ? `details.html?id=${encodeURIComponent(entry.id)}&k=${encodeURIComponent(LOG_KEY)}`
+        : `details.html?idx=${i}&k=${encodeURIComponent(LOG_KEY)}`;
+      
+      window.location.href = target;
+    });
+    
+    // Keep keyboard support
+    card.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+    });
+  });
 }
 
 // ---------- Boot / Refresh ----------
@@ -426,11 +309,6 @@ function boot() {
 }
 
 document.getElementById('refreshBtn').onclick = boot;
-document.addEventListener('keydown', (e)=>{
-  if (e.key === 'Escape' && modal?.classList.contains('show')) {
-    modal.classList.remove('show');
-  }
-});
 
 boot();
 </script>
