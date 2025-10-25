@@ -120,9 +120,9 @@
 <!-- Header -->
 <header class="topbar">
   <div class="wrap">
-    <h1 class="page-title">
-      ARA — <span id="treeNameHdr">Tree name</span>
-    </h1>
+   <h1 class="page-title" id="page-title">
+      ARA — <span>Tree name</span>
+    </h1>
 
     <div class="subheader-actions">
       <a id="btnBackToLog"  href="log.html"   class="btn btn-ghost btn-sm">← Return to Log</a>
@@ -181,10 +181,10 @@
           <div class="label">Accuracy</div>
           <div class="value" id="loc-acc">±— m</div>
         </div>
-        <div class="row">
-          <div class="label">Recorded</div>
-          <div class="value" id="loc-time">—</div>
-        </div>
+       <div class="row">
+          <div class="label">Recorded</div>
+          <div class="value" id="loc-recorded">—</div>
+        </div>
         <div class="row">
           <div class="label">Google Maps</div>
           <div class="value" id="loc-maps">—</div>
@@ -198,24 +198,24 @@
   <section class="card">
     <div class="block">
       <div class="section-title">Circumference</div>
-      <div class="grid">
-        <div class="row">
-          <div class="label">Entered/Equivalent circumference</div>
-          <div class="value" id="c-circ">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Diameter (from circumference)</div>
-          <div class="value" id="c-diam">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Average circumference (multi)</div>
-          <div class="value" id="c-avg">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Largest trunk note</div>
-          <div class="value" id="c-largest">—</div>
-        </div>
-      </div>
+      
+<div class="grid">
+        <div class="row">
+          <div class="label">Entered/Equivalent circumference</div>
+          <div class="value" id="circ-entered">—</div>         </div>
+        <div class="row">
+          <div class="label">Diameter (from circumference)</div>
+          <div class="value" id="circ-diameter">—</div>         </div>
+        
+                <div class="row" id="row-circ-avg"> 
+          <div class="label">Average circumference (multi)</div>
+          <div class="value" id="circ-avg">—</div>         </div>
+        
+                <div class="row" id="row-circ-largest">
+          <div class="label">Largest trunk note</div>
+          <div class="value" id="circ-largest">—</div>         </div>
+      </div>
+      
     </div>
   </section>
 
@@ -224,9 +224,9 @@
     <div class="block">
       <div class="section-title">Height</div>
       <div class="grid">
-        <div class="row">
-          <div class="label">Tree height</div>
-          <div class="value" id="h-final">—</div>
+<div class="row">
+          <div class="label">Tree height</div>
+          <div class="value" id="h-height">—</div>         
         </div>
         <div class="row">
           <div class="label">Angle (°)</div>
@@ -248,20 +248,17 @@
   <section class="card">
     <div class="block">
       <div class="section-title">Canopy spread</div>
-      <div class="grid">
-        <div class="row">
-          <div class="label">Major axis</div>
-          <div class="value" id="s-major">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Minor axis</div>
-          <div class="value" id="s-minor">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Final canopy spread</div>
-          <div class="value" id="s-final">—</div>
-        </div>
-      </div>
+     <div class="grid">
+        <div class="row">
+          <div class="label">Major axis</div>
+          <div class="value" id="c-major">—</div>         </div>
+        <div class="row">
+          <div class="label">Minor axis</div>
+          <div class="value" id="c-minor">—</div>         </div>
+        <div class="row">
+          <div class="label">Final canopy spread</div>
+          <div class="value" id="c-mean">—</div>         </div>
+      </div>
     </div>
   </section>
 
@@ -269,9 +266,8 @@
   <section class="card">
     <div class="block">
       <div class="section-title">Notes</div>
-      <div class="row" style="padding:14px;">
-        <div class="value" id="notes">—</div>
-      </div>
+     <div class="row" style="padding:14px;">
+        <div class="value" id="notes-body">—</div>       </div>
     </div>
   </section>
 
@@ -316,135 +312,190 @@
 </script>
 
 <script>
-(function () {
-  // ---------- helpers ----------
-  const $ = sel => document.querySelector(sel);
-  const set = (sel, val) => { const el = $(sel); if (el) el.textContent = (val ?? '—'); };
-  const setHTML = (sel, html) => { const el = $(sel); if (el) el.innerHTML = html || '—'; };
-  const fmt2 = v => Number.isFinite(v) ? v.toFixed(2) : '—';
-  const fmt1 = v => Number.isFinite(v) ? v.toFixed(1) : '—';
-  const mToFt = m => m * 3.28084;
+/* ---------- Selectors expected in your HTML ----------
 
-  // accuracy → text color
-  function accClass(m){
-    if (!Number.isFinite(m)) return 'acc-grey';
-    if (m <= 5)  return 'acc-green';
-    if (m < 20)  return 'acc-amber';
-    return 'acc-grey';
-  }
-  function paintAccuracyText(sel, meters){
-    const el = $(sel);
-    if (!el) return;
-    el.classList.remove('acc-green','acc-amber','acc-grey');
-    el.classList.add(accClass(meters));
-    el.textContent = Number.isFinite(meters) ? `±${meters.toFixed(1)} m` : '±—';
-  }
+General:
+  #gen-name, #gen-species, #gen-condition, #gen-type
 
-  // DMS
+Location:
+  #loc-dd, #loc-dms, #loc-alt, #loc-acc, #loc-recorded, #loc-maps  (anchor)
+
+Circumference:
+  #circ-entered, #circ-diameter, #circ-avg, #circ-largest
+  Rows you want to show/hide:
+    #row-circ-avg, #row-circ-largest  (multi-only)
+
+Height:
+  #h-height, #h-angle, #h-dist, #h-eye
+
+Canopy:
+  #c-major, #c-minor, #c-mean
+
+Notes:
+  #notes-body
+
+Header:
+  #page-title (e.g., "ARA — Tree name")
+
+Utility classes for accuracy color (same palette as app):
+  .acc-green, .acc-amber, .acc-grey   (text color)
+
+------------------------------------------------------ */
+
+(function(){
+  /* ---------- tiny helpers ---------- */
+  const $ = s => document.querySelector(s);
+  const set = (id, val) => { const el = $(id); if (el) el.textContent = (val ?? '—'); };
+  const setHTML = (id, html) => { const el = $(id); if (el) el.innerHTML = html; };
+  const show = (sel, on) => { const el = $(sel); if (el) el.style.display = on ? '' : 'none'; };
+  const PI = Math.PI, FT_PER_M = 3.28084;
+  const mToFt = m => m * FT_PER_M;
+  const fmt2 = x => (Number.isFinite(x) ? x.toFixed(2) : '—');
+  const fmt1 = x => (Number.isFinite(x) ? x.toFixed(1) : '—');
+
   function toDMS(dec, isLat){
     if (!Number.isFinite(dec)) return '—';
-    const hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
-    const v = Math.abs(dec);
-    const d = Math.floor(v);
-    const m = Math.floor((v - d) * 60);
-    const s = ((v - d) * 60 - m) * 60;
+    const hemi = dec >= 0 ? (isLat?'N':'E') : (isLat?'S':'W');
+    let v = Math.abs(dec);
+    const d = Math.floor(v); v = (v - d) * 60;
+    const m = Math.floor(v); const s = (v - m) * 60;
     return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
   }
+  function paintAccText(el, meters){
+    if(!el) return;
+    el.classList.remove('acc-green','acc-amber','acc-grey');
+    if (!Number.isFinite(meters)) { el.classList.add('acc-grey'); return; }
+    if (meters <= 5) el.classList.add('acc-green');
+    else if (meters < 20) el.classList.add('acc-amber');
+    else el.classList.add('acc-grey');
+  }
 
-  // ---------- load entry ----------
+  /* ---------- read params & entry ---------- */
   const params = new URLSearchParams(location.search);
   const id = params.get('id');
   const LOG_KEY = params.get('k') || 'ara_field_v1_log';
 
-  let entries = [];
-  try { entries = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch {}
-  const entry = entries.find(e => e && String(e.id) === String(id))
-             || entries.find(e => e && String(e.ts) === String(id)); // fallback
-  if (!entry){ alert('Entry not found.'); return; }
+  // Load from the same localStorage key the log page uses
+  let all = [];
+  try { all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch {}
+  const entry = all.find(e => e && e.id === id);
+  if (!entry){
+    // Show a gentle message if nothing found
+    set('#gen-name', '(entry not found)');
+    return;
+  }
 
-  // Support BOTH schemas
-  const b = entry.basics ? entry.basics : entry;  // name/species/condition/type
-  const r = entry.results ? entry.results : {
-    lastSingle: entry.lastSingle,
-    lastMulti:  entry.lastMulti,
-    lastHeight: entry.lastHeight,
-    lastSpread: entry.lastSpread
-  };
-  const lastSingle = r?.lastSingle || null;
-  const lastMulti  = r?.lastMulti  || null;
-  const lastHeight = r?.lastHeight || null;
-  const lastSpread = r?.lastSpread || null;
+  /* ---------- Header title ---------- */
+  const name = entry?.basics?.name || 'Tree name';
+  set('#page-title', `ARA — ${name}`);
 
-  // ---------- GENERAL ----------
-  set('#gen-name', b.name || '—');
-  set('#gen-species', b.species || '—');
-  set('#gen-condition', b.condition || '—');
-  set('#gen-type', b.type || '—');
+  /* ---------- General ---------- */
+  set('#gen-name',       name || '—');
+  set('#gen-species',    entry?.basics?.species || '—');
+  set('#gen-condition',  entry?.basics?.condition || '—');
+  set('#gen-type',       entry?.basics?.type || '—');
 
-  // header title
-  if (b.name) { const hdr = document.getElementById('treeNameHdr'); if (hdr) hdr.textContent = b.name; }
+  /* ---------- Location ---------- */
+  const loc = entry?.location || {};
+  const lat = parseFloat(loc.lat), lng = parseFloat(loc.lng);
+  const alt = (loc.alt!==undefined && loc.alt!=='') ? parseFloat(loc.alt) : NaN;
+  const acc = (loc.acc!==undefined && loc.acc!=='') ? parseFloat(loc.acc) : NaN;
+  const ts  = loc.ts ? parseInt(loc.ts,10) : NaN;
 
-  // ---------- LOCATION ----------
-  if (entry.location){
-    const lat = parseFloat(entry.location.lat);
-    const lng = parseFloat(entry.location.lng);
-    set('#loc-dd', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—');
-    set('#loc-dms', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat,true)}  |  ${toDMS(lng,false)}` : '—');
+  set('#loc-dd', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—');
+  set('#loc-dms', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat,true)} | ${toDMS(lng,false)}` : '—');
+  set('#loc-alt', Number.isFinite(alt) ? `${fmt1(alt)} m` : '—');
 
-    const alt = parseFloat(entry.location.alt);
-    set('#loc-alt', Number.isFinite(alt) ? `${alt.toFixed(1)} m` : '—');
+  const accEl = document.querySelector('#loc-acc');
+  if (Number.isFinite(acc)) {
+    set('#loc-acc', `±${fmt1(acc)} m`);
+    paintAccText(accEl, acc);
+  } else {
+    set('#loc-acc','±— m');
+    paintAccText(accEl, NaN);
+  }
 
-    const acc = parseFloat(entry.location.acc);
-    paintAccuracyText('#loc-acc', acc);
+  set('#loc-recorded', Number.isFinite(ts) ? new Date(ts).toLocaleString() : '—');
 
-    const ts = entry.location.ts ? new Date(parseInt(entry.location.ts,10)) : (entry.ts ? new Date(entry.ts) : null);
-    set('#loc-time', ts ? ts.toLocaleString() : '—');
+  // Google Maps link
+  const a = document.querySelector('#loc-maps');
+  if (a && Number.isFinite(lat) && Number.isFinite(lng)){
+    const url = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+    a.href = url;
+    a.textContent = url;
+  } else if (a){
+    a.removeAttribute('href');
+    a.textContent = '—';
+  }
 
-    if (Number.isFinite(lat) && Number.isFinite(lng)){
-      const url = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
-      setHTML('#loc-maps', `<a href="${url}" target="_blank" rel="noopener">${url}</a>`);
+  /* ---------- Circumference ---------- */
+  const type = (entry?.basics?.type || '').trim();
+  const R = entry?.results || {};
+
+  // Single
+  if (type === 'Single trunk tree' && R.lastSingle){
+    const s = R.lastSingle; // {cM,cFt,dM,dFt}
+    set('#circ-entered',   `${fmt2(s.cM)} m (${fmt2(s.cFt)} ft)`);
+    set('#circ-diameter',  `${fmt2(s.dM)} m (${fmt2(s.dFt)} ft)`);
+    // Hide multi-only rows
+    show('#row-circ-avg', false);
+    show('#row-circ-largest', false);
+  }
+  // Multi
+  else if (type === 'Multi trunked tree' && R.lastMulti){
+    const m = R.lastMulti; // {cEqM,cEqFt,dEqM,dEqFt,cAvgM,cAvgFt,trunks[],tie}
+    set('#circ-entered',  `${fmt2(m.cEqM)} m (${fmt2(m.cEqFt)} ft)`); // Equivalent circumference
+    set('#circ-diameter', `${fmt2(m.dEqM)} m (${fmt2(m.dEqFt)} ft)`); // From equivalent
+    set('#circ-avg',      `${fmt2(m.cAvgM)} m (${fmt2(m.cAvgFt)} ft)`);
+
+    // Largest trunk note
+    if (Array.isArray(m.trunks) && m.trunks.length){
+      const dmax = Math.max(...m.trunks.map(t=>t.dM));
+      const largest = m.trunks.filter(t => Math.abs(t.dM - dmax) < 1e-9)
+                              .map(t => `T${t.index}: ${fmt2(t.cM)} m → ${fmt2(t.dM)} m`);
+      set('#circ-largest', largest.length ? (m.tie ? `Tie — ${largest.join(', ')}` : largest[0]) : '—');
     } else {
-      setHTML('#loc-maps', '—');
+      set('#circ-largest', '—');
     }
+    // Show multi-only rows
+    show('#row-circ-avg', true);
+    show('#row-circ-largest', true);
+  }
+  // Unknown / not computed
+  else {
+    set('#circ-entered','—');
+    set('#circ-diameter','—');
+    show('#row-circ-avg', false);
+    show('#row-circ-largest', false);
   }
 
-  // ---------- CIRCUMFERENCE ----------
-  if (b.type === 'Multi trunked tree' && lastMulti){
-    set('#c-circ', `${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft)`);
-    set('#c-diam', `${fmt2(lastMulti.dEqM)} m (${fmt2(lastMulti.dEqFt)} ft)`);
-    set('#c-avg',  `${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft)`);
-    const trunkNote = (lastMulti.trunks || []).filter(t => t.isLargest).map(t => `T${t.index}`).join(', ');
-    set('#c-largest', trunkNote ? `Largest: ${trunkNote}` : '—');
-  } else if (b.type === 'Single trunk tree' && lastSingle){
-    set('#c-circ', `${fmt2(lastSingle.cM)} m (${fmt2(lastSingle.cFt)} ft)`);
-    set('#c-diam', `${fmt2(lastSingle.dM)} m (${fmt2(lastSingle.dFt)} ft)`);
-    set('#c-avg',  '—');
-    set('#c-largest', '—');
+  /* ---------- Height ---------- */
+  if (R.lastHeight){
+    const h = R.lastHeight; // {hM,hFt,angleDeg,dM,eM}
+    set('#h-height', `${fmt2(h.hM)} m (${fmt2(h.hFt)} ft)`);
+    set('#h-angle',  fmt1(h.angleDeg));
+    set('#h-dist',   `${fmt2(h.dM)} m (${fmt2(mToFt(h.dM))} ft)`);
+    set('#h-eye',    `${fmt2(h.eM)} m (${fmt2(mToFt(h.eM))} ft)`);
   } else {
-    set('#c-circ','—'); set('#c-diam','—'); set('#c-avg','—'); set('#c-largest','—');
+    set('#h-height','—'); set('#h-angle','—'); set('#h-dist','—'); set('#h-eye','—');
   }
 
-  // ---------- HEIGHT ----------
-  if (lastHeight){
-    set('#h-final', `${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`);
-    set('#h-angle', fmt1(lastHeight.angleDeg));
-    set('#h-dist',  `${fmt2(lastHeight.dM)} m (${fmt2(mToFt(lastHeight.dM))} ft)`);
-    set('#h-eye',   `${fmt2(lastHeight.eM)} m (${fmt2(mToFt(lastHeight.eM))} ft)`);
+  /* ---------- Canopy ---------- */
+  if (R.lastSpread){
+    const sp = R.lastSpread; // {majorM,minorM,meanM,meanFt}
+    if (Number.isFinite(sp.majorM)) set('#c-major', `${fmt2(sp.majorM)} m (${fmt2(mToFt(sp.majorM))} ft)`);
+    else set('#c-major','—');
+    if (Number.isFinite(sp.minorM)) set('#c-minor', `${fmt2(sp.minorM)} m (${fmt2(mToFt(sp.minorM))} ft)`);
+    else set('#c-minor','—');
+    set('#c-mean', `${fmt2(sp.meanM)} m (${fmt2(sp.meanFt)} ft)`);
   } else {
-    set('#h-final','—'); set('#h-angle','—'); set('#h-dist','—'); set('#h-eye','—');
+    set('#c-major','—'); set('#c-minor','—'); set('#c-mean','—');
   }
 
-  // ---------- CANOPY ----------
-  if (lastSpread){
-    set('#s-major', Number.isFinite(lastSpread.majorM) ? `${fmt2(lastSpread.majorM)} m (${fmt2(mToFt(lastSpread.majorM))} ft)` : '—');
-    set('#s-minor', Number.isFinite(lastSpread.minorM) ? `${fmt2(lastSpread.minorM)} m (${fmt2(mToFt(lastSpread.minorM))} ft)` : '—');
-    set('#s-final', `${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)`);
-  } else {
-    set('#s-major','—'); set('#s-minor','—'); set('#s-final','—');
-  }
+  /* ---------- Notes ---------- */
+  const notes = (entry?.notes || '').trim();
+  set('#notes-body', notes || '—');
 
-  // ---------- NOTES ----------
-  set('#notes', (entry.notes && entry.notes.trim()) ? entry.notes : '—');
 })();
 </script>
 
