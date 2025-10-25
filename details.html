@@ -312,192 +312,203 @@
 </script>
 
 <script>
-/* ---------- Selectors expected in your HTML ----------
-
-General:
-  #gen-name, #gen-species, #gen-condition, #gen-type
-
-Location:
-  #loc-dd, #loc-dms, #loc-alt, #loc-acc, #loc-recorded, #loc-maps  (anchor)
-
-Circumference:
-  #circ-entered, #circ-diameter, #circ-avg, #circ-largest
-  Rows you want to show/hide:
-    #row-circ-avg, #row-circ-largest  (multi-only)
-
-Height:
-  #h-height, #h-angle, #h-dist, #h-eye
-
-Canopy:
-  #c-major, #c-minor, #c-mean
-
-Notes:
-  #notes-body
-
-Header:
-  #page-title (e.g., "ARA — Tree name")
-
-Utility classes for accuracy color (same palette as app):
-  .acc-green, .acc-amber, .acc-grey   (text color)
-
------------------------------------------------------- */
-
 (function(){
-  /* ---------- tiny helpers ---------- */
-  const $ = s => document.querySelector(s);
-  const set = (id, val) => { const el = $(id); if (el) el.textContent = (val ?? '—'); };
-  const setHTML = (id, html) => { const el = $(id); if (el) el.innerHTML = html; };
-  const show = (sel, on) => { const el = $(sel); if (el) el.style.display = on ? '' : 'none'; };
-  const PI = Math.PI, FT_PER_M = 3.28084;
-  const mToFt = m => m * FT_PER_M;
-  const fmt2 = x => (Number.isFinite(x) ? x.toFixed(2) : '—');
-  const fmt1 = x => (Number.isFinite(x) ? x.toFixed(1) : '—');
+  /* ---------- tiny helpers and Utilities ---------- */
+  const $ = s => document.querySelector(s);
+  const set = (id, val) => { const el = $(id); if (el) el.textContent = (val ?? '—'); };
+  const setHTML = (id, html) => { const el = $(id); if (el) el.innerHTML = html; };
+  const show = (sel, on) => { const el = $(sel); if (el) el.style.display = on ? '' : 'none'; };
+  
+  const FT_PER_M = 3.28084;
+  const mToFt = m => m * FT_PER_M;
+  const fmt2 = x => (Number.isFinite(x) ? x.toFixed(2) : '—');
+  const fmt1 = x => (Number.isFinite(x) ? x.toFixed(1) : '—');
 
-  function toDMS(dec, isLat){
-    if (!Number.isFinite(dec)) return '—';
-    const hemi = dec >= 0 ? (isLat?'N':'E') : (isLat?'S':'W');
-    let v = Math.abs(dec);
-    const d = Math.floor(v); v = (v - d) * 60;
-    const m = Math.floor(v); const s = (v - m) * 60;
-    return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
+  function toDMS(dec, isLat){
+    if (!Number.isFinite(dec)) return '—';
+    const hemi = dec >= 0 ? (isLat?'N':'E') : (isLat?'S':'W');
+    let v = Math.abs(dec);
+    const d = Math.floor(v); v = (v - d) * 60;
+    const m = Math.floor(v); const s = (v - m) * 60;
+    return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
+  }
+  
+  function paintAccText(el, meters){
+    if(!el) return;
+    el.classList.remove('acc-green','acc-amber','acc-grey');
+    if (!Number.isFinite(meters)) { el.classList.add('acc-grey'); return; }
+    if (meters <= 5) el.classList.add('acc-green');
+    else if (meters < 20) el.classList.add('acc-amber');
+    else el.classList.add('acc-grey');
+  }
+
+  function escapeHtml(s){
+    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+  }
+
+
+  /* ---------- Load Entry Data (The Initialization Fix) ---------- */
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  const LOG_KEY = params.get('k') || 'ara_field_v1_log';
+
+  // 1. Load from localStorage
+  let all = [];
+  try { all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch {}
+  // 2. Find the specific entry
+  const entry = all.find(e => e && String(e.id) === String(id));
+  
+  // Define constants for safer access
+  const basics = entry?.basics || {};
+  const loc = entry?.location || {};
+  const R = entry?.results || {}; // R holds the measurement results
+  
+  if (!entry){
+    setHTML('#page-title', 'ARA — <span>Entry Not Found</span>');
+    return; // Stop execution if no entry is found
+  }
+
+  /* ---------- Header title ---------- */
+  const name = basics.name || 'Tree name';
+  // Use setHTML to set the page-title content while preserving the 'ARA —' text
+  setHTML('#page-title', `ARA — <span>${escapeHtml(name)}</span>`); 
+
+  /* ---------- General ---------- */
+  set('#gen-name',       name || '—');
+  set('#gen-species',    basics.species || '—');
+  set('#gen-condition',  basics.condition || '—');
+  set('#gen-type',       basics.type || '—');
+
+  /* ---------- Location ---------- */
+  const lat = parseFloat(loc.lat), lng = parseFloat(loc.lng);
+  const alt = (loc.alt !== undefined && loc.alt !== '') ? parseFloat(loc.alt) : NaN;
+  const acc = (loc.acc !== undefined && loc.acc !== '') ? parseFloat(loc.acc) : NaN;
+  const ts  = loc.ts ? parseInt(loc.ts, 10) : NaN;
+
+  set('#loc-dd', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—');
+  set('#loc-dms', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat, true)} | ${toDMS(lng, false)}` : '—');
+  set('#loc-alt', Number.isFinite(alt) ? `${fmt1(alt)} m` : '—');
+
+  const accEl = document.querySelector('#loc-acc');
+  if (Number.isFinite(acc)) {
+    set('#loc-acc', `±${fmt1(acc)} m`);
+    paintAccText(accEl, acc);
+  } else {
+    set('#loc-acc', '±— m');
+    paintAccText(accEl, NaN);
+  }
+
+  set('#loc-recorded', Number.isFinite(ts) ? new Date(ts).toLocaleString() : '—'); // CORRECT ID: #loc-recorded
+
+  // Google Maps link (ID #loc-maps is a div, so use setHTML)
+  if (Number.isFinite(lat) && Number.isFinite(lng)){
+    // Using a standard Google Maps URL format
+    const url = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+    setHTML('#loc-maps', `<a href="${url}" target="_blank">View on Google Maps</a>`);
+  } else {
+    setHTML('#loc-maps', '—');
+  }
+
+  /* ---------- Circumference ---------- */
+  const type = (basics.type || '').trim();
+
+  // Single
+  if (type === 'Single trunk tree' && R.lastSingle){
+    const s = R.lastSingle; // {cM,cFt,dM,dFt}
+    set('#circ-entered',   `${fmt2(s.cM)} m (${fmt2(s.cFt)} ft)`); // CORRECT ID: #circ-entered
+    set('#circ-diameter',  `${fmt2(s.dM)} m (${fmt2(s.dFt)} ft)`); // CORRECT ID: #circ-diameter
+    
+    // Hide multi-only rows
+    show('#row-circ-avg', false);
+    show('#row-circ-largest', false);
+  }
+  // Multi
+  else if (type === 'Multi trunked tree' && R.lastMulti){
+    const m = R.lastMulti; // {cEqM,cEqFt,dEqM,dEqFt,cAvgM,cAvgFt,trunks[],tie}
+    set('#circ-entered',  `${fmt2(m.cEqM)} m (${fmt2(m.cEqFt)} ft)`); // CORRECT ID: #circ-entered
+    set('#circ-diameter', `${fmt2(m.dEqM)} m (${fmt2(m.dEqFt)} ft)`); // CORRECT ID: #circ-diameter
+    set('#circ-avg',      `${fmt2(m.cAvgM)} m (${fmt2(m.cAvgFt)} ft)`); // CORRECT ID: #circ-avg
+
+    // Largest trunk note
+    if (Array.isArray(m.trunks) && m.trunks.length){
+      const dmax = Math.max(...m.trunks.map(t=>t.dM));
+      const largest = m.trunks.filter(t => Math.abs(t.dM - dmax) < 1e-9)
+                              .map(t => `T${t.index}: ${fmt2(t.cM)} m → ${fmt2(t.dM)} m`);
+      set('#circ-largest', largest.length ? (m.tie ? `Tie — ${largest.join(', ')}` : largest[0]) : '—'); // CORRECT ID: #circ-largest
+    } else {
+      set('#circ-largest', '—'); // CORRECT ID: #circ-largest
+    }
+    
+    // Show multi-only rows
+    show('#row-circ-avg', true);
+    show('#row-circ-largest', true);
+  }
+  // Unknown / not computed
+  else {
+    set('#circ-entered','—'); set('#circ-diameter','—');
+    show('#row-circ-avg', false);
+    show('#row-circ-largest', false);
+  }
+
+  /* ---------- Height ---------- */
+  if (R.lastHeight){
+    const h = R.lastHeight; // {hM,hFt,angleDeg,dM,eM}
+    set('#h-height', `${fmt2(h.hM)} m (${fmt2(h.hFt)} ft)`); // CORRECT ID: #h-height
+    set('#h-angle',  fmt1(h.angleDeg));
+    set('#h-dist',   `${fmt2(h.dM)} m (${fmt2(mToFt(h.dM))} ft)`);
+    set('#h-eye',    `${fmt2(h.eM)} m (${fmt2(mToFt(h.eM))} ft)`);
+  } else {
+    set('#h-height','—'); set('#h-angle','—'); set('#h-dist','—'); set('#h-eye','—');
+  }
+
+  /* ---------- Canopy ---------- */
+  if (R.lastSpread){
+    const sp = R.lastSpread; // {majorM,minorM,meanM,meanFt}
+    if (Number.isFinite(sp.majorM)) set('#c-major', `${fmt2(sp.majorM)} m (${fmt2(mToFt(sp.majorM))} ft)`); // CORRECT ID: #c-major
+    else set('#c-major','—');
+    if (Number.isFinite(sp.minorM)) set('#c-minor', `${fmt2(sp.minorM)} m (${fmt2(mToFt(sp.minorM))} ft)`); // CORRECT ID: #c-minor
+    else set('#c-minor','—');
+    set('#c-mean', `${fmt2(sp.meanM)} m (${fmt2(sp.meanFt)} ft)`); // CORRECT ID: #c-mean
+  } else {
+    set('#c-major','—'); set('#c-minor','—'); set('#c-mean','—');
+  }
+
+  /* ---------- Notes ---------- */
+  const notes = (entry.notes || '').trim();
+  setHTML('#notes-body', notes
+    ? '<ul>' + notes.split(/\n+/).map(line => `<li>${escapeHtml(line)}</li>`).join('') + '</ul>'
+    : '—'
+  ); // CORRECT ID: #notes-body
+  
+  /* ---------- Actions (Copy/Email) ---------- */
+  const emailBtn = document.querySelector('.footer-actions button:nth-child(2)');
+  const copyBtn = document.querySelector('.footer-actions button:nth-child(1)');
+  
+  if (emailBtn && entry.descText) {
+    emailBtn.disabled = false;
+    emailBtn.textContent = 'Open email';
+    emailBtn.addEventListener('click', () => {
+      const subject = `ARA Field Nomination – ${name}`;
+      const body = (entry.descText || 'No description available.').trim();
+      const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      location.href = url;
+    });
   }
-  function paintAccText(el, meters){
-    if(!el) return;
-    el.classList.remove('acc-green','acc-amber','acc-grey');
-    if (!Number.isFinite(meters)) { el.classList.add('acc-grey'); return; }
-    if (meters <= 5) el.classList.add('acc-green');
-    else if (meters < 20) el.classList.add('acc-amber');
-    else el.classList.add('acc-grey');
+  
+  if (copyBtn && entry.descText) {
+    copyBtn.disabled = false;
+    copyBtn.textContent = 'Copy description';
+    copyBtn.addEventListener('click', () => {
+      const text = (entry.descText || 'No description available.').trim();
+      navigator.clipboard?.writeText(text).then(()=> {
+        const prev = copyBtn.textContent;
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(()=> copyBtn.textContent = prev, 900);
+      });
+    });
   }
-
-  /* ---------- read params & entry ---------- */
-  const params = new URLSearchParams(location.search);
-  const id = params.get('id');
-  const LOG_KEY = params.get('k') || 'ara_field_v1_log';
-
-  // Load from the same localStorage key the log page uses
-  let all = [];
-  try { all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch {}
-  const entry = all.find(e => e && e.id === id);
-  if (!entry){
-    // Show a gentle message if nothing found
-    set('#gen-name', '(entry not found)');
-    return;
-  }
-
-  /* ---------- Header title ---------- */
-  const name = entry?.basics?.name || 'Tree name';
-  set('#page-title', `ARA — ${name}`);
-
-  /* ---------- General ---------- */
-  set('#gen-name',       name || '—');
-  set('#gen-species',    entry?.basics?.species || '—');
-  set('#gen-condition',  entry?.basics?.condition || '—');
-  set('#gen-type',       entry?.basics?.type || '—');
-
-  /* ---------- Location ---------- */
-  const loc = entry?.location || {};
-  const lat = parseFloat(loc.lat), lng = parseFloat(loc.lng);
-  const alt = (loc.alt!==undefined && loc.alt!=='') ? parseFloat(loc.alt) : NaN;
-  const acc = (loc.acc!==undefined && loc.acc!=='') ? parseFloat(loc.acc) : NaN;
-  const ts  = loc.ts ? parseInt(loc.ts,10) : NaN;
-
-  set('#loc-dd', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—');
-  set('#loc-dms', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat,true)} | ${toDMS(lng,false)}` : '—');
-  set('#loc-alt', Number.isFinite(alt) ? `${fmt1(alt)} m` : '—');
-
-  const accEl = document.querySelector('#loc-acc');
-  if (Number.isFinite(acc)) {
-    set('#loc-acc', `±${fmt1(acc)} m`);
-    paintAccText(accEl, acc);
-  } else {
-    set('#loc-acc','±— m');
-    paintAccText(accEl, NaN);
-  }
-
-  set('#loc-recorded', Number.isFinite(ts) ? new Date(ts).toLocaleString() : '—');
-
-  // Google Maps link
-  const a = document.querySelector('#loc-maps');
-  if (a && Number.isFinite(lat) && Number.isFinite(lng)){
-    const url = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
-    a.href = url;
-    a.textContent = url;
-  } else if (a){
-    a.removeAttribute('href');
-    a.textContent = '—';
-  }
-
-  /* ---------- Circumference ---------- */
-  const type = (entry?.basics?.type || '').trim();
-  const R = entry?.results || {};
-
-  // Single
-  if (type === 'Single trunk tree' && R.lastSingle){
-    const s = R.lastSingle; // {cM,cFt,dM,dFt}
-    set('#circ-entered',   `${fmt2(s.cM)} m (${fmt2(s.cFt)} ft)`);
-    set('#circ-diameter',  `${fmt2(s.dM)} m (${fmt2(s.dFt)} ft)`);
-    // Hide multi-only rows
-    show('#row-circ-avg', false);
-    show('#row-circ-largest', false);
-  }
-  // Multi
-  else if (type === 'Multi trunked tree' && R.lastMulti){
-    const m = R.lastMulti; // {cEqM,cEqFt,dEqM,dEqFt,cAvgM,cAvgFt,trunks[],tie}
-    set('#circ-entered',  `${fmt2(m.cEqM)} m (${fmt2(m.cEqFt)} ft)`); // Equivalent circumference
-    set('#circ-diameter', `${fmt2(m.dEqM)} m (${fmt2(m.dEqFt)} ft)`); // From equivalent
-    set('#circ-avg',      `${fmt2(m.cAvgM)} m (${fmt2(m.cAvgFt)} ft)`);
-
-    // Largest trunk note
-    if (Array.isArray(m.trunks) && m.trunks.length){
-      const dmax = Math.max(...m.trunks.map(t=>t.dM));
-      const largest = m.trunks.filter(t => Math.abs(t.dM - dmax) < 1e-9)
-                              .map(t => `T${t.index}: ${fmt2(t.cM)} m → ${fmt2(t.dM)} m`);
-      set('#circ-largest', largest.length ? (m.tie ? `Tie — ${largest.join(', ')}` : largest[0]) : '—');
-    } else {
-      set('#circ-largest', '—');
-    }
-    // Show multi-only rows
-    show('#row-circ-avg', true);
-    show('#row-circ-largest', true);
-  }
-  // Unknown / not computed
-  else {
-    set('#circ-entered','—');
-    set('#circ-diameter','—');
-    show('#row-circ-avg', false);
-    show('#row-circ-largest', false);
-  }
-
-  /* ---------- Height ---------- */
-  if (R.lastHeight){
-    const h = R.lastHeight; // {hM,hFt,angleDeg,dM,eM}
-    set('#h-height', `${fmt2(h.hM)} m (${fmt2(h.hFt)} ft)`);
-    set('#h-angle',  fmt1(h.angleDeg));
-    set('#h-dist',   `${fmt2(h.dM)} m (${fmt2(mToFt(h.dM))} ft)`);
-    set('#h-eye',    `${fmt2(h.eM)} m (${fmt2(mToFt(h.eM))} ft)`);
-  } else {
-    set('#h-height','—'); set('#h-angle','—'); set('#h-dist','—'); set('#h-eye','—');
-  }
-
-  /* ---------- Canopy ---------- */
-  if (R.lastSpread){
-    const sp = R.lastSpread; // {majorM,minorM,meanM,meanFt}
-    if (Number.isFinite(sp.majorM)) set('#c-major', `${fmt2(sp.majorM)} m (${fmt2(mToFt(sp.majorM))} ft)`);
-    else set('#c-major','—');
-    if (Number.isFinite(sp.minorM)) set('#c-minor', `${fmt2(sp.minorM)} m (${fmt2(mToFt(sp.minorM))} ft)`);
-    else set('#c-minor','—');
-    set('#c-mean', `${fmt2(sp.meanM)} m (${fmt2(sp.meanFt)} ft)`);
-  } else {
-    set('#c-major','—'); set('#c-minor','—'); set('#c-mean','—');
-  }
-
-  /* ---------- Notes ---------- */
-  const notes = (entry?.notes || '').trim();
-  set('#notes-body', notes || '—');
 
 })();
 </script>
-
 </body>
 </html>
