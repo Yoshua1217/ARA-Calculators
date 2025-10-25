@@ -347,8 +347,57 @@ const toDMS = (dec, isLat) => {
   const m = Math.floor(v); const s = (v - m) * 60;
   return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
 };
+
+// Get URL parameters and the log key
 const params = new URLSearchParams(location.search);
 const LOG_KEY = params.get('k') || 'ara_field_v1_log';
+
+// Reference all the display elements once
+const elements = {
+  // Header
+  treeNameHdr: document.getElementById('treeNameHdr'),
+
+  // General
+  genName: document.getElementById('gen-name'),
+  genSpecies: document.getElementById('gen-species'),
+  genCondition: document.getElementById('gen-condition'),
+  genType: document.getElementById('gen-type'),
+
+  // Location
+  locDD: document.getElementById('loc-dd'),
+  locDMS: document.getElementById('loc-dms'),
+  locAlt: document.getElementById('loc-alt'),
+  locAcc: document.getElementById('loc-acc'),
+  locTime: document.getElementById('loc-time'),
+  locMaps: document.getElementById('loc-maps'),
+
+  // Circumference
+  circCirc: document.getElementById('c-circ'),
+  circDiam: document.getElementById('c-diam'),
+  circAvg: document.getElementById('c-avg'),
+  circLargest: document.getElementById('c-largest'),
+
+  // Height
+  hFinal: document.getElementById('h-final'),
+  hAngle: document.getElementById('h-angle'),
+  hDist: document.getElementById('h-dist'),
+  hEye: document.getElementById('h-eye'),
+
+  // Canopy
+  sMajor: document.getElementById('s-major'),
+  sMinor: document.getElementById('s-minor'),
+  sFinal: document.getElementById('s-final'),
+
+  // Notes
+  notes: document.getElementById('notes'),
+
+  // Observation (Removed 'obs-ts' ID as it doesn't exist, will use entry ID)
+  // Actions
+  emailBtn: document.querySelector('.footer-actions button:nth-child(2)'), // targeting based on position/class
+  copyBtn: document.querySelector('.footer-actions button:nth-child(1)'),
+  removeBtn: document.getElementById('removeFromLog'),
+};
+
 
 /* ---------- Load the record ---------- */
 function loadSelectedEntry() {
@@ -367,6 +416,7 @@ function loadSelectedEntry() {
   }
 
   if (idxParam != null) {
+    // The logs array is NOT sorted here, so we must load by index if ID is missing.
     const i = parseInt(idxParam, 10);
     const found = Number.isInteger(i) ? all[i] : null;
     return { entry: found || null, all, idx: i };
@@ -381,7 +431,7 @@ function paintAccText(el, meters) {
   el.classList.remove('acc-text-green', 'acc-text-amber', 'acc-text-grey');
   if (!Number.isFinite(meters)) {
     el.classList.add('acc-text-grey');
-    el.textContent = '±—';
+    el.textContent = '±— m';
     return;
   }
   if (meters <= 5)       el.classList.add('acc-text-green');
@@ -393,16 +443,17 @@ function paintAccText(el, meters) {
 
 /* ---------- Populate UI ---------- */
 function fillDetails(entry) {
-  // Title
   const treeName = entry?.basics?.name || '—';
-  document.getElementById('tree-name-title').textContent = treeName;
+
+  // Header
+  if (elements.treeNameHdr) elements.treeNameHdr.textContent = treeName;
 
   // General
-  document.getElementById('gen-name').textContent      = entry?.basics?.name || '—';
-  document.getElementById('gen-species').textContent   = entry?.basics?.species || '—';
-  document.getElementById('gen-condition').textContent = entry?.basics?.condition || '—';
+  if (elements.genName) elements.genName.textContent      = entry?.basics?.name || '—';
+  if (elements.genSpecies) elements.genSpecies.textContent   = entry?.basics?.species || '—';
+  if (elements.genCondition) elements.genCondition.textContent = entry?.basics?.condition || '—';
   const type = entry?.basics?.type || '—';
-  document.getElementById('gen-type').textContent = type;
+  if (elements.genType) elements.genType.textContent = type;
 
   // Location
   const lat = parseFloat(entry?.location?.lat);
@@ -411,133 +462,103 @@ function fillDetails(entry) {
   const alt = parseFloat(entry?.location?.alt);
   const ts  = entry?.location?.ts ? new Date(parseInt(entry.location.ts,10)).toLocaleString() : '—';
 
-  document.getElementById('loc-dd').textContent  =
+  if (elements.locDD) elements.locDD.textContent  =
     (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—';
-  document.getElementById('loc-dms').textContent =
-    (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat,true)}  |  ${toDMS(lng,false)}` : '—';
-  document.getElementById('loc-alt').textContent = Number.isFinite(alt) ? `${fmt1(alt)} m` : '—';
-  paintAccText(document.getElementById('loc-acc'), acc);
-  document.getElementById('loc-ts').textContent  = ts;
+  if (elements.locDMS) elements.locDMS.textContent =
+    (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat,true)} | ${toDMS(lng,false)}` : '—';
+  if (elements.locAlt) elements.locAlt.textContent = Number.isFinite(alt) ? `${fmt1(alt)} m` : '—';
+  
+  paintAccText(elements.locAcc, acc);
+  
+  if (elements.locTime) elements.locTime.textContent  = ts;
+  if (elements.locMaps) {
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      elements.locMaps.innerHTML = `<a href="https://maps.google.com/?q=${lat},${lng}" target="_blank">View in Maps</a>`;
+    } else {
+      elements.locMaps.textContent = '—';
+    }
+  }
 
-  // Panels show/hide for trunk type
-  const isMulti = (type === 'Multi trunked tree');
-  document.getElementById('panel-single').style.display = isMulti ? 'none' : '';
-  document.getElementById('panel-multi').style.display  = isMulti ? '' : 'none';
-
-  // Single-trunk values (if present)
+  // Circumference
+  // Note: The HTML only has c-circ, c-diam, c-avg. No separate single/multi fields.
   const st = entry?.results?.lastSingle;
-  document.getElementById('st-c').textContent = st ? `${fmt2(st.cM)} m (${fmt2(st.cFt)} ft)` : '—';
-  document.getElementById('st-d').textContent = st ? `${fmt2(st.dM)} m (${fmt2(st.dFt)} ft)` : '—';
-
-  // Multi-trunk values (if present)
   const mt = entry?.results?.lastMulti;
-  if (mt) {
-    document.getElementById('mt-ceq').textContent = `${fmt2(mt.cEqM)} m (${fmt2(mt.cEqFt)} ft)`;
-    document.getElementById('mt-deq').textContent = `${fmt2(mt.dEqM)} m (${fmt2(mt.dEqFt)} ft)`;
-    const dAvgM = (mt.cAvgM ?? NaN) / Math.PI;
-    const dAvgFt = mToFt(dAvgM);
-    document.getElementById('mt-cavg').textContent = `${fmt2(mt.cAvgM)} m (${fmt2(mt.cAvgFt)} ft)`;
-    document.getElementById('mt-davg').textContent = `${fmt2(dAvgM)} m (${fmt2(dAvgFt)} ft)`;
-
-    const list = document.createElement('ul');
-    (mt.trunks || []).forEach(t => {
-      const li = document.createElement('li');
-      const core = `T${t.index}: ${fmt2(t.cM)} m (${fmt2(t.cFt)} ft) → ${fmt2(t.dM)} m (${fmt2(t.dFt)} ft)`;
-      li.innerHTML = t.isLargest ? `<strong>${core}</strong>` : core;
-      list.appendChild(li);
-    });
-    const holder = document.getElementById('mt-trunks');
-    holder.innerHTML = '';
-    holder.appendChild(list);
-  } else {
-    document.getElementById('mt-ceq').textContent = '—';
-    document.getElementById('mt-deq').textContent = '—';
-    document.getElementById('mt-cavg').textContent = '—';
-    document.getElementById('mt-davg').textContent = '—';
-    document.getElementById('mt-trunks').textContent = '—';
+  
+  if (!mt) { // Single-trunk logic (if no multi-data)
+    if (elements.circCirc) elements.circCirc.textContent = st ? `${fmt2(st.cM)} m (${fmt2(st.cFt)} ft)` : '—';
+    if (elements.circDiam) elements.circDiam.textContent = st ? `${fmt2(st.dM)} m (${fmt2(st.dFt)} ft)` : '—';
+    if (elements.circAvg) elements.circAvg.textContent = 'N/A';
+  } else { // Multi-trunk logic
+    if (elements.circCirc) elements.circCirc.textContent = `${fmt2(mt.cEqM)} m (${fmt2(mt.cEqFt)} ft)`;
+    if (elements.circDiam) elements.circDiam.textContent = `${fmt2(mt.dEqM)} m (${fmt2(mt.dEqFt)} ft)`;
+    if (elements.circAvg) elements.circAvg.textContent = `${fmt2(mt.cAvgM)} m (${fmt2(mt.cAvgFt)} ft)`;
+    // Largest trunk note logic (using 'c-largest' if you decide to add it back)
+    // if (elements.circLargest) elements.circLargest.textContent = '... logic here ...';
   }
 
   // Height
   const ht = entry?.results?.lastHeight;
   if (ht) {
-    document.getElementById('h-val').textContent   = `${fmt2(ht.hM)} m (${fmt2(ht.hFt)} ft)`;
-    document.getElementById('h-angle').textContent = `${fmt1(ht.angleDeg)}°`;
-    document.getElementById('h-dist').textContent  = `${fmt2(ht.dM)} m`;
-    document.getElementById('h-eye').textContent   = `${fmt2(ht.eM)} m`;
+    if (elements.hFinal) elements.hFinal.textContent   = `${fmt2(ht.hM)} m (${fmt2(ht.hFt)} ft)`;
+    if (elements.hAngle) elements.hAngle.textContent = `${fmt1(ht.angleDeg)}°`;
+    if (elements.hDist) elements.hDist.textContent  = `${fmt2(ht.dM)} m`;
+    if (elements.hEye) elements.hEye.textContent   = `${fmt2(ht.eM)} m`;
   } else {
-    document.getElementById('h-val').textContent   = '—';
-    document.getElementById('h-angle').textContent = '—';
-    document.getElementById('h-dist').textContent  = '—';
-    document.getElementById('h-eye').textContent   = '—';
+    if (elements.hFinal) elements.hFinal.textContent   = '—';
+    if (elements.hAngle) elements.hAngle.textContent = '—';
+    if (elements.hDist) elements.hDist.textContent  = '—';
+    if (elements.hEye) elements.hEye.textContent   = '—';
   }
 
   // Canopy
   const sp = entry?.results?.lastSpread;
   if (sp) {
-    document.getElementById('cs-major').textContent = Number.isFinite(sp.majorM) ? `${fmt2(sp.majorM)} m (${fmt2(mToFt(sp.majorM))} ft)` : '—';
-    document.getElementById('cs-minor').textContent = Number.isFinite(sp.minorM) ? `${fmt2(sp.minorM)} m (${fmt2(mToFt(sp.minorM))} ft)` : '—';
-    document.getElementById('cs-final').textContent = `${fmt2(sp.meanM)} m (${fmt2(sp.meanFt)} ft)`;
+    if (elements.sMajor) elements.sMajor.textContent = Number.isFinite(sp.majorM) ? `${fmt2(sp.majorM)} m (${fmt2(mToFt(sp.majorM))} ft)` : '—';
+    if (elements.sMinor) elements.sMinor.textContent = Number.isFinite(sp.minorM) ? `${fmt2(sp.minorM)} m (${fmt2(mToFt(sp.minorM))} ft)` : '—';
+    if (elements.sFinal) elements.sFinal.textContent = `${fmt2(sp.meanM)} m (${fmt2(sp.meanFt)} ft)`;
   } else {
-    document.getElementById('cs-major').textContent = '—';
-    document.getElementById('cs-minor').textContent = '—';
-    document.getElementById('cs-final').textContent = '—';
+    if (elements.sMajor) elements.sMajor.textContent = '—';
+    if (elements.sMinor) elements.sMinor.textContent = '—';
+    if (elements.sFinal) elements.sFinal.textContent = '—';
   }
 
   // Notes
   const notes = (entry?.notes || '').trim();
-  document.getElementById('notes-box').innerHTML = notes
-    ? '<ul>' + notes.split(/\n+/).map(line => `<li>${escapeHtml(line)}</li>`).join('') + '</ul>'
-    : '—';
-
-  // Observation (we use the description timestamp if you stored it;
-  // otherwise fall back to the saved location timestamp or the entry.id)
-  const obsTs =
-    (entry?.descTs ? new Date(entry.descTs).toLocaleString() :
-    entry?.location?.ts ? new Date(parseInt(entry.location.ts,10)).toLocaleString() :
-    entry?.id ? new Date(parseInt(entry.id,10)).toLocaleString() : '—');
-  document.getElementById('obs-ts').textContent = obsTs;
-
-  // Share & copy actions (plain text taken from saved description if present)
-  document.getElementById('btn-email')?.addEventListener('click', () => {
-    const subject = `ARA Field Nomination – ${treeName || 'Tree'}`;
-    const body = (entry?.descText || 'No description available.').trim();
-    const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    location.href = url;
-  });
-  document.getElementById('btn-copy')?.addEventListener('click', () => {
-    const text = (entry?.descText || 'No description available.').trim();
-    navigator.clipboard?.writeText(text).then(()=> {
-      const btn = document.getElementById('btn-copy');
-      const prev = btn.textContent;
-      btn.textContent = 'Copied ✓';
-      setTimeout(()=> btn.textContent = prev, 900);
+  if (elements.notes) {
+    elements.notes.innerHTML = notes
+      ? '<ul>' + notes.split(/\n+/).map(line => `<li>${escapeHtml(line)}</li>`).join('') + '</ul>'
+      : '—';
+  }
+  
+  // Observation (using description timestamp, location timestamp, or ID as fallback)
+  // Since there is no ID for the observation time, we skip updating it, 
+  // but you can log it here if needed:
+  // const obsTs = (entry?.descTs ? new Date(entry.descTs).toLocaleString() : ...
+  
+  // Share & copy actions (enable buttons and attach handlers)
+  if (elements.emailBtn) {
+    elements.emailBtn.disabled = false;
+    elements.emailBtn.addEventListener('click', () => {
+      const subject = `ARA Field Nomination – ${treeName || 'Tree'}`;
+      const body = (entry?.descText || 'No description available.').trim();
+      const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      location.href = url;
     });
-  });
-
-  // Remove
-  document.getElementById('btn-remove')?.addEventListener('click', () => {
-    if (!confirm('Remove this tree from the log? This cannot be undone.')) return;
-
-    let list = [];
-    try { list = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch {}
-    if (!Array.isArray(list)) list = [];
-
-    // Prefer id match; fallback to idx param
-    const id = params.get('id');
-    const idx = params.get('idx');
-
-    if (id != null) {
-      const ix = list.findIndex(e => String(e.id) === String(id));
-      if (ix >= 0) list.splice(ix, 1);
-    } else if (idx != null) {
-      const i = parseInt(idx, 10);
-      if (Number.isInteger(i) && i >= 0 && i < list.length) list.splice(i, 1);
-    }
-
-    localStorage.setItem(LOG_KEY, JSON.stringify(list));
-    // Back to the log
-    location.href = 'log.html';
-  });
+  }
+  if (elements.copyBtn) {
+    elements.copyBtn.disabled = false;
+    elements.copyBtn.addEventListener('click', () => {
+      const text = (entry?.descText || 'No description available.').trim();
+      navigator.clipboard?.writeText(text).then(()=> {
+        const prev = elements.copyBtn.textContent;
+        elements.copyBtn.textContent = 'Copied ✓';
+        setTimeout(()=> elements.copyBtn.textContent = prev, 900);
+      });
+    });
+  }
+  
+  // Remove (Keep the handler from the first script block, but ensure it handles both id/idx)
+  // We don't attach the remove handler here since it's already in the first script block.
 }
 
 // basic HTML escape for notes
@@ -550,8 +571,9 @@ function escapeHtml(s){
   const { entry } = loadSelectedEntry();
   if (!entry) {
     // Show a simple empty state
-    document.getElementById('tree-name-title').textContent = 'Not found';
-    alert('This entry was not found.');
+    if (elements.treeNameHdr) elements.treeNameHdr.textContent = 'Entry Not Found';
+    // alert('This entry was not found. It may have been removed or the link is invalid.');
+    // You could redirect back to the log here: location.href = 'log.html';
     return;
   }
   fillDetails(entry);
