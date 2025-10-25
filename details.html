@@ -291,53 +291,30 @@
 </div>
 
 <script>
-  // --- Header: set tree name from ?name= ---
-  (function(){
-    const params = new URLSearchParams(location.search);
-    const name = (params.get('name') || '').trim();
-    const hdr = document.getElementById('treeNameHdr');
-    if (hdr && name) hdr.textContent = name;
-  })();
+(function(){
+  const removeBtn = document.getElementById('removeFromLog');
+  if (!removeBtn) return;
 
-  // --- Return to Log: prefer history back if you arrived from log.html ---
-  (function(){
-    const btnBackToLog = document.getElementById('btnBackToLog');
-    if (!btnBackToLog) return;
-    btnBackToLog.addEventListener('click', function(e){
-      if (document.referrer && /log\.html(\?|#|$)/.test(document.referrer)){
-        e.preventDefault();
-        history.back();
-      }
-    });
-  })();
+  removeBtn.addEventListener('click', function(){
+    if (!confirm('Are you sure you want to remove this tree from the log? This cannot be undone.')) return;
 
-  // --- Remove from log (with confirm) ---
-  (function(){
-    const removeBtn = document.getElementById('removeFromLog');
-    if (!removeBtn) return;
+    try{
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      const LOG_KEY = params.get('k') || 'ara_field_v1_log';
+      if (!id) throw new Error('No id in URL');
 
-    removeBtn.addEventListener('click', function(){
-      const ok = confirm('Are you sure you want to remove this tree from the log? This cannot be undone.');
-      if (!ok) return;
-
-      try{
-        const params = new URLSearchParams(location.search);
-        const id = params.get('id');
-        const Log_KEY = 'ara_field_v1_log';  // must match log.html & field tools save code
-        if (!id) throw new Error('No id in URL');
-
-        const list = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
-        const next = list.filter(entry => String(entry.id) !== String(id));
-        localStorage.setItem(Log_KEY, JSON.stringify(next));
-
-        // back to log after deletion
-        location.href = 'log.html';
-      }catch(err){
-        alert('Could not remove this entry. ' + (err && err.message ? err.message : err));
-      }
-    });
-  })();
+      const list = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      const next = list.filter(entry => String(entry.id) !== String(id));
+      localStorage.setItem(LOG_KEY, JSON.stringify(next));
+      location.href = 'log.html';
+    }catch(err){
+      alert('Could not remove this entry. ' + (err && err.message ? err.message : err));
+    }
+  });
+})();
 </script>
+
 <script>
 (function () {
   // ---------- helpers ----------
@@ -377,19 +354,26 @@
   // ---------- load entry ----------
   const params = new URLSearchParams(location.search);
   const id = params.get('id');
-  const LOG_KEY = 'ara_field_v1_log';
+  const LOG_KEY = params.get('k') || 'ara_field_v1_log';
 
   let entries = [];
   try { entries = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch {}
-  const entry = entries.find(e => e && String(e.id) === String(id));
+  const entry = entries.find(e => e && String(e.id) === String(id))
+             || entries.find(e => e && String(e.ts) === String(id)); // fallback
   if (!entry){ alert('Entry not found.'); return; }
 
-  const b = entry.basics || {};             // name, species, condition, type
-  const r = entry.results || {};            // lastSingle, lastMulti, lastHeight, lastSpread
-  const lastSingle = r.lastSingle || null;
-  const lastMulti  = r.lastMulti  || null;
-  const lastHeight = r.lastHeight || null;
-  const lastSpread = r.lastSpread || null;
+  // Support BOTH schemas
+  const b = entry.basics ? entry.basics : entry;  // name/species/condition/type
+  const r = entry.results ? entry.results : {
+    lastSingle: entry.lastSingle,
+    lastMulti:  entry.lastMulti,
+    lastHeight: entry.lastHeight,
+    lastSpread: entry.lastSpread
+  };
+  const lastSingle = r?.lastSingle || null;
+  const lastMulti  = r?.lastMulti  || null;
+  const lastHeight = r?.lastHeight || null;
+  const lastSpread = r?.lastSpread || null;
 
   // ---------- GENERAL ----------
   set('#gen-name', b.name || '—');
@@ -397,17 +381,13 @@
   set('#gen-condition', b.condition || '—');
   set('#gen-type', b.type || '—');
 
-  // header subtitle (already set earlier for title text)
-  if (b.name) {
-    const hdr = document.getElementById('treeNameHdr');
-    if (hdr) hdr.textContent = b.name;
-  }
+  // header title
+  if (b.name) { const hdr = document.getElementById('treeNameHdr'); if (hdr) hdr.textContent = b.name; }
 
   // ---------- LOCATION ----------
   if (entry.location){
     const lat = parseFloat(entry.location.lat);
     const lng = parseFloat(entry.location.lng);
-
     set('#loc-dd', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—');
     set('#loc-dms', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat,true)}  |  ${toDMS(lng,false)}` : '—');
 
@@ -417,10 +397,9 @@
     const acc = parseFloat(entry.location.acc);
     paintAccuracyText('#loc-acc', acc);
 
-    const ts = entry.location.ts ? new Date(parseInt(entry.location.ts,10)) : null;
+    const ts = entry.location.ts ? new Date(parseInt(entry.location.ts,10)) : (entry.ts ? new Date(entry.ts) : null);
     set('#loc-time', ts ? ts.toLocaleString() : '—');
 
-    // maps link (your HTML has <div id="loc-maps">—</div>)
     if (Number.isFinite(lat) && Number.isFinite(lng)){
       const url = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
       setHTML('#loc-maps', `<a href="${url}" target="_blank" rel="noopener">${url}</a>`);
@@ -430,18 +409,13 @@
   }
 
   // ---------- CIRCUMFERENCE ----------
-  // Your markup has single set of fields: #c-circ, #c-diam, #c-avg, #c-largest
   if (b.type === 'Multi trunked tree' && lastMulti){
-    // show equivalent & average
     set('#c-circ', `${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft)`);
     set('#c-diam', `${fmt2(lastMulti.dEqM)} m (${fmt2(lastMulti.dEqFt)} ft)`);
     set('#c-avg',  `${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft)`);
-
-    // largest trunk note
     const trunkNote = (lastMulti.trunks || []).filter(t => t.isLargest).map(t => `T${t.index}`).join(', ');
     set('#c-largest', trunkNote ? `Largest: ${trunkNote}` : '—');
   } else if (b.type === 'Single trunk tree' && lastSingle){
-    // entered single trunk
     set('#c-circ', `${fmt2(lastSingle.cM)} m (${fmt2(lastSingle.cFt)} ft)`);
     set('#c-diam', `${fmt2(lastSingle.dM)} m (${fmt2(lastSingle.dFt)} ft)`);
     set('#c-avg',  '—');
@@ -471,11 +445,8 @@
 
   // ---------- NOTES ----------
   set('#notes', (entry.notes && entry.notes.trim()) ? entry.notes : '—');
-
-  // (optional) Description HTML if you later add a panel for it:
-  // if (entry.desc) setHTML('#desc-html', entry.desc);
-
 })();
 </script>
+
 </body>
 </html>
