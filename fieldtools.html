@@ -713,11 +713,13 @@
 
     <div class="block">
       <h3>Share & copy</h3>
-      <div class="btn-row">
-        <button type="button" id="copyDesc" class="btn-ghost" disabled>Copy description</button>
-        <button type="button" id="shareLink" class="btn-ghost" disabled>Copy share link</button>
-        <a id="emailBtn" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
-      </div>
+<div class="btn-row">
+  <button type="button" id="copyDesc" class="btn-ghost" disabled>Copy description</button>
+  <button type="button" id="shareLink" class="btn-ghost" disabled>Copy share link</button>
+  <a id="emailBtn" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
+  <button type="button" id="saveLog" class="btn-ok" disabled>Save to log</button>
+  <button type="button" id="viewLog" class="btn-ghost">View log</button>
+</div>
     </div>
 
     <div class="block">
@@ -2304,6 +2306,171 @@ function initConnectivity(){
   byId('treeName')?.addEventListener('input', function(){
   if (typeof updateKeyMeasurementsBox === 'function') updateKeyMeasurementsBox();
 });
+
+  <script>
+/* ------------ Tree Log (local) ------------ */
+const LOG_KEY = 'ara_log_v1';
+
+function readLog(){
+  try { return JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); }
+  catch { return []; }
+}
+function writeLog(list){
+  try { localStorage.setItem(LOG_KEY, JSON.stringify(list)); }
+  catch(e){ console.warn('writeLog failed', e); }
+}
+function uid(){
+  const t = Date.now();
+  const r = Math.floor(Math.random()*1e6).toString().padStart(6,'0');
+  return `${t}-${r}`;
+}
+function accuracyBucketFromValue(m){
+  // reuse your buckets for a UI dot later; map to a label too
+  const b = accBucket(m); // 'green'|'amber'|'grey' (or 'red' when off)
+  const label = (function(x){
+    if (x==='green') return 'high';
+    if (x==='amber') return 'medium';
+    if (x==='grey')  return 'low';
+    if (x==='red')   return 'off';
+    return 'low';
+  })(b);
+  return {bucket:b, label};
+}
+
+function getBasics(){
+  return {
+    name:      (document.getElementById('treeName')?.value || '').trim(),
+    species:   (document.getElementById('species')?.value || '').trim(),
+    condition: (document.getElementById('condition')?.value || '').trim(),
+    type:      (document.getElementById('treeType')?.value || '').trim()
+  };
+}
+function getSavedLocation(){
+  const lat = parseFloat(document.getElementById('lat')?.value);
+  const lng = parseFloat(document.getElementById('lng')?.value);
+  const acc = parseFloat(document.getElementById('acc')?.value);
+  const altTag = document.getElementById('loc-saved-alt')?.dataset?.val;
+  const alt = Number.isFinite(parseFloat(altTag)) ? parseFloat(altTag) : NaN;
+  const tsTag = document.getElementById('loc-saved-ts')?.dataset?.ts;
+  const ts = Number.isFinite(parseInt(tsTag,10)) ? parseInt(tsTag,10) : null;
+  return {
+    lat: Number.isFinite(lat) ? lat : null,
+    lng: Number.isFinite(lng) ? lng : null,
+    acc: Number.isFinite(acc) ? acc : null,
+    alt: Number.isFinite(alt) ? alt : null,
+    recordedAt: ts
+  };
+}
+
+function makeLogEntry(){
+  // Ensure the on-screen description reflects current inputs
+  const descEl = document.getElementById('desc');
+  const hasDesc = !!(descEl && descEl.innerHTML && descEl.innerHTML.trim() !== '—');
+  if (!hasDesc) {
+    // Build once so Save works even if user forgot to press anything
+    if (typeof generateDescription === 'function') generateDescription();
+  }
+
+  const htmlDesc = (document.getElementById('desc')?.innerHTML || '').trim();
+  const textDesc = (typeof buildDescriptionText === 'function') ? buildDescriptionText() : '';
+
+  const basics = getBasics();
+  const loc = getSavedLocation();
+
+  // Pull your computed results (already persisted in autosave code)
+  const results = {
+    height: window.lastHeight || null,
+    single: window.lastSingle || null,
+    multi:  window.lastMulti  || null,
+    spread: window.lastSpread || null
+  };
+
+  // Quick “key measurements” snapshot for the gallery card
+  const km = {
+    circumferenceM: (results.multi?.cEqM ?? results.single?.cM) ?? null,
+    heightM:        results.height?.hM ?? null,
+    canopyM:        results.spread?.meanM ?? null
+  };
+
+  // Accuracy bucket for the little dot in the gallery
+  const accVal = Number.isFinite(loc.acc) ? loc.acc : NaN;
+  const accInfo = accuracyBucketFromValue(accVal);
+
+  return {
+    id: uid(),
+    createdAt: Date.now(),
+    title: basics.name || basics.species || 'Untitled tree',
+    basics,
+    location: loc,
+    accuracy: { meters: Number.isFinite(accVal) ? accVal : null, bucket: accInfo.bucket, label: accInfo.label },
+    keyMeasurements: km,
+    description: { html: htmlDesc, text: textDesc },
+    // Keep raw state to make a “Re-open for edit” possible later:
+    state: (typeof getFormState === 'function') ? getFormState() : null
+  };
+}
+
+function saveToLog(){
+  try{
+    const entry = makeLogEntry();
+
+    // Require at least a title OR a species so cards aren’t all “Untitled”
+    if (!entry.title || entry.title === 'Untitled tree') {
+      // fall back to something meaningful if nothing at all was typed
+      const loc = entry.location;
+      if (Number.isFinite(loc?.lat) && Number.isFinite(loc?.lng)){
+        entry.title = `Tree @ ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`;
+      }
+    }
+
+    const list = readLog();
+    list.unshift(entry); // newest first
+    writeLog(list);
+
+    // Tiny inline toast/feedback
+    const btn = document.getElementById('saveLog');
+    if (btn){
+      const old = btn.textContent;
+      btn.textContent = 'Saved ✓';
+      btn.disabled = true;
+      setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 900);
+    }
+  }catch(e){
+    console.warn('saveToLog failed', e);
+    alert('Could not save to log (storage error).');
+  }
+}
+
+function updateLogButtonsEnabled(){
+  const descEl = document.getElementById('desc');
+  const hasDesc = !!(descEl && descEl.innerHTML && descEl.innerHTML.trim() !== '—');
+  const saveBtn = document.getElementById('saveLog');
+  if (saveBtn) saveBtn.disabled = !hasDesc;
+}
+
+(function initLogButtons(){
+  const saveBtn = document.getElementById('saveLog');
+  const viewBtn = document.getElementById('viewLog');
+
+  if (saveBtn) saveBtn.addEventListener('click', saveToLog);
+  if (viewBtn) viewBtn.addEventListener('click', function(){
+    const list = readLog();
+    alert(`Log contains ${list.length} entr${list.length===1?'y':'ies'}.\n\n(“View log” page coming next.)`);
+  });
+
+  // Keep Save enabled state aligned with description generation
+  updateLogButtonsEnabled();
+
+  // Also re-check whenever description is (re)generated
+  const _origGen = window.generateDescription;
+  if (typeof _origGen === 'function'){
+    window.generateDescription = function(){
+      _origGen();
+      updateLogButtonsEnabled();
+    };
+  }
+})();
+</script>
 
   // Connectivity: wire up events + initial check
 initConnectivity();
