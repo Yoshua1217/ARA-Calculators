@@ -102,6 +102,55 @@
   .results{background:#0b1a2f; border:1px solid var(--border); border-radius:12px; padding:12px;}
   .btn-row{display:flex; flex-wrap:wrap; gap:10px;}
   .chip{background:#10253f; border:1px solid var(--border); border-radius:999px; padding:6px 10px; color:#cfe0ff;}
+
+  /* Tree log grid */
+.log-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--gap);
+  margin-top: 12px;
+}
+
+/* Each gallery card */
+.log-card{
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .08s ease, border-color .15s ease;
+}
+.log-card:active{ transform: scale(0.985); }
+.log-card .block{ padding: 14px 16px; }
+
+/* Top row: name + tiny accuracy dot */
+.log-head{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  margin-bottom: 6px;
+}
+.log-name{
+  font-weight:800; color:#eaf3ff; letter-spacing:.2px;
+}
+.log-sub{ color: var(--muted); font-size: .95rem; }
+.log-meta{ color: var(--muted); font-size: .86rem; margin-top: 6px; }
+
+/* Reuse your accuracy dot palette */
+.acc-dot{ display:inline-block; width:10px; height:10px; border-radius:50%; border:1px solid rgba(0,0,0,.25); }
+.acc-grey{ background:#46505e; }
+.acc-amber{ background:#ffb300; }
+.acc-green{ background:#1b5e2b; }
+.acc-red  { background:#7a2020; }
+
+/* Empty state */
+.empty{
+  text-align:center;
+  padding:18px;
+  color: var(--muted);
+  border:1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
 </style>
 </head>
 <body>
@@ -149,12 +198,12 @@
 </div>
 
 <script>
-// Robust loader: scan all keys; prefer known names; fall back to biggest valid array
+// ---------- Loader (yours, kept) ----------
 function loadLogs() {
   const preferred = [
-    'ara_field_v1_log',   // canonical key (Field Tools writes here)
-    'ARA_FIELD_LOG_V1',   // older / test key (if you used it)
-    'ara_field_v1_logs',  // plural variant (earlier drafts)
+    'ara_field_v1_log',
+    'ARA_FIELD_LOG_V1',
+    'ara_field_v1_logs',
   ];
 
   const looksLikeLogArray = (arr) => {
@@ -173,13 +222,12 @@ function loadLogs() {
     } catch {}
   }
 
-  // Fallback scan (largest valid array wins)
   let best = { key: 'ara_field_v1_log', items: [] };
   for (let i=0; i<localStorage.length; i++){
     const k = localStorage.key(i);
     try {
       const val = JSON.parse(localStorage.getItem(k));
-      if (looksLikeLogArray(val) && val.length >= best.items.length) {
+      if (Array.isArray(val) && val.length >= best.items.length) {
         best = { key: k, items: val };
       }
     } catch {}
@@ -187,10 +235,10 @@ function loadLogs() {
   return best;
 }
 
-// --- Access elements already declared earlier in your script ---
-const grid   = document.getElementById('grid');
-const empty  = document.getElementById('empty');
-const modal  = document.getElementById('detailModal');
+// ---------- Elements ----------
+const grid        = document.getElementById('grid');
+const empty       = document.getElementById('empty');
+const modal       = document.getElementById('detailModal');
 const closeModal  = document.getElementById('closeModal');
 const detailTitle = document.getElementById('detailTitle');
 const detailDesc  = document.getElementById('detailDesc');
@@ -202,28 +250,190 @@ const loadStatus  = document.getElementById('loadStatus');
 
 let logs = [];
 let keyStore = 'ara_field_v1_log';
-let current = null;
+let current = null; // currently opened entry
 
-// --- Refresh + boot ---
-document.getElementById('refreshBtn').onclick = boot;
+// ---------- Helpers ----------
+function escapeHtml(s){ 
+  return String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function fmtDate(ts){
+  try{
+    const d = new Date(ts);
+    const p = n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }catch{ return '—'; }
+}
+function accBucket(m){
+  if (!Number.isFinite(m)) return 'grey';
+  if (m <= 5)  return 'green';
+  if (m < 20)  return 'amber';
+  return 'grey';
+}
+function htmlToPlainText(html){
+  const div = document.createElement('div');
+  div.innerHTML = html || '';
+  // convert anchors to "text – URL"
+  div.querySelectorAll('a').forEach(a=>{
+    const url = a.getAttribute('href') || '';
+    const span = document.createElement('span');
+    span.textContent = `${a.textContent || url}${url ? ' – ' + url : ''}`;
+    a.replaceWith(span);
+  });
+  // bullets + paragraphs
+  const items = Array.from(div.querySelectorAll('li')).map(li=>`- ${li.textContent.trim()}`);
+  const paras = Array.from(div.querySelectorAll('p')).map(p=>p.textContent.trim());
+  const text  = items.concat(paras).join('\n').trim();
+  return text || div.textContent.trim();
+}
 
+// ---------- Render the gallery ----------
+function render(){
+  if (!grid) return;
+
+  if (!Array.isArray(logs) || logs.length === 0){
+    grid.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  // newest first
+  const sorted = logs.slice().sort((a,b)=>(b?.ts||0)-(a?.ts||0));
+
+  grid.innerHTML = sorted.map(entry=>{
+    const id      = entry?.id || String(entry?.ts || '');
+    const name    = (entry?.name || 'Untitled').trim();
+    const species = (entry?.species || '').trim();
+    const when    = fmtDate(entry?.ts);
+    const acc     = Number.isFinite(entry?.location?.acc) ? entry.location.acc : NaN;
+    const bucket  = accBucket(acc);
+
+    return `
+      <article class="card" data-id="${escapeHtml(id)}" role="button" tabindex="0" aria-label="Open ${escapeHtml(name)}">
+        <h3>
+          <span>${escapeHtml(name)}</span>
+          <span class="acc-dot acc-${bucket}" title="${Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : 'No accuracy saved'}"></span>
+        </h3>
+        <div class="muted">${escapeHtml(species || '—')}</div>
+        <div class="muted" style="margin-top:6px;">Recorded: ${escapeHtml(when)}</div>
+      </article>
+    `;
+  }).join('');
+
+  // Click/keyboard to open modal
+  grid.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const id = card.getAttribute('data-id');
+      const entry = logs.find(e => String(e.id || e.ts) === String(id));
+      if (entry) openEntry(entry);
+    });
+    card.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+    });
+  });
+}
+
+// ---------- Open entry in modal ----------
+function openEntry(entry){
+  current = entry;
+
+  const name    = (entry?.name || 'Untitled').trim();
+  const species = (entry?.species || '').trim();
+  const when    = fmtDate(entry?.ts);
+  const acc     = Number.isFinite(entry?.location?.acc) ? entry.location.acc : NaN;
+  const bucket  = accBucket(acc);
+
+  if (detailTitle) detailTitle.textContent = name || 'Untitled';
+
+  // chips
+  if (detailChips){
+    detailChips.innerHTML = `
+      <span class="chip">${escapeHtml(species || 'Unknown species')}</span>
+      <span class="chip">Recorded: ${escapeHtml(when)}</span>
+      <span class="chip">Accuracy: ${
+        Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : '—'
+      } <span class="acc-dot acc-${bucket}" style="margin-left:6px;"></span></span>
+    `;
+  }
+
+  // description HTML (fall back to plaintext if needed)
+  const descHTML = entry?.descHtml || entry?.desc || '';
+  if (detailDesc) detailDesc.innerHTML = descHTML || '—';
+
+  // email link
+  if (emailBtn){
+    const text = entry?.descText || htmlToPlainText(descHTML || '');
+    const subj = 'ARA Tree Log – ' + (name || 'Untitled');
+    emailBtn.href = 'mailto:?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(text || '');
+    emailBtn.removeAttribute('aria-disabled');
+  }
+
+  // show modal
+  if (modal) modal.classList.add('show');
+}
+
+// ---------- Modal actions ----------
+if (closeModal){
+  closeModal.addEventListener('click', ()=> modal && modal.classList.remove('show'));
+}
+if (copyBtn){
+  copyBtn.addEventListener('click', ()=>{
+    if (!current) return;
+    const html = current.descHtml || current.desc || '';
+    const text = current.descText || htmlToPlainText(html || '');
+    (navigator.clipboard?.writeText
+      ? navigator.clipboard.writeText(text)
+      : new Promise(res=>{
+          const t=document.createElement('textarea');
+          t.value=text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); res();
+        })
+    ).then(()=>{
+      const old = copyBtn.textContent;
+      copyBtn.textContent = 'Copied ✓';
+      setTimeout(()=> copyBtn.textContent = old, 1200);
+    });
+  });
+}
+if (removeBtn){
+  removeBtn.addEventListener('click', ()=>{
+    if (!current) return;
+    const id = String(current.id || current.ts || '');
+    logs = logs.filter(e => String(e.id || e.ts) !== id);
+    try { localStorage.setItem(keyStore, JSON.stringify(logs)); } catch {}
+    modal && modal.classList.remove('show');
+    render();
+    // update status
+    if (loadStatus){
+      loadStatus.textContent = logs.length
+        ? `Loaded ${logs.length} from “${keyStore}”`
+        : `No entries (checked “${keyStore}”)`;
+    }
+  });
+}
+
+// ---------- Boot / Refresh ----------
 function boot() {
   const data = loadLogs();
   keyStore = data.key;
   logs     = Array.isArray(data.items) ? data.items : [];
 
-  // Show where we loaded from
   if (loadStatus) {
     loadStatus.textContent = logs.length
       ? `Loaded ${logs.length} from “${keyStore}”`
       : `No entries (checked “${keyStore}”)`;
   }
-
   render();
 }
 
-boot();
+document.getElementById('refreshBtn').onclick = boot;
+document.addEventListener('keydown', (e)=>{
+  if (e.key === 'Escape' && modal?.classList.contains('show')) {
+    modal.classList.remove('show');
+  }
+});
 
+boot();
 </script>
+
 </body>
 </html>
