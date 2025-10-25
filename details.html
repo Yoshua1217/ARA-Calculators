@@ -334,248 +334,168 @@
   })();
 </script>
 <script>
-/* ---------- Utilities ---------- */
-const FT_PER_M = 3.28084;
-const mToFt = m => m * FT_PER_M;
-const fmt2 = x => Number.isFinite(x) ? x.toFixed(2) : '—';
-const fmt1 = x => Number.isFinite(x) ? x.toFixed(1) : '—';
-const toDMS = (dec, isLat) => {
-  if (!Number.isFinite(dec)) return '—';
-  const hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
-  let v = Math.abs(dec);
-  const d = Math.floor(v); v = (v - d) * 60;
-  const m = Math.floor(v); const s = (v - m) * 60;
-  return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
-};
+(function () {
+  // helpers
+  const $ = sel => document.querySelector(sel);
+  const set = (sel, val) => { const el = $(sel); if (el) el.textContent = (val ?? '—'); };
+  const setHTML = (sel, html) => { const el = $(sel); if (el) el.innerHTML = html || '—'; };
+  const fmt2 = v => Number.isFinite(v) ? v.toFixed(2) : '—';
+  const fmt1 = v => Number.isFinite(v) ? v.toFixed(1) : '—';
+  const mToFt = m => m * 3.28084;
 
-// Get URL parameters and the log key
-const params = new URLSearchParams(location.search);
-const LOG_KEY = params.get('k') || 'ara_field_v1_log';
+  // accuracy color buckets (text color only, per your palette)
+  function accClass(m){
+    if (!Number.isFinite(m)) return 'acc-grey';
+    if (m <= 5)  return 'acc-green';
+    if (m < 20)  return 'acc-amber';
+    return 'acc-grey';
+  }
+  function paintAccuracyText(sel, meters){
+    const el = $(sel);
+    if (!el) return;
+    el.classList.remove('acc-green','acc-amber','acc-grey');
+    el.classList.add(accClass(meters));
+    el.textContent = Number.isFinite(meters) ? `±${meters.toFixed(1)} m` : '±—';
+  }
 
-// Reference all the display elements once
-const elements = {
-  // Header
-  treeNameHdr: document.getElementById('treeNameHdr'),
-
-  // General
-  genName: document.getElementById('gen-name'),
-  genSpecies: document.getElementById('gen-species'),
-  genCondition: document.getElementById('gen-condition'),
-  genType: document.getElementById('gen-type'),
-
-  // Location
-  locDD: document.getElementById('loc-dd'),
-  locDMS: document.getElementById('loc-dms'),
-  locAlt: document.getElementById('loc-alt'),
-  locAcc: document.getElementById('loc-acc'),
-  locTime: document.getElementById('loc-time'),
-  locMaps: document.getElementById('loc-maps'),
-
-  // Circumference
-  circCirc: document.getElementById('c-circ'),
-  circDiam: document.getElementById('c-diam'),
-  circAvg: document.getElementById('c-avg'),
-  circLargest: document.getElementById('c-largest'),
-
-  // Height
-  hFinal: document.getElementById('h-final'),
-  hAngle: document.getElementById('h-angle'),
-  hDist: document.getElementById('h-dist'),
-  hEye: document.getElementById('h-eye'),
-
-  // Canopy
-  sMajor: document.getElementById('s-major'),
-  sMinor: document.getElementById('s-minor'),
-  sFinal: document.getElementById('s-final'),
-
-  // Notes
-  notes: document.getElementById('notes'),
-
-  // Actions
-  emailBtn: document.querySelector('.footer-actions button:nth-child(2)'), 
-  copyBtn: document.querySelector('.footer-actions button:nth-child(1)'),
-  removeBtn: document.getElementById('removeFromLog'),
-};
-
-
-/* ---------- Load the record ---------- */
-function loadSelectedEntry() {
-  let all = [];
-  try {
-    all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
-    if (!Array.isArray(all)) all = [];
-  } catch {}
-
+  // read id from URL and fetch entry from log
+  const params = new URLSearchParams(location.search);
   const id = params.get('id');
-  const idxParam = params.get('idx');
+  const LOG_KEY = 'ara_field_v1_log';
+  let entries = [];
+  try { entries = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch {}
+  const entry = entries.find(e => e && e.id === id);
 
-  if (id != null) {
-    // NOTE: We assume the 'id' is a string or number that matches entry.id
-    const found = all.find(e => String(e.id) === String(id));
-    return { entry: found || null, all };
-  }
-
-  if (idxParam != null) {
-    // NOTE: This fallback relies on the index of the log entry array, which may not be stable
-    const i = parseInt(idxParam, 10);
-    const found = Number.isInteger(i) ? all[i] : null;
-    return { entry: found || null, all, idx: i };
-  }
-
-  return { entry: null, all };
-}
-
-/* ---------- Accuracy color ---------- */
-function paintAccText(el, meters) {
-  if (!el) return;
-  el.classList.remove('acc-text-green', 'acc-text-amber', 'acc-text-grey');
-  if (!Number.isFinite(meters)) {
-    el.classList.add('acc-text-grey');
-    el.textContent = '±— m';
+  if (!entry){
+    alert('Entry not found.'); 
     return;
   }
-  if (meters <= 5)       el.classList.add('acc-text-green');
-  else if (meters < 20)  el.classList.add('acc-text-amber');
-  else                   el.classList.add('acc-text-grey');
 
-  el.textContent = `±${fmt1(meters)} m`;
-}
+  // SHAPE SHORTCUTS
+  const b = entry.basics || {};             // name, species, condition, type
+  const r = entry.results || {};            // lastSingle, lastMulti, lastHeight, lastSpread
+  const lastSingle = r.lastSingle || null;  // single trunk calc snapshot
+  const lastMulti  = r.lastMulti  || null;  // multi trunk calc snapshot
+  const lastHeight = r.lastHeight || null;
+  const lastSpread = r.lastSpread || null;
 
-/* ---------- Populate UI (The main fix) ---------- */
-function fillDetails(entry) {
-  const treeName = entry?.basics?.name || '—';
+  // HEADER
+  set('#title-name', b.name || 'Tree');
+  // If you show the full header line "ARA – {tree}", keep this as-is; buttons moved to the row below per your last tweak.
 
-  // 1. Header
-  if (elements.treeNameHdr) elements.treeNameHdr.textContent = treeName;
+  // ===== General panel
+  set('#gen-name', b.name || '—');
+  set('#gen-species', b.species || '—');
+  set('#gen-condition', b.condition || '—');
+  set('#gen-type', b.type || '—');
 
-  // 2. General
-  if (elements.genName) elements.genName.textContent      = entry?.basics?.name || '—';
-  if (elements.genSpecies) elements.genSpecies.textContent   = entry?.basics?.species || '—';
-  if (elements.genCondition) elements.genCondition.textContent = entry?.basics?.condition || '—';
-  const type = entry?.basics?.type || '—';
-  if (elements.genType) elements.genType.textContent = type;
+  // ===== Location panel (you said this already works, leaving here for completeness)
+  if (entry.location){
+    const lat = parseFloat(entry.location.lat);
+    const lng = parseFloat(entry.location.lng);
+    set('#loc-dd', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—');
 
-  // 3. Location
-  const lat = parseFloat(entry?.location?.lat);
-  const lng = parseFloat(entry?.location?.lng);
-  const acc = parseFloat(entry?.location?.acc);
-  const alt = parseFloat(entry?.location?.alt);
-  const ts  = entry?.location?.ts ? new Date(parseInt(entry.location.ts, 10)).toLocaleString() : '—'; // Fixed parseInt radix
+    // simple DMS helper
+    function toDMS(dec, isLat){
+      if (!Number.isFinite(dec)) return '—';
+      const hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
+      const v = Math.abs(dec);
+      const d = Math.floor(v);
+      const m = Math.floor((v - d) * 60);
+      const s = ((v - d) * 60 - m) * 60;
+      return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
+    }
+    set('#loc-dms', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat,true)}  |  ${toDMS(lng,false)}` : '—');
 
-  if (elements.locDD) elements.locDD.textContent  =
-    (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—';
-  if (elements.locDMS) elements.locDMS.textContent =
-    (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat, true)} | ${toDMS(lng, false)}` : '—';
-  if (elements.locAlt) elements.locAlt.textContent = Number.isFinite(alt) ? `${fmt1(alt)} m` : '—';
-  
-  paintAccText(elements.locAcc, acc);
-  
-  if (elements.locTime) elements.locTime.textContent  = ts;
-  if (elements.locMaps) {
-    if (Number.isFinite(lat) && Number.isFinite(lng)) {
-      // NOTE: Using the correct Google Maps URL format
-      elements.locMaps.innerHTML = `<a href="https://maps.google.com/?q=${lat},${lng}" target="_blank">View in Maps</a>`;
-    } else {
-      elements.locMaps.textContent = '—';
+    const acc = parseFloat(entry.location.acc);
+    paintAccuracyText('#loc-acc', acc);
+
+    // recorded time (ts may be string)
+    const ts = entry.location.ts ? new Date(parseInt(entry.location.ts,10)) : null;
+    set('#loc-when', ts ? ts.toLocaleString() : '—');
+
+    // maps link text (anchor href should already be in markup)
+    const a = document.querySelector('#loc-maplink');
+    if (a && Number.isFinite(lat) && Number.isFinite(lng)){
+      const url = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+      a.href = url;
+      a.textContent = url;
     }
   }
 
-  // 4. Circumference (Single/Multi-trunk)
-  const st = entry?.results?.lastSingle;
-  const mt = entry?.results?.lastMulti;
-  
-  if (mt) { // Multi-trunk logic (uses equivalent/average fields)
-    if (elements.circCirc) elements.circCirc.textContent = mt.cEqM ? `${fmt2(mt.cEqM)} m (${fmt2(mt.cEqFt)} ft)` : '—';
-    if (elements.circDiam) elements.circDiam.textContent = mt.dEqM ? `${fmt2(mt.dEqM)} m (${fmt2(mt.dEqFt)} ft)` : '—';
-    if (elements.circAvg) elements.circAvg.textContent = mt.cAvgM ? `${fmt2(mt.cAvgM)} m (${fmt2(mt.cAvgFt)} ft)` : 'N/A';
-    if (elements.circLargest) elements.circLargest.textContent = mt.largestNote || '—';
-  } else if (st) { // Single-trunk logic (uses single-trunk fields)
-    if (elements.circCirc) elements.circCirc.textContent = st.cM ? `${fmt2(st.cM)} m (${fmt2(st.cFt)} ft)` : '—';
-    if (elements.circDiam) elements.circDiam.textContent = st.dM ? `${fmt2(st.dM)} m (${fmt2(st.dFt)} ft)` : '—';
-    if (elements.circAvg) elements.circAvg.textContent = 'N/A';
-    if (elements.circLargest) elements.circLargest.textContent = '—';
-  } else {
-    // No data available
-    if (elements.circCirc) elements.circCirc.textContent = '—';
-    if (elements.circDiam) elements.circDiam.textContent = '—';
-    if (elements.circAvg) elements.circAvg.textContent = '—';
-    if (elements.circLargest) elements.circLargest.textContent = '—';
+  // ===== Circumference panel(s)
+  const isMulti = (b.type === 'Multi trunked tree');
+  const singleCard = $('#card-circ-single');
+  const multiCard  = $('#card-circ-multi');
+
+  if (singleCard) singleCard.style.display = isMulti ? 'none' : '';
+  if (multiCard)  multiCard.style.display  = isMulti ? '' : 'none';
+
+  if (!isMulti && lastSingle){
+    set('#single-circ', `${fmt2(lastSingle.cM)} m (${fmt2(mToFt(lastSingle.cM))} ft)`);
+    set('#single-diam', `${fmt2(lastSingle.dM)} m (${fmt2(mToFt(lastSingle.dM))} ft)`);
   }
 
-  // 5. Height
-  const ht = entry?.results?.lastHeight;
-  if (ht) {
-    if (elements.hFinal) elements.hFinal.textContent   = ht.hM ? `${fmt2(ht.hM)} m (${fmt2(ht.hFt)} ft)` : '—';
-    if (elements.hAngle) elements.hAngle.textContent = ht.angleDeg ? `${fmt1(ht.angleDeg)}°` : '—';
-    if (elements.hDist) elements.hDist.textContent  = ht.dM ? `${fmt2(ht.dM)} m` : '—';
-    if (elements.hEye) elements.hEye.textContent   = ht.eM ? `${fmt2(ht.eM)} m` : '—';
-  } else {
-    if (elements.hFinal) elements.hFinal.textContent   = '—';
-    if (elements.hAngle) elements.hAngle.textContent = '—';
-    if (elements.hDist) elements.hDist.textContent  = '—';
-    if (elements.hEye) elements.hEye.textContent   = '—';
-  }
+  if (isMulti && lastMulti){
+    // top aggregates
+    set('#multi-eqcirc', `${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft)`);
+    set('#multi-eqdiam', `${fmt2(lastMulti.dEqM)} m (${fmt2(lastMulti.dEqFt)} ft)`);
+    const dAvgM = lastMulti.cAvgM / Math.PI;
+    set('#multi-avgcirc', `${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft)`);
+    set('#multi-avgdiam', `${fmt2(dAvgM)} m (${fmt2(mToFt(dAvgM))} ft)`);
 
-  // 6. Canopy
-  const sp = entry?.results?.lastSpread;
-  if (sp) {
-    if (elements.sMajor) elements.sMajor.textContent = Number.isFinite(sp.majorM) ? `${fmt2(sp.majorM)} m (${fmt2(mToFt(sp.majorM))} ft)` : '—';
-    if (elements.sMinor) elements.sMinor.textContent = Number.isFinite(sp.minorM) ? `${fmt2(sp.minorM)} m (${fmt2(mToFt(sp.minorM))} ft)` : '—';
-    if (elements.sFinal) elements.sFinal.textContent = sp.meanM ? `${fmt2(sp.meanM)} m (${fmt2(sp.meanFt)} ft)` : '—';
-  } else {
-    if (elements.sMajor) elements.sMajor.textContent = '—';
-    if (elements.sMinor) elements.sMinor.textContent = '—';
-    if (elements.sFinal) elements.sFinal.textContent = '—';
-  }
-
-  // 7. Notes
-  const notes = (entry?.notes || '').trim();
-  if (elements.notes) {
-    elements.notes.innerHTML = notes
-      ? '<ul>' + notes.split(/\n+/).map(line => `<li>${escapeHtml(line)}</li>`).join('') + '</ul>'
-      : '—';
-  }
-  
-  // 8. Actions (Enable buttons and attach handlers)
-  // These were missing from the previous attempt.
-  if (elements.emailBtn) {
-    elements.emailBtn.disabled = false;
-    elements.emailBtn.addEventListener('click', () => {
-      const subject = `ARA Field Nomination – ${treeName || 'Tree'}`;
-      const body = (entry?.descText || 'No description available.').trim();
-      const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      location.href = url;
-    });
-  }
-  if (elements.copyBtn) {
-    elements.copyBtn.disabled = false;
-    elements.copyBtn.addEventListener('click', () => {
-      const text = (entry?.descText || 'No description available.').trim();
-      navigator.clipboard?.writeText(text).then(()=> {
-        const prev = elements.copyBtn.textContent;
-        elements.copyBtn.textContent = 'Copied ✓';
-        setTimeout(()=> elements.copyBtn.textContent = prev, 900);
+    // trunk list
+    const list = $('#multi-trunk-list');
+    if (list){
+      list.innerHTML = '';
+      (lastMulti.trunks || []).forEach(t => {
+        const li = document.createElement('li');
+        const core = `T${t.index}: ${fmt2(t.cM)} m (${fmt2(t.cFt)} ft) → ${fmt2(t.dM)} m (${fmt2(t.dFt)} ft)`;
+        li.textContent = t.isLargest ? `${core} (largest)` : core;
+        list.appendChild(li);
       });
+    }
+  }
+
+  // ===== Height panel
+  if (lastHeight){
+    set('#height-main', `${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`);
+    set('#height-eq',   `height = tan(${fmt1(lastHeight.angleDeg)}°) × ${fmt2(lastHeight.dM)} m + ${fmt2(lastHeight.eM)} m`);
+  }
+
+  // ===== Canopy panel
+  if (lastSpread){
+    set('#can-major', Number.isFinite(lastSpread.majorM) ? `${fmt2(lastSpread.majorM)} m (${fmt2(mToFt(lastSpread.majorM))} ft)` : '—');
+    set('#can-minor', Number.isFinite(lastSpread.minorM) ? `${fmt2(lastSpread.minorM)} m (${fmt2(mToFt(lastSpread.minorM))} ft)` : '—');
+    set('#can-mean',  `${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)`);
+  }
+
+  // ===== Notes panel
+  set('#notes-box', (entry.notes && entry.notes.trim()) ? entry.notes : '—');
+
+  // ===== Description panel (rich HTML saved from the results page)
+  if (entry.desc){
+    setHTML('#desc-html', entry.desc);
+  } else {
+    setHTML('#desc-html', '—');
+  }
+
+  // ===== Remove button (kept from your previous overlay flow, same logic)
+  const removeBtn = $('#removeFromLog');
+  if (removeBtn){
+    removeBtn.addEventListener('click', function(){
+      const ok = confirm('Remove this tree from the log? This cannot be undone.');
+      if (!ok) return;
+      const idx = entries.findIndex(e => e && e.id === id);
+      if (idx >= 0){
+        entries.splice(idx, 1);
+        localStorage.setItem(LOG_KEY, JSON.stringify(entries));
+      }
+      // Go back to log list
+      location.href = 'log.html';
     });
   }
-}
-
-// basic HTML escape for notes
-function escapeHtml(s){
-  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-}
-
-/* ---------- Boot ---------- */
-(function init(){
-  const { entry } = loadSelectedEntry();
-  if (!entry) {
-    if (elements.treeNameHdr) elements.treeNameHdr.textContent = 'Entry Not Found';
-    // alert('This entry was not found. It may have been removed or the link is invalid.');
-    return;
-  }
-  fillDetails(entry);
 })();
 </script>
-
 </body>
 </html>
