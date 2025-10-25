@@ -2307,7 +2307,6 @@ function initConnectivity(){
   if (typeof updateKeyMeasurementsBox === 'function') updateKeyMeasurementsBox();
 });
 
-  <script>
 /* ------------ Tree Log (local) ------------ */
 const LOG_KEY = 'ara_log_v1';
 
@@ -2470,8 +2469,7 @@ function updateLogButtonsEnabled(){
     };
   }
 })();
-</script>
-
+  
   // Connectivity: wire up events + initial check
 initConnectivity();
   wireAutosaveInputs();
@@ -2535,6 +2533,10 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.removeItem('ARA_EDIT_ID');
   }
 });
+
+    document.addEventListener('DOMContentLoaded', () => {
+    try { loadState?.(); } catch(e) { console.warn(e); }
+  });
 </script>
 </body>
 </html>
