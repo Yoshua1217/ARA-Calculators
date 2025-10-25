@@ -1,829 +1,415 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>ARA – Tree</title>
 <style>
   :root{
-    /* Same palette as Field Tools */
-    --bg:#0d1b2a;
-    --bg-elev:#0f2236;
-    --panel:#14253d;
-    --panel-2:#172a47;
-    --text:#e8eef6;
-    --muted:#a9b7c7;
-    --accent:#2ea3ff;
-    --accent-2:#4db2ff;
-    --ok:#1fa37a;
-    --danger:#d93c3c;
-    --border:#1f3553;
-    --radius:14px;
-    --gap:14px;
+    --bg:#0d1b2a; --bg-elev:#0f2236;
+    --panel:#14253d; --panel-2:#172a47;
+    --text:#e8eef6; --muted:#a9b7c7;
+    --accent:#2ea3ff; --accent-2:#4db2ff;
+    --ok:#1fa37a; --danger:#d93c3c;
+    --border:#1f3553; --radius:14px; --gap:14px;
   }
-  *{ box-sizing:border-box }
-  html,body{ height:100% }
+  *{box-sizing:border-box}
+  html,body{height:100%}
   body{
     margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     background:var(--bg); color:var(--text);
   }
 
-  /* Sticky header */
- /* Header layout */
-.topbar{
-  position: sticky; top: 0; z-index: 50;
-  background: linear-gradient(180deg, #0d1b2a, #0f2236);
-  border-bottom: 1px solid var(--border);
-}
-.topbar .wrap{ max-width:1000px; margin:0 auto; padding:12px 14px; }
-.page-title{
-  margin:0 0 8px; font-size:1.15rem; font-weight:800; color:#eaf3ff;
-  letter-spacing:.2px;
-}
-
-/* Small action row under the title */
-.subheader-actions{
-  display:flex; gap:8px; flex-wrap:wrap;
-}
-.btn{ display:inline-flex; align-items:center; justify-content:center;
-  font-weight:700; border-radius:10px; border:0; cursor:pointer;
-  background:var(--accent-2); color:#001528; padding:10px 14px;
-  text-decoration:none; user-select:none;
-}
-.btn-ghost{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
-.btn-sm{ padding:6px 10px; font-size:.92rem; }
-
-/* Danger button (matches Reset style from Field Tools) */
-.btn-danger{
-  background:#e53935; color:#fff; border:3px solid #6b0e0e;
-}
-.btn-danger:hover{ background:#d32f2f; border-color:#8e0000; transform:translateY(-1px); }
-.btn-danger:active{ background:#8e0000; border-color:#5c0000; transform:scale(.98); }
-
-/* Make action rows in the page look tidy */
-.actions-row{ display:flex; flex-wrap:wrap; gap:10px; }
-
-
-  /* Page content */
-  .content{ padding:14px; max-width:1000px; margin:0 auto; }
-
-  /* Panel cards */
-  .card{
-    background:var(--panel); border:1px solid var(--border);
-    border-radius:var(--radius); margin-bottom:var(--gap);
+  /* Header */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(180deg,#0d1b2a,#0f2236);
+    border-bottom:1px solid var(--border);
+    padding:12px 14px;
   }
-  .card .block{ padding:16px 18px; }
+  .head-title{
+    font-weight:800; letter-spacing:.2px; font-size:1.06rem; color:#eaf3ff; line-height:1.1;
+  }
+  .head-sub{ color:var(--muted); margin-top:4px; font-size:.92rem; }
+  .head-actions{
+    display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;
+  }
+  .btn{ padding:10px 14px; border-radius:10px; border:1px solid var(--border);
+        background:var(--panel-2); color:var(--text); font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; }
+  .btn:hover{ background:var(--accent-2); color:#001528; }
+  .btn.small{ padding:8px 12px; font-weight:700; }
+  .btn-danger{ background:var(--danger); color:#fff; border-color:#7b1d1d; }
+  .btn-danger:hover{ filter:brightness(1.05); }
+  .btn-danger:active{ background:#8e0000; }
+
+  /* Content */
+  .content{ padding:14px; max-width:1000px; margin:0 auto; }
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:var(--gap); }
+  .block{ padding:16px 18px; }
   h2{ margin:0 0 8px; font-size:1.2rem; }
   h3{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
 
-  /* Measurement grid */
-  .grid{
-    display:grid; grid-template-columns:1fr 1fr; gap:12px;
-  }
-  @media (max-width:780px){ .grid{ grid-template-columns:1fr } }
-
-  .row{
-    padding:10px 12px; border:1px solid var(--border); border-radius:10px;
-    background:var(--panel-2);
-  }
-  .label{ color:var(--muted); font-size:.92rem; margin-bottom:4px }
-  .value{ font-weight:800; letter-spacing:.2px }
-
+  .kv{ display:grid; grid-template-columns:170px 1fr; gap:10px 14px; }
+  .kv dt{ color:#cfe0ff; font-weight:700; }
+  .kv dd{ margin:0; color:var(--text); }
   .muted{ color:var(--muted) }
-  .tiny{ font-size:.86rem; color:var(--muted) }
+  .tiny{ color:var(--muted); font-size:.88rem; }
 
-  /* Section header style for “Description” look */
-  .section-title{
-    font-size:1.15rem; font-weight:900; text-decoration:underline;
-    text-underline-offset:3px; margin-bottom:8px; color:#eaf3ff;
-  }
+  /* Accuracy text buckets */
+  .acc-grey{ color:#c1c9d6; }
+  .acc-amber{ color:#ffb300; }
+  .acc-green{ color:#4cd28b; }
 
-  /* Footer action bar (optional later) */
-  .footer-actions{
-    display:flex; gap:10px; flex-wrap:wrap;
-  }
+  /* Trunk list */
+  .list{ margin:4px 0 0 0; padding-left:18px; }
+  .list li{ margin:4px 0; }
 
-  /* ---- Accuracy text colors ----
-.acc-text-green { color:#1b5e2b; }
-.acc-text-amber { color:#ffb300; }
-.acc-text-grey  { color:#a9b7c7; } */
-
-  /* Accuracy text color helpers (match app palette) */
-.acc-grey  { color: #e2e8f0; }  /* neutral */
-.acc-amber { color: #ffb300; }  /* 5–20 m */
-.acc-green { color: #1b5e2b; }  /* ≤5 m */
-
+  /* Hide blocks when not applicable */
+  .hide{ display:none; }
 </style>
 </head>
 <body>
 
 <!-- Header -->
 <header class="topbar">
-  <div class="wrap">
-   <h1 class="page-title" id="page-title">
-      ARA — <span>Tree name</span>
-    </h1>
+  <div class="head-title" id="hdr-title">ARA – <span id="hdr-name">Tree</span></div>
+  <div class="head-sub" id="hdr-sub">Tree details</div>
 
-    <div class="subheader-actions">
-      <a id="btnBackToLog"  href="log.html"   class="btn btn-ghost btn-sm">← Return to Log</a>
-      <a id="btnBackHome"   href="index.html" class="btn btn-ghost btn-sm">Return Home</a>
-    </div>
+  <div class="head-actions">
+    <a href="index.html" class="btn small" id="btn-home">Return Home</a>
+    <a href="log.html" class="btn small" id="btn-log">Return to Log</a>
+    <button type="button" class="btn small btn-danger" id="btn-remove">Remove from log</button>
   </div>
 </header>
 
-
-<!-- Content -->
-<div class="content">
+<main class="content">
 
   <!-- GENERAL -->
   <section class="card">
     <div class="block">
-      <div class="section-title">General</div>
-      <div class="grid">
-        <div class="row">
-          <div class="label">Tree name</div>
-          <div class="value" id="gen-name">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Species</div>
-          <div class="value" id="gen-species">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Condition</div>
-          <div class="value" id="gen-condition">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Type</div>
-          <div class="value" id="gen-type">—</div>
-        </div>
-      </div>
+      <h2>General</h2>
+      <dl class="kv">
+        <dt>Tree</dt><dd id="gen-name">—</dd>
+        <dt>Species</dt><dd id="gen-species">—</dd>
+        <dt>Condition</dt><dd id="gen-condition">—</dd>
+        <dt>Type</dt><dd id="gen-type">—</dd>
+        <dt>Recorded</dt><dd id="gen-recorded">—</dd>
+      </dl>
     </div>
   </section>
 
   <!-- LOCATION -->
   <section class="card">
     <div class="block">
-      <div class="section-title">Location</div>
-      <div class="grid">
-        <div class="row">
-          <div class="label">DD (lat, lng)</div>
-          <div class="value" id="loc-dd">—, —</div>
-        </div>
-        <div class="row">
-          <div class="label">DMS</div>
-          <div class="value" id="loc-dms">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Altitude</div>
-          <div class="value" id="loc-alt">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Accuracy</div>
-          <div class="value" id="loc-acc">±— m</div>
-        </div>
-       <div class="row">
-          <div class="label">Recorded</div>
-          <div class="value" id="loc-recorded">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Google Maps</div>
-          <div class="value" id="loc-maps">—</div>
-        </div>
-      </div>
-      <div class="tiny" style="margin-top:8px;">Map will appear below in a later pass.</div>
+      <h2>Location</h2>
+      <dl class="kv">
+        <dt>DD</dt><dd id="loc-dd">—</dd>
+        <dt>DMS</dt><dd id="loc-dms">—</dd>
+        <dt>Altitude</dt><dd id="loc-alt">—</dd>
+        <dt>Accuracy</dt><dd id="loc-acc" class="acc-grey">—</dd>
+        <dt>Recorded</dt><dd id="loc-ts">—</dd>
+        <dt>Google Maps</dt><dd><a id="loc-link" href="#" target="_blank" rel="noopener">—</a></dd>
+      </dl>
     </div>
   </section>
 
   <!-- CIRCUMFERENCE -->
-  <section class="card">
+  <section class="card" id="sec-circ">
     <div class="block">
-      <div class="section-title">Circumference</div>
-      
-<div class="grid">
-        <div class="row">
-          <div class="label">Entered/Equivalent circumference</div>
-          <div class="value" id="circ-entered">—</div>         </div>
-        <div class="row">
-          <div class="label">Diameter (from circumference)</div>
-          <div class="value" id="circ-diameter">—</div>         </div>
-        
-                <div class="row" id="row-circ-avg"> 
-          <div class="label">Average circumference (multi)</div>
-          <div class="value" id="circ-avg">—</div>         </div>
-        
-                <div class="row" id="row-circ-largest">
-          <div class="label">Largest trunk note</div>
-          <div class="value" id="circ-largest">—</div>         </div>
-      </div>
-      
+      <h2>Circumference</h2>
+
+      <!-- Single trunk block -->
+      <div id="circ-single" class="">
+        <dl class="kv">
+          <dt>Circumference</dt><dd id="c-single-c">—</dd>
+          <dt>Diameter</dt><dd id="c-single-d">—</dd>
+        </dl>
+      </div>
+
+      <!-- Multi trunk block -->
+      <div id="circ-multi" class="hide">
+        <h3>Individual trunks</h3>
+        <ul class="list" id="c-trunks"></ul>
+
+        <h3 style="margin-top:12px;">Full Tree</h3>
+        <dl class="kv">
+          <dt>Equivalent circ.</dt><dd id="c-eq-c">—</dd>
+          <dt>Equivalent diam.</dt><dd id="c-eq-d">—</dd>
+          <dt>Average circ.</dt><dd id="c-avg-c">—</dd>
+          <dt>Average diam.</dt><dd id="c-avg-d">—</dd>
+        </dl>
+      </div>
     </div>
   </section>
 
   <!-- HEIGHT -->
   <section class="card">
     <div class="block">
-      <div class="section-title">Height</div>
-      <div class="grid">
-<div class="row">
-          <div class="label">Tree height</div>
-          <div class="value" id="h-height">—</div>         
-        </div>
-        <div class="row">
-          <div class="label">Angle (°)</div>
-          <div class="value" id="h-angle">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Distance to trunk</div>
-          <div class="value" id="h-dist">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Eye height</div>
-          <div class="value" id="h-eye">—</div>
-        </div>
-      </div>
+      <h2>Height</h2>
+      <dl class="kv">
+        <dt>Tree height</dt><dd id="h-final">—</dd>
+        <dt>Formula</dt><dd id="h-formula" class="tiny">—</dd>
+      </dl>
     </div>
   </section>
 
   <!-- CANOPY -->
   <section class="card">
     <div class="block">
-      <div class="section-title">Canopy spread</div>
-     <div class="grid">
-        <div class="row">
-          <div class="label">Major axis</div>
-          <div class="value" id="c-major">—</div>         </div>
-        <div class="row">
-          <div class="label">Minor axis</div>
-          <div class="value" id="c-minor">—</div>         </div>
-        <div class="row">
-          <div class="label">Final canopy spread</div>
-          <div class="value" id="c-mean">—</div>         </div>
-      </div>
+      <h2>Canopy</h2>
+      <dl class="kv">
+        <dt>Major axis</dt><dd id="s-major">—</dd>
+        <dt>Minor axis</dt><dd id="s-minor">—</dd>
+        <dt>Final spread</dt><dd id="s-final">—</dd>
+      </dl>
     </div>
   </section>
 
   <!-- NOTES -->
   <section class="card">
     <div class="block">
-      <div class="section-title">Notes</div>
-     <div class="row" style="padding:14px;">
-        <div class="value" id="notes-body">—</div>       </div>
+      <h2>Notes</h2>
+      <div id="notes-box" class="tiny">—</div>
     </div>
   </section>
 
-  <!-- ACTIONS (future: copy/email/remove) -->
-  <section class="card">
-    <div class="block">
-      <h3>Actions</h3>
-      <div class="footer-actions" style="margin-top:8px;">
-        <button class="btn btn-ghost" disabled>Copy description</button>
-        <button class="btn btn-ghost" disabled>Open email</button>
-        <button id="removeFromLog" class="btn btn-danger">Remove from log</button>
-      </div>
-      <div class="tiny" style="margin-top:6px;">(Buttons disabled for now – aesthetics first.)</div>
-    </div>
-  </section>
-
-</div>
+</main>
 
 <script>
-(function(){
-  const removeBtn = document.getElementById('removeFromLog');
-  if (!removeBtn) return;
+/* ---------- helpers ---------- */
+const fmt2 = x => (Number.isFinite(x) ? x.toFixed(2) : '—');
+const fmt1 = x => (Number.isFinite(x) ? x.toFixed(1) : '—');
+const FT_PER_M = 3.28084;
+const mToFt = m => m * FT_PER_M;
+function toDMS(dec, isLat){
+  if (!Number.isFinite(dec)) return '—';
+  const hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
+  const v = Math.abs(dec);
+  const d = Math.floor(v);
+  const m = Math.floor((v - d) * 60);
+  const s = ((v - d) * 60 - m) * 60;
+  return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
+}
+function accBucket(m){
+  if (!Number.isFinite(m)) return 'grey';
+  if (m <= 5) return 'green';
+  if (m < 20) return 'amber';
+  return 'grey';
+}
+function setAccClass(el, meters){
+  const bucket = accBucket(meters);
+  el.classList.remove('acc-grey','acc-amber','acc-green');
+  el.classList.add('acc-' + bucket);
+}
 
-  removeBtn.addEventListener('click', function(){
-    if (!confirm('Are you sure you want to remove this tree from the log? This cannot be undone.')) return;
+/* ---------- storage readers (robust to key/case drift) ---------- */
+function readJSON(key){
+  try{
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
 
-    try{
-      const params = new URLSearchParams(location.search);
-      const id = params.get('id');
-      const LOG_KEY = params.get('k') || 'ara_field_v1_log';
-      if (!id) throw new Error('No id in URL');
+// Try all known variants
+function loadLogArray(){
+  return (
+    readJSON('ara_field_v1_log') ||
+    readJSON('ARA_FIELD_LOG_V1') ||
+    [] // default
+  );
+}
 
-      const list = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
-      const next = list.filter(entry => String(entry.id) !== String(id));
-      localStorage.setItem(LOG_KEY, JSON.stringify(next));
-      location.href = 'log.html';
-    }catch(err){
-      alert('Could not remove this entry. ' + (err && err.message ? err.message : err));
+function loadById(id){
+  const arr = loadLogArray();
+  if (!id) return null;
+  return arr.find(x => String(x?.id) === String(id)) || null;
+}
+
+/* ---------- fill UI ---------- */
+function setText(id, val){ const el = document.getElementById(id); if (el) el.textContent = (val ?? '—'); }
+function setHTML(id, html){ const el = document.getElementById(id); if (el) el.innerHTML = (html ?? '—'); }
+
+function fillGeneral(entry){
+  const name = entry.name || 'Tree';
+  document.getElementById('hdr-name').textContent = name;
+  setText('gen-name', name);
+  setText('gen-species', entry.species || '—');
+  setText('gen-condition', entry.condition || '—');
+  setText('gen-type', entry.treeType || '—');
+
+  // Recorded (prefer location.ts, else entry.recorded, else now)
+  let ts = entry?.location?.ts || entry?.recorded;
+  let when = '—';
+  if (Number.isFinite(+ts)) when = new Date(+ts).toLocaleString();
+  setText('gen-recorded', when);
+}
+
+function fillLocation(entry){
+  const loc = entry.location || {};
+  const lat = Number(loc.lat), lng = Number(loc.lng);
+  const acc = Number(loc.acc);
+  const alt = (loc.alt==='' || loc.alt==null) ? NaN : Number(loc.alt);
+  const ts  = Number(loc.ts);
+
+  // DD
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    setText('loc-dd', `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+    setText('loc-dms', `${toDMS(lat,true)}  |  ${toDMS(lng,false)}`);
+    // maps link
+    const a = document.getElementById('loc-link');
+    if (a){
+      const url = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+      a.href = url;
+      a.textContent = url;
     }
-  });
-})();
-</script>
-
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ARA – Tree</title>
-<style>
-  :root{
-    /* Same palette as Field Tools */
-    --bg:#0d1b2a;
-    --bg-elev:#0f2236;
-    --panel:#14253d;
-    --panel-2:#172a47;
-    --text:#e8eef6;
-    --muted:#a9b7c7;
-    --accent:#2ea3ff;
-    --accent-2:#4db2ff;
-    --ok:#1fa37a;
-    --danger:#d93c3c;
-    --border:#1f3553;
-    --radius:14px;
-    --gap:14px;
-  }
-  *{ box-sizing:border-box }
-  html,body{ height:100% }
-  body{
-    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-    background:var(--bg); color:var(--text);
+  } else {
+    setText('loc-dd','—'); setText('loc-dms','—');
+    const a = document.getElementById('loc-link'); if (a){ a.href='#'; a.textContent='—'; }
   }
 
-  /* Sticky header */
- /* Header layout */
-.topbar{
-  position: sticky; top: 0; z-index: 50;
-  background: linear-gradient(180deg, #0d1b2a, #0f2236);
-  border-bottom: 1px solid var(--border);
-}
-.topbar .wrap{ max-width:1000px; margin:0 auto; padding:12px 14px; }
-.page-title{
-  margin:0 0 8px; font-size:1.15rem; font-weight:800; color:#eaf3ff;
-  letter-spacing:.2px;
+  // altitude
+  setText('loc-alt', Number.isFinite(alt) ? `${alt.toFixed(1)} m` : '—');
+
+  // accuracy (with color)
+  const accEl = document.getElementById('loc-acc');
+  if (accEl){
+    accEl.textContent = Number.isFinite(acc) ? `±${acc.toFixed(1)} m` : '±—';
+    setAccClass(accEl, acc);
+  }
+
+  // recorded
+  setText('loc-ts', Number.isFinite(ts) ? new Date(ts).toLocaleString() : '—');
 }
 
-/* Small action row under the title */
-.subheader-actions{
-  display:flex; gap:8px; flex-wrap:wrap;
-}
-.btn{ display:inline-flex; align-items:center; justify-content:center;
-  font-weight:700; border-radius:10px; border:0; cursor:pointer;
-  background:var(--accent-2); color:#001528; padding:10px 14px;
-  text-decoration:none; user-select:none;
-}
-.btn-ghost{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
-.btn-sm{ padding:6px 10px; font-size:.92rem; }
+function fillCirc(entry){
+  const type = (entry.treeType || '').toLowerCase();
+  const res = entry.results || {};
+  const single = res.lastSingle || null;
+  const multi  = res.lastMulti  || null;
 
-/* Danger button (matches Reset style from Field Tools) */
-.btn-danger{
-  background:#e53935; color:#fff; border:3px solid #6b0e0e;
-}
-.btn-danger:hover{ background:#d32f2f; border-color:#8e0000; transform:translateY(-1px); }
-.btn-danger:active{ background:#8e0000; border-color:#5c0000; transform:scale(.98); }
+  const singleBlock = document.getElementById('circ-single');
+  const multiBlock  = document.getElementById('circ-multi');
 
-/* Make action rows in the page look tidy */
-.actions-row{ display:flex; flex-wrap:wrap; gap:10px; }
+  // default visibility
+  singleBlock.classList.remove('hide');
+  multiBlock.classList.add('hide');
 
+  if (type.includes('multi')){
+    // Show multi panel
+    singleBlock.classList.add('hide');
+    multiBlock.classList.remove('hide');
 
-  /* Page content */
-  .content{ padding:14px; max-width:1000px; margin:0 auto; }
-
-  /* Panel cards */
-  .card{
-    background:var(--panel); border:1px solid var(--border);
-    border-radius:var(--radius); margin-bottom:var(--gap);
-  }
-  .card .block{ padding:16px 18px; }
-  h2{ margin:0 0 8px; font-size:1.2rem; }
-  h3{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
-
-  /* Measurement grid */
-  .grid{
-    display:grid; grid-template-columns:1fr 1fr; gap:12px;
-  }
-  @media (max-width:780px){ .grid{ grid-template-columns:1fr } }
-
-  .row{
-    padding:10px 12px; border:1px solid var(--border); border-radius:10px;
-    background:var(--panel-2);
-  }
-  .label{ color:var(--muted); font-size:.92rem; margin-bottom:4px }
-  .value{ font-weight:800; letter-spacing:.2px }
-
-  .muted{ color:var(--muted) }
-  .tiny{ font-size:.86rem; color:var(--muted) }
-
-  /* Section header style for “Description” look */
-  .section-title{
-    font-size:1.15rem; font-weight:900; text-decoration:underline;
-    text-underline-offset:3px; margin-bottom:8px; color:#eaf3ff;
-  }
-
-  /* Footer action bar (optional later) */
-  .footer-actions{
-    display:flex; gap:10px; flex-wrap:wrap;
-  }
-
-  /* ---- Accuracy text colors ----
-.acc-text-green { color:#1b5e2b; }
-.acc-text-amber { color:#ffb300; }
-.acc-text-grey  { color:#a9b7c7; } */
-
-  /* Accuracy text color helpers (match app palette) */
-.acc-grey  { color: #e2e8f0; }  /* neutral */
-.acc-amber { color: #ffb300; }  /* 5–20 m */
-.acc-green { color: #1b5e2b; }  /* ≤5 m */
-
-</style>
-</head>
-<body>
-
-<!-- Header -->
-<header class="topbar">
-  <div class="wrap">
-   <h1 class="page-title" id="page-title">
-      ARA — <span>Tree name</span>
-    </h1>
-
-    <div class="subheader-actions">
-      <a id="btnBackToLog"  href="log.html"   class="btn btn-ghost btn-sm">← Return to Log</a>
-      <a id="btnBackHome"   href="index.html" class="btn btn-ghost btn-sm">Return Home</a>
-    </div>
-  </div>
-</header>
-
-
-<!-- Content -->
-<div class="content">
-
-  <!-- GENERAL -->
-  <section class="card">
-    <div class="block">
-      <div class="section-title">General</div>
-      <div class="grid">
-        <div class="row">
-          <div class="label">Tree name</div>
-          <div class="value" id="gen-name">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Species</div>
-          <div class="value" id="gen-species">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Condition</div>
-          <div class="value" id="gen-condition">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Type</div>
-          <div class="value" id="gen-type">—</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- LOCATION -->
-  <section class="card">
-    <div class="block">
-      <div class="section-title">Location</div>
-      <div class="grid">
-        <div class="row">
-          <div class="label">DD (lat, lng)</div>
-          <div class="value" id="loc-dd">—, —</div>
-        </div>
-        <div class="row">
-          <div class="label">DMS</div>
-          <div class="value" id="loc-dms">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Altitude</div>
-          <div class="value" id="loc-alt">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Accuracy</div>
-          <div class="value" id="loc-acc">±— m</div>
-        </div>
-       <div class="row">
-          <div class="label">Recorded</div>
-          <div class="value" id="loc-recorded">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Google Maps</div>
-          <div class="value" id="loc-maps">—</div>
-        </div>
-      </div>
-      <div class="tiny" style="margin-top:8px;">Map will appear below in a later pass.</div>
-    </div>
-  </section>
-
-  <!-- CIRCUMFERENCE -->
-  <section class="card">
-    <div class="block">
-      <div class="section-title">Circumference</div>
-      
-<div class="grid">
-        <div class="row">
-          <div class="label">Entered/Equivalent circumference</div>
-          <div class="value" id="circ-entered">—</div>         </div>
-        <div class="row">
-          <div class="label">Diameter (from circumference)</div>
-          <div class="value" id="circ-diameter">—</div>         </div>
-        
-                <div class="row" id="row-circ-avg"> 
-          <div class="label">Average circumference (multi)</div>
-          <div class="value" id="circ-avg">—</div>         </div>
-        
-                <div class="row" id="row-circ-largest">
-          <div class="label">Largest trunk note</div>
-          <div class="value" id="circ-largest">—</div>         </div>
-      </div>
-      
-    </div>
-  </section>
-
-  <!-- HEIGHT -->
-  <section class="card">
-    <div class="block">
-      <div class="section-title">Height</div>
-      <div class="grid">
-<div class="row">
-          <div class="label">Tree height</div>
-          <div class="value" id="h-height">—</div>         
-        </div>
-        <div class="row">
-          <div class="label">Angle (°)</div>
-          <div class="value" id="h-angle">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Distance to trunk</div>
-          <div class="value" id="h-dist">—</div>
-        </div>
-        <div class="row">
-          <div class="label">Eye height</div>
-          <div class="value" id="h-eye">—</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CANOPY -->
-  <section class="card">
-    <div class="block">
-      <div class="section-title">Canopy spread</div>
-     <div class="grid">
-        <div class="row">
-          <div class="label">Major axis</div>
-          <div class="value" id="c-major">—</div>         </div>
-        <div class="row">
-          <div class="label">Minor axis</div>
-          <div class="value" id="c-minor">—</div>         </div>
-        <div class="row">
-          <div class="label">Final canopy spread</div>
-          <div class="value" id="c-mean">—</div>         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- NOTES -->
-  <section class="card">
-    <div class="block">
-      <div class="section-title">Notes</div>
-     <div class="row" style="padding:14px;">
-        <div class="value" id="notes-body">—</div>       </div>
-    </div>
-  </section>
-
-  <!-- ACTIONS (future: copy/email/remove) -->
-  <section class="card">
-    <div class="block">
-      <h3>Actions</h3>
-      <div class="footer-actions" style="margin-top:8px;">
-        <button class="btn btn-ghost" disabled>Copy description</button>
-        <button class="btn btn-ghost" disabled>Open email</button>
-        <button id="removeFromLog" class="btn btn-danger">Remove from log</button>
-      </div>
-      <div class="tiny" style="margin-top:6px;">(Buttons disabled for now – aesthetics first.)</div>
-    </div>
-  </section>
-
-</div>
-
-<script>
-(function(){
-  const removeBtn = document.getElementById('removeFromLog');
-  if (!removeBtn) return;
-
-  removeBtn.addEventListener('click', function(){
-    if (!confirm('Are you sure you want to remove this tree from the log? This cannot be undone.')) return;
-
-    try{
-      const params = new URLSearchParams(location.search);
-      const id = params.get('id');
-      const LOG_KEY = params.get('k') || 'ara_field_v1_log';
-      if (!id) throw new Error('No id in URL');
-
-      const list = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
-      const next = list.filter(entry => String(entry.id) !== String(id));
-      localStorage.setItem(LOG_KEY, JSON.stringify(next));
-      location.href = 'log.html';
-    }catch(err){
-      alert('Could not remove this entry. ' + (err && err.message ? err.message : err));
-    }
-  });
-})();
-</script>
-
-<script>
-(function(){
-  /* ---------- tiny helpers and Utilities ---------- */
-  const $ = s => document.querySelector(s);
-  const set = (id, val) => { const el = $(id); if (el) el.textContent = (val ?? '—'); };
-  const setHTML = (id, html) => { const el = $(id); if (el) el.innerHTML = html; };
-  const show = (sel, on) => { const el = $(sel); if (el) el.style.display = on ? '' : 'none'; };
-  
-  const FT_PER_M = 3.28084;
-  const mToFt = m => m * FT_PER_M;
-  const fmt2 = x => (Number.isFinite(x) ? x.toFixed(2) : '—');
-  const fmt1 = x => (Number.isFinite(x) ? x.toFixed(1) : '—');
-
-  function toDMS(dec, isLat){
-    if (!Number.isFinite(dec)) return '—';
-    const hemi = dec >= 0 ? (isLat?'N':'E') : (isLat?'S':'W');
-    let v = Math.abs(dec);
-    const d = Math.floor(v); v = (v - d) * 60;
-    const m = Math.floor(v); const s = (v - m) * 60;
-    return `${d}° ${m}' ${s.toFixed(2)}" ${hemi}`;
-  }
-  
-  function paintAccText(el, meters){
-    if(!el) return;
-    el.classList.remove('acc-green','acc-amber','acc-grey');
-    if (!Number.isFinite(meters)) { el.classList.add('acc-grey'); return; }
-    if (meters <= 5) el.classList.add('acc-green');
-    else if (meters < 20) el.classList.add('acc-amber');
-    else el.classList.add('acc-grey');
-  }
-
-  function escapeHtml(s){
-    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
-  }
-
-
-  /* ---------- Load Entry Data (The Initialization Fix) ---------- */
-  const params = new URLSearchParams(location.search);
-  const id = params.get('id');
-  const LOG_KEY = params.get('k') || 'ara_field_v1_log';
-
-  // 1. Load from localStorage
-  let all = [];
-  try { all = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch {}
-  // 2. Find the specific entry
-  const entry = all.find(e => e && String(e.id) === String(id));
-  
-  // Define constants for safer access
-  const basics = entry?.basics || {};
-  const loc = entry?.location || {};
-  const R = entry?.results || {}; // R holds the measurement results
-  
-  if (!entry){
-    setHTML('#page-title', 'ARA — <span>Entry Not Found</span>');
-    return; // Stop execution if no entry is found
-  }
-
-  /* ---------- Header title ---------- */
-  const name = basics.name || 'Tree name';
-  // Use setHTML to set the page-title content while preserving the 'ARA —' text
-  setHTML('#page-title', `ARA — <span>${escapeHtml(name)}</span>`); 
-
-  /* ---------- General ---------- */
-  set('#gen-name',       name || '—');
-  set('#gen-species',    basics.species || '—');
-  set('#gen-condition',  basics.condition || '—');
-  set('#gen-type',       basics.type || '—');
-
-  /* ---------- Location ---------- */
-  const lat = parseFloat(loc.lat), lng = parseFloat(loc.lng);
-  const alt = (loc.alt !== undefined && loc.alt !== '') ? parseFloat(loc.alt) : NaN;
-  const acc = (loc.acc !== undefined && loc.acc !== '') ? parseFloat(loc.acc) : NaN;
-  const ts  = loc.ts ? parseInt(loc.ts, 10) : NaN;
-
-  set('#loc-dd', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '—');
-  set('#loc-dms', (Number.isFinite(lat) && Number.isFinite(lng)) ? `${toDMS(lat, true)} | ${toDMS(lng, false)}` : '—');
-  set('#loc-alt', Number.isFinite(alt) ? `${fmt1(alt)} m` : '—');
-
-  const accEl = document.querySelector('#loc-acc');
-  if (Number.isFinite(acc)) {
-    set('#loc-acc', `±${fmt1(acc)} m`);
-    paintAccText(accEl, acc);
-  } else {
-    set('#loc-acc', '±— m');
-    paintAccText(accEl, NaN);
-  }
-
-  set('#loc-recorded', Number.isFinite(ts) ? new Date(ts).toLocaleString() : '—'); // CORRECT ID: #loc-recorded
-
-  // Google Maps link (ID #loc-maps is a div, so use setHTML)
-  if (Number.isFinite(lat) && Number.isFinite(lng)){
-    // Using a standard Google Maps URL format
-    const url = `https://maps.google.com/?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
-    setHTML('#loc-maps', `<a href="${url}" target="_blank">View on Google Maps</a>`);
-  } else {
-    setHTML('#loc-maps', '—');
-  }
-
-  /* ---------- Circumference ---------- */
-  const type = (basics.type || '').trim();
-
-  // Single
-  if (type === 'Single trunk tree' && R.lastSingle){
-    const s = R.lastSingle; // {cM,cFt,dM,dFt}
-    set('#circ-entered',   `${fmt2(s.cM)} m (${fmt2(s.cFt)} ft)`); // CORRECT ID: #circ-entered
-    set('#circ-diameter',  `${fmt2(s.dM)} m (${fmt2(s.dFt)} ft)`); // CORRECT ID: #circ-diameter
-    
-    // Hide multi-only rows
-    show('#row-circ-avg', false);
-    show('#row-circ-largest', false);
-  }
-  // Multi
-  else if (type === 'Multi trunked tree' && R.lastMulti){
-    const m = R.lastMulti; // {cEqM,cEqFt,dEqM,dEqFt,cAvgM,cAvgFt,trunks[],tie}
-    set('#circ-entered',  `${fmt2(m.cEqM)} m (${fmt2(m.cEqFt)} ft)`); // CORRECT ID: #circ-entered
-    set('#circ-diameter', `${fmt2(m.dEqM)} m (${fmt2(m.dEqFt)} ft)`); // CORRECT ID: #circ-diameter
-    set('#circ-avg',      `${fmt2(m.cAvgM)} m (${fmt2(m.cAvgFt)} ft)`); // CORRECT ID: #circ-avg
-
-    // Largest trunk note
-    if (Array.isArray(m.trunks) && m.trunks.length){
-      const dmax = Math.max(...m.trunks.map(t=>t.dM));
-      const largest = m.trunks.filter(t => Math.abs(t.dM - dmax) < 1e-9)
-                              .map(t => `T${t.index}: ${fmt2(t.cM)} m → ${fmt2(t.dM)} m`);
-      set('#circ-largest', largest.length ? (m.tie ? `Tie — ${largest.join(', ')}` : largest[0]) : '—'); // CORRECT ID: #circ-largest
-    } else {
-      set('#circ-largest', '—'); // CORRECT ID: #circ-largest
-    }
-    
-    // Show multi-only rows
-    show('#row-circ-avg', true);
-    show('#row-circ-largest', true);
-  }
-  // Unknown / not computed
-  else {
-    set('#circ-entered','—'); set('#circ-diameter','—');
-    show('#row-circ-avg', false);
-    show('#row-circ-largest', false);
-  }
-
-  /* ---------- Height ---------- */
-  if (R.lastHeight){
-    const h = R.lastHeight; // {hM,hFt,angleDeg,dM,eM}
-    set('#h-height', `${fmt2(h.hM)} m (${fmt2(h.hFt)} ft)`); // CORRECT ID: #h-height
-    set('#h-angle',  fmt1(h.angleDeg));
-    set('#h-dist',   `${fmt2(h.dM)} m (${fmt2(mToFt(h.dM))} ft)`);
-    set('#h-eye',    `${fmt2(h.eM)} m (${fmt2(mToFt(h.eM))} ft)`);
-  } else {
-    set('#h-height','—'); set('#h-angle','—'); set('#h-dist','—'); set('#h-eye','—');
-  }
-
-  /* ---------- Canopy ---------- */
-  if (R.lastSpread){
-    const sp = R.lastSpread; // {majorM,minorM,meanM,meanFt}
-    if (Number.isFinite(sp.majorM)) set('#c-major', `${fmt2(sp.majorM)} m (${fmt2(mToFt(sp.majorM))} ft)`); // CORRECT ID: #c-major
-    else set('#c-major','—');
-    if (Number.isFinite(sp.minorM)) set('#c-minor', `${fmt2(sp.minorM)} m (${fmt2(mToFt(sp.minorM))} ft)`); // CORRECT ID: #c-minor
-    else set('#c-minor','—');
-    set('#c-mean', `${fmt2(sp.meanM)} m (${fmt2(sp.meanFt)} ft)`); // CORRECT ID: #c-mean
-  } else {
-    set('#c-major','—'); set('#c-minor','—'); set('#c-mean','—');
-  }
-
-  /* ---------- Notes ---------- */
-  const notes = (entry.notes || '').trim();
-  setHTML('#notes-body', notes
-    ? '<ul>' + notes.split(/\n+/).map(line => `<li>${escapeHtml(line)}</li>`).join('') + '</ul>'
-    : '—'
-  ); // CORRECT ID: #notes-body
-  
-  /* ---------- Actions (Copy/Email) ---------- */
-  const emailBtn = document.querySelector('.footer-actions button:nth-child(2)');
-  const copyBtn = document.querySelector('.footer-actions button:nth-child(1)');
-  
-  if (emailBtn && entry.descText) {
-    emailBtn.disabled = false;
-    emailBtn.textContent = 'Open email';
-    emailBtn.addEventListener('click', () => {
-      const subject = `ARA Field Nomination – ${name}`;
-      const body = (entry.descText || 'No description available.').trim();
-      const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      location.href = url;
-    });
-  }
-  
-  if (copyBtn && entry.descText) {
-    copyBtn.disabled = false;
-    copyBtn.textContent = 'Copy description';
-    copyBtn.addEventListener('click', () => {
-      const text = (entry.descText || 'No description available.').trim();
-      navigator.clipboard?.writeText(text).then(()=> {
-        const prev = copyBtn.textContent;
-        copyBtn.textContent = 'Copied ✓';
-        setTimeout(()=> copyBtn.textContent = prev, 900);
+    const list = document.getElementById('c-trunks');
+    list.innerHTML = '';
+    if (multi && Array.isArray(multi.trunks) && multi.trunks.length){
+      multi.trunks.forEach(t=>{
+        const li=document.createElement('li');
+        const cM = fmt2(t.cM), cFt = fmt2(t.cFt);
+        const dM = fmt2(t.dM), dFt = fmt2(t.dFt);
+        li.innerHTML = (t.isLargest ? '<strong>' : '') +
+          `T${t.index}: ${cM} m (${cFt} ft) → ${dM} m (${dFt} ft)` +
+          (t.isLargest ? ' (largest)</strong>' : '');
+        list.appendChild(li);
       });
-    });
+    } else {
+      const li=document.createElement('li'); li.textContent='—';
+      list.appendChild(li);
+    }
+
+    // Equivalents / averages
+    setText('c-eq-c',  (multi ? `${fmt2(multi.cEqM)} m (${fmt2(multi.cEqFt)} ft)` : '—'));
+    setText('c-eq-d',  (multi ? `${fmt2(multi.dEqM)} m (${fmt2(multi.dEqFt)} ft)` : '—'));
+    const dAvgM = multi ? multi.cAvgM/Math.PI : NaN;
+    const dAvgFt= mToFt(dAvgM);
+    setText('c-avg-c', (multi ? `${fmt2(multi.cAvgM)} m (${fmt2(multi.cAvgFt)} ft)` : '—'));
+    setText('c-avg-d', (multi ? `${fmt2(dAvgM)} m (${fmt2(dAvgFt)} ft)` : '—'));
+
+  } else {
+    // Single trunk panel
+    singleBlock.classList.remove('hide');
+    multiBlock.classList.add('hide');
+    setText('c-single-c', single ? `${fmt2(single.cM)} m (${fmt2(single.cFt)} ft)` : '—');
+    setText('c-single-d', single ? `${fmt2(single.dM)} m (${fmt2(single.dFt)} ft)` : '—');
+  }
+}
+
+function fillHeight(entry){
+  const h = entry?.results?.lastHeight || null;
+  if (!h){
+    setText('h-final','—');
+    setText('h-formula','—');
+    return;
+  }
+  setText('h-final', `${fmt2(h.hM)} m (${fmt2(h.hFt)} ft)`);
+  setText('h-formula', `height = tan(${fmt1(h.angleDeg)}°) × ${fmt2(h.dM)} m + ${fmt2(h.eM)} m = ${fmt2(h.hM)} m (${fmt2(h.hFt)} ft)`);
+}
+
+function fillSpread(entry){
+  const s = entry?.results?.lastSpread || null;
+  if (!s){
+    setText('s-major','—');
+    setText('s-minor','—');
+    setText('s-final','—');
+    return;
+  }
+  setText('s-major', Number.isFinite(s.majorM) ? `${fmt2(s.majorM)} m (${fmt2(mToFt(s.majorM))} ft)` : '—');
+  setText('s-minor', Number.isFinite(s.minorM) ? `${fmt2(s.minorM)} m (${fmt2(mToFt(s.minorM))} ft)` : '—');
+  setText('s-final', `${fmt2(s.meanM)} m (${fmt2(s.meanFt)} ft)`);
+}
+
+function fillNotes(entry){
+  const n = (entry.notes || '').trim();
+  if (!n){ setHTML('notes-box','—'); return; }
+  const html = n.split(/\n+/).map(line => `<div>• ${line.replace(/</g,'&lt;')}</div>`).join('');
+  setHTML('notes-box', html);
+}
+
+/* ---------- removal ---------- */
+function removeFromLog(id){
+  const arr = loadLogArray();
+  const idx = arr.findIndex(x => String(x?.id) === String(id));
+  if (idx === -1) return false;
+
+  // write back to the same key we loaded from (prefer lowercase)
+  const key = localStorage.getItem('ara_field_v1_log') ? 'ara_field_v1_log' : 'ARA_FIELD_LOG_V1';
+  arr.splice(idx,1);
+  localStorage.setItem(key, JSON.stringify(arr));
+  return true;
+}
+
+/* ---------- main ---------- */
+(function init(){
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+
+  const entry = loadById(id);
+  if (!entry){
+    document.getElementById('hdr-sub').textContent = 'Not found';
+    alert('This entry was not found in your log.');
+    return;
   }
 
+  // Fill sections
+  fillGeneral(entry);
+  fillLocation(entry);
+  fillCirc(entry);
+  fillHeight(entry);
+  fillSpread(entry);
+  fillNotes(entry);
+
+  // Remove button
+  const btnRemove = document.getElementById('btn-remove');
+  btnRemove.addEventListener('click', ()=>{
+    const name = entry.name || 'this tree';
+    if (!confirm(`Remove “${name}” from the log? This cannot be undone.`)) return;
+    if (removeFromLog(id)){
+      alert('Removed from log.');
+      location.href = 'log.html';
+    } else {
+      alert('Could not remove; entry not found.');
+    }
+  });
 })();
 </script>
-</body>
-</html>
 </body>
 </html>
