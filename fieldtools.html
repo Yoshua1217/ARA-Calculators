@@ -2308,15 +2308,19 @@ function initConnectivity(){
 });
 
 /* ------------ Tree Log (local) ------------ */
-const LOG_KEY = 'ara_tree_log_v1';
+const LOG_KEY = 'ara_field_v1_log';
 
 function readLog(){
-  try { return JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); }
-  catch { return []; }
+  try{
+    const raw = localStorage.getItem(LOG_KEY);
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
 }
-function writeLog(list){
-  try { localStorage.setItem(LOG_KEY, JSON.stringify(list)); }
-  catch(e){ console.warn('writeLog failed', e); }
+function writeLog(arr){
+  try{
+    localStorage.setItem(LOG_KEY, JSON.stringify(arr || []));
+  }catch(e){}
 }
 function uid(){
   const t = Date.now();
@@ -2409,35 +2413,36 @@ function makeLogEntry(){
   };
 }
 
-function saveToLog(){
-  try{
-    const entry = makeLogEntry();
+async function saveToLog(){
+  // Make sure description is up-to-date
+  generateDescription(); // you already have this
 
-    // Require at least a title OR a species so cards aren’t all “Untitled”
-    if (!entry.title || entry.title === 'Untitled tree') {
-      // fall back to something meaningful if nothing at all was typed
-      const loc = entry.location;
-      if (Number.isFinite(loc?.lat) && Number.isFinite(loc?.lng)){
-        entry.title = `Tree @ ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`;
-      }
-    }
+  const name     = (byId('treeName')?.value || '').trim();
+  const species  = (byId('species')?.value  || '').trim();
+  const ts       = Date.now();
+  const descHtml = (byId('desc')?.innerHTML || '').trim();   // HTML version
+  const descText = (typeof buildDescriptionText === 'function')
+                     ? buildDescriptionText() : '';          // plain text twin
 
-    const list = readLog();
-    list.unshift(entry); // newest first
-    writeLog(list);
+  // Optional: include lat/lng/acc if present (for the chip)
+  const lat = parseFloat(byId('lat')?.value);
+  const lng = parseFloat(byId('lng')?.value);
+  const acc = parseFloat(byId('acc')?.value);
 
-    // Tiny inline toast/feedback
-    const btn = document.getElementById('saveLog');
-    if (btn){
-      const old = btn.textContent;
-      btn.textContent = 'Saved ✓';
-      btn.disabled = true;
-      setTimeout(()=>{ btn.textContent = old; btn.disabled = false; }, 900);
-    }
-  }catch(e){
-    console.warn('saveToLog failed', e);
-    alert('Could not save to log (storage error).');
-  }
+  const entry = {
+    id: crypto?.randomUUID ? crypto.randomUUID() : ('id_'+ts),
+    name, species, ts,
+    descHtml, descText,
+    location: Number.isFinite(lat)&&Number.isFinite(lng) ? {lat,lng,acc: Number.isFinite(acc)?acc:undefined} : null
+  };
+
+  const arr = readLog();
+  arr.push(entry);
+  writeLog(arr);
+
+  alert(`Log contains ${arr.length} entries.`);
+  // Navigate to the log page
+  location.href = 'log.html';
 }
 
 function updateLogButtonsEnabled(){
@@ -2510,7 +2515,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!id) return;
 
   try {
-    const raw = localStorage.getItem('ARA_FIELD_LOG_V1') || '[]';
+    const raw = localStorage.getItem('LOG_KEY') || '[]';
     const list = JSON.parse(raw);
     const entry = list.find(e => e.id === id);
     if (entry) {
