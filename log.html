@@ -152,20 +152,18 @@
 // Robust loader: scan all keys; prefer known names; fall back to biggest valid array
 function loadLogs() {
   const preferred = [
-    'ara_field_v1_log',    // current expected
-    'ara_field_v1_logs',   // older plural
-    'ARA_FIELD_V1_LOG',    // just in case of case/typo
+    'ara_field_v1_log',   // canonical key (Field Tools writes here)
+    'ARA_FIELD_LOG_V1',   // older / test key (if you used it)
+    'ara_field_v1_logs',  // plural variant (earlier drafts)
   ];
 
-  // Helper: is this array of tree-like objects?
   const looksLikeLogArray = (arr) => {
     if (!Array.isArray(arr)) return false;
-    if (arr.length === 0) return true;   // empty but valid
+    if (arr.length === 0) return true;
     const t = arr[0] || {};
     return (typeof t === 'object') && ('descHtml' in t || 'desc' in t || 'ts' in t || 'name' in t);
   };
 
-  // 1) Try preferred keys in order
   for (const k of preferred) {
     try {
       const raw = localStorage.getItem(k);
@@ -175,21 +173,17 @@ function loadLogs() {
     } catch {}
   }
 
-  // 2) Scan everything to catch any test key you might have used
-  let best = { key: null, items: [] };
-  for (let i = 0; i < localStorage.length; i++) {
+  // Fallback scan (largest valid array wins)
+  let best = { key: 'ara_field_v1_log', items: [] };
+  for (let i=0; i<localStorage.length; i++){
     const k = localStorage.key(i);
     try {
-      const raw = localStorage.getItem(k);
-      const val = JSON.parse(raw);
-      if (looksLikeLogArray(val) && val.length >= (best.items?.length || 0)) {
+      const val = JSON.parse(localStorage.getItem(k));
+      if (looksLikeLogArray(val) && val.length >= best.items.length) {
         best = { key: k, items: val };
       }
-    } catch { /* ignore non-JSON keys */ }
+    } catch {}
   }
-
-  // 3) If nothing valid found, return the expected key with empty array
-  if (!best.key) best.key = 'ara_field_v1_log';
   return best;
 }
 
