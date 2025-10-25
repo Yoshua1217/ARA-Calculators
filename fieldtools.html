@@ -718,7 +718,7 @@
   <button type="button" id="shareLink" class="btn-ghost" disabled>Copy share link</button>
   <a id="emailBtn" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
   <button type="button" id="saveLog" class="btn-ok" disabled>Save to log</button>
-  <button type="button" id="viewLog" class="btn-ghost">View log</button>
+<a href="log.html" id="viewLog" class="btn-ghost">View log</a>
 </div>
     </div>
 
@@ -2505,6 +2505,36 @@ initConnectivity();
   })();
 })();
 </script>
+<script>
+// When coming back from log.html's "Open in editor"
+document.addEventListener('DOMContentLoaded', () => {
+  const id = localStorage.getItem('ARA_EDIT_ID');
+  if (!id) return;
 
+  try {
+    const raw = localStorage.getItem('ARA_FIELD_LOG_V1') || '[]';
+    const list = JSON.parse(raw);
+    const entry = list.find(e => e.id === id);
+    if (entry) {
+      // restore full state into the editor (uses your existing setFormState)
+      if (typeof setFormState === 'function' && entry.state) {
+        setFormState(entry.state);
+      }
+      // restore description box so share/copy buttons enable
+      const desc = document.getElementById('desc');
+      if (desc && entry.description?.html) {
+        desc.innerHTML = entry.description.html;
+        document.getElementById('copyDesc')?.removeAttribute('disabled');
+        document.getElementById('shareLink')?.removeAttribute('disabled');
+        document.getElementById('saveLog')?.removeAttribute('disabled');
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to restore editor state from log:', e);
+  } finally {
+    localStorage.removeItem('ARA_EDIT_ID');
+  }
+});
+</script>
 </body>
 </html>
