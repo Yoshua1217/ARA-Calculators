@@ -114,6 +114,7 @@
     <a class="btn" href="fieldtools.html">Back to Field Tools</a>
     <button id="refreshBtn" class="btn">Refresh</button>
   </div>
+  <span id="loadStatus" class="muted" style="margin-left:8px;"></span>
 </div>
 
 <!-- CONTENT -->
@@ -148,88 +149,87 @@
 </div>
 
 <script>
-/* -------- Load data -------- */
-function loadLogs(){
-  const keys=['ara_field_v1_log','ara_field_v1_logs'];
-  for(const k of keys){
-    try{
-      const raw=localStorage.getItem(k);
-      if(!raw) continue;
-      const arr=JSON.parse(raw);
-      if(Array.isArray(arr)) return {key:k,items:arr};
-    }catch(e){}
+// Robust loader: scan all keys; prefer known names; fall back to biggest valid array
+function loadLogs() {
+  const preferred = [
+    'ara_field_v1_log',    // current expected
+    'ara_field_v1_logs',   // older plural
+    'ARA_FIELD_V1_LOG',    // just in case of case/typo
+  ];
+
+  // Helper: is this array of tree-like objects?
+  const looksLikeLogArray = (arr) => {
+    if (!Array.isArray(arr)) return false;
+    if (arr.length === 0) return true;   // empty but valid
+    const t = arr[0] || {};
+    return (typeof t === 'object') && ('descHtml' in t || 'desc' in t || 'ts' in t || 'name' in t);
+  };
+
+  // 1) Try preferred keys in order
+  for (const k of preferred) {
+    try {
+      const raw = localStorage.getItem(k);
+      if (!raw) continue;
+      const arr = JSON.parse(raw);
+      if (looksLikeLogArray(arr)) return { key: k, items: arr };
+    } catch {}
   }
-  return {key:'ara_field_v1_log',items:[]};
+
+  // 2) Scan everything to catch any test key you might have used
+  let best = { key: null, items: [] };
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    try {
+      const raw = localStorage.getItem(k);
+      const val = JSON.parse(raw);
+      if (looksLikeLogArray(val) && val.length >= (best.items?.length || 0)) {
+        best = { key: k, items: val };
+      }
+    } catch { /* ignore non-JSON keys */ }
+  }
+
+  // 3) If nothing valid found, return the expected key with empty array
+  if (!best.key) best.key = 'ara_field_v1_log';
+  return best;
 }
 
-/* -------- Accuracy colors -------- */
-function accClass(m){
-  if(!Number.isFinite(m)) return 'acc-grey';
-  if(m<=5) return 'acc-green';
-  if(m<20) return 'acc-amber';
-  return 'acc-grey';
-}
-function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// --- Access elements already declared earlier in your script ---
+const grid   = document.getElementById('grid');
+const empty  = document.getElementById('empty');
+const modal  = document.getElementById('detailModal');
+const closeModal  = document.getElementById('closeModal');
+const detailTitle = document.getElementById('detailTitle');
+const detailDesc  = document.getElementById('detailDesc');
+const detailChips = document.getElementById('detailChips');
+const copyBtn     = document.getElementById('copyBtn');
+const emailBtn    = document.getElementById('emailBtn');
+const removeBtn   = document.getElementById('removeBtn');
+const loadStatus  = document.getElementById('loadStatus');
 
-/* -------- Render list -------- */
-const grid=document.getElementById('grid');
-const empty=document.getElementById('empty');
-const modal=document.getElementById('detailModal');
-const closeModal=document.getElementById('closeModal');
-const detailTitle=document.getElementById('detailTitle');
-const detailDesc=document.getElementById('detailDesc');
-const detailChips=document.getElementById('detailChips');
-const copyBtn=document.getElementById('copyBtn');
-const emailBtn=document.getElementById('emailBtn');
-const removeBtn=document.getElementById('removeBtn');
+let logs = [];
+let keyStore = 'ara_field_v1_log';
+let current = null;
 
-let logs=[],keyStore='ara_field_v1_log',current=null;
+// --- Refresh + boot ---
+document.getElementById('refreshBtn').onclick = boot;
 
-function render(){
-  grid.innerHTML='';
-  if(!logs.length){empty.style.display='';return;}
-  empty.style.display='none';
-  const sorted=[...logs].sort((a,b)=>(b.ts||0)-(a.ts||0));
-  sorted.forEach((t,i)=>{
-    const card=document.createElement('div');
-    card.className='card';
-    const acc=Number(t.acc)||Number(t.location?.acc)||NaN;
-    card.innerHTML=`
-      <h3><span class="acc-dot ${accClass(acc)}"></span>${escapeHtml(t.name||'Unnamed')}</h3>
-      <div class="muted">${escapeHtml(t.species||'')}</div>
-      <div class="muted">${new Date(t.ts||Date.now()).toLocaleString()}</div>`;
-    card.onclick=()=>openDetail(t);
-    grid.appendChild(card);
-  });
-}
+function boot() {
+  const data = loadLogs();
+  keyStore = data.key;
+  logs     = Array.isArray(data.items) ? data.items : [];
 
-/* -------- Detail modal -------- */
-function openDetail(t){
-  current=t;
-  detailTitle.textContent=t.name||'Tree';
-  detailChips.innerHTML='';
-  if(t.species){const c=document.createElement('span');c.className='chip';c.textContent=t.species;detailChips.appendChild(c);}
-  const ts=new Date(t.ts||Date.now()).toLocaleString();
-  const c2=document.createElement('span');c2.className='chip';c2.textContent=ts;detailChips.appendChild(c2);
-  const html=t.descHtml||t.desc||'—';
-  detailDesc.innerHTML=html;
-  const plain=detailDesc.textContent.trim();
-  copyBtn.onclick=()=>navigator.clipboard.writeText(plain);
-  emailBtn.href='mailto:?subject='+encodeURIComponent('ARA Tree Log – '+(t.name||''))+'&body='+encodeURIComponent(plain);
-  removeBtn.onclick=()=>{if(confirm('Remove this entry?')){logs=logs.filter(x=>x!==t);localStorage.setItem(keyStore,JSON.stringify(logs));close();render();}};
-  modal.classList.add('show');
-}
-function close(){modal.classList.remove('show');}
-closeModal.onclick=close;
-modal.onclick=e=>{if(e.target===modal)close();};
+  // Show where we loaded from
+  if (loadStatus) {
+    loadStatus.textContent = logs.length
+      ? `Loaded ${logs.length} from “${keyStore}”`
+      : `No entries (checked “${keyStore}”)`;
+  }
 
-/* -------- Init -------- */
-document.getElementById('refreshBtn').onclick=boot;
-function boot(){
-  const d=loadLogs();keyStore=d.key;logs=d.items||[];
   render();
 }
+
 boot();
+
 </script>
 </body>
 </html>
