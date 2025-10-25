@@ -2414,34 +2414,22 @@ function makeLogEntry(){
 }
 
 async function saveToLog(){
-  // Make sure description is up-to-date
-  generateDescription(); // you already have this
+  // Make sure the on-screen description reflects current inputs
+  if (typeof generateDescription === 'function') generateDescription();
 
-  const name     = (byId('treeName')?.value || '').trim();
-  const species  = (byId('species')?.value  || '').trim();
-  const ts       = Date.now();
-  const descHtml = (byId('desc')?.innerHTML || '').trim();   // HTML version
-  const descText = (typeof buildDescriptionText === 'function')
-                     ? buildDescriptionText() : '';          // plain text twin
+  // Build the full, rich entry (basics, location, results, description, state)
+  const entry = (typeof makeLogEntry === 'function') ? makeLogEntry() : null;
+  if (!entry) {
+    alert('Sorry — could not assemble a log entry.');
+    return;
+  }
 
-  // Optional: include lat/lng/acc if present (for the chip)
-  const lat = parseFloat(byId('lat')?.value);
-  const lng = parseFloat(byId('lng')?.value);
-  const acc = parseFloat(byId('acc')?.value);
+  const list = readLog();       // uses LOG_KEY = 'ara_field_v1_log'
+  list.push(entry);
+  writeLog(list);
 
-  const entry = {
-    id: crypto?.randomUUID ? crypto.randomUUID() : ('id_'+ts),
-    name, species, ts,
-    descHtml, descText,
-    location: Number.isFinite(lat)&&Number.isFinite(lng) ? {lat,lng,acc: Number.isFinite(acc)?acc:undefined} : null
-  };
-
-  const arr = readLog();
-  arr.push(entry);
-  writeLog(arr);
-
-  alert(`Log contains ${arr.length} entries.`);
-  // Navigate to the log page
+  alert(`Saved! Log now has ${list.length} entr${list.length===1?'y':'ies'}.`);
+  // Go to the log page
   location.href = 'log.html';
 }
 
@@ -2515,7 +2503,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!id) return;
 
   try {
-    const raw = localStorage.getItem('LOG_KEY') || '[]';
+    // ✅ Use the variable LOG_KEY that equals 'ara_field_v1_log'
+    const raw = localStorage.getItem(LOG_KEY) || '[]';
     const list = JSON.parse(raw);
     const entry = list.find(e => e.id === id);
     if (entry) {
