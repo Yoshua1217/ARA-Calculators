@@ -103,10 +103,15 @@
     display:flex; gap:10px; flex-wrap:wrap;
   }
 
-  /* ---- Accuracy text colors ---- */
+  /* ---- Accuracy text colors ----
 .acc-text-green { color:#1b5e2b; }
 .acc-text-amber { color:#ffb300; }
-.acc-text-grey  { color:#a9b7c7; }
+.acc-text-grey  { color:#a9b7c7; } */
+
+  /* Accuracy text color helpers (match app palette) */
+.acc-grey  { color: #e2e8f0; }  /* neutral */
+.acc-amber { color: #ffb300; }  /* 5–20 m */
+.acc-green { color: #1b5e2b; }  /* ≤5 m */
 
 </style>
 </head>
@@ -318,7 +323,7 @@
       try{
         const params = new URLSearchParams(location.search);
         const id = params.get('id');
-        const KEY = 'ara_field_v1_log';  // must match log.html & field tools save code
+        const Log_KEY = 'ara_field_v1_log';  // must match log.html & field tools save code
         if (!id) throw new Error('No id in URL');
 
         const list = JSON.parse(localStorage.getItem(KEY) || '[]');
@@ -496,6 +501,23 @@
     });
   }
 })();
+
+  function paintAcc(meters){
+  const el = document.getElementById('d-loc-acc');
+  if(!el) return;
+  el.classList.remove('acc-green','acc-amber','acc-grey');
+  let cls = 'acc-grey';
+  if (Number.isFinite(meters)) {
+    if (meters <= 5) cls = 'acc-green';
+    else if (meters < 20) cls = 'acc-amber';
+    else cls = 'acc-grey';
+    el.textContent = `±${meters.toFixed(1)} m`;
+  } else {
+    el.textContent = '±—';
+  }
+  el.classList.add(cls);
+}
+
 </script>
 </body>
 </html>
