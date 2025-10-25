@@ -1,0 +1,1272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ARA Field Tools</title>
+<style>
+  :root{
+    /* Dark blue palette */
+    --bg:#0d1b2a;
+    --bg-elev:#0f2236;
+    --panel:#14253d;
+    --panel-2:#172a47;
+    --text:#e8eef6;
+    --muted:#a9b7c7;
+    --accent:#2ea3ff;
+    --accent-2:#4db2ff;
+    --ok:#1fa37a;
+    --danger:#d93c3c;
+    --border:#1f3553;
+    --radius:14px;
+    --gap:14px;
+  }
+  *{ box-sizing:border-box }
+  html,body{ height:100% }
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    padding-top:35px;
+    background:var(--bg); color:var(--text);
+  }
+
+  /* Fixed header */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(180deg, #0d1b2a, #0f2236);
+    border-bottom:1px solid var(--border);
+    padding:10px 14px;
+  }
+  
+/* Fixed header */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  background:linear-gradient(180deg, #0d1b2a, #0f2236);
+  border-bottom:1px solid var(--border);
+  padding:10px 14px;
+}
+
+.topbar .row{
+  display:flex;
+  flex-direction:column;      /* stack title over controls */
+  align-items:flex-start;     /* left edges line up */
+  gap:8px;
+}
+
+.brand {
+  font-weight: 800;
+  letter-spacing: .2px;
+  font-size: 1.05rem;
+  color: #eaf3ff;
+  line-height: 1.1;
+  padding-left: 2px; /* alignment fix */
+}
+.inline-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none; /* hide scrollbars on Firefox */
+  gap: 4px; /* tighter gap between buttons */
+  margin-left: -5px; /* pulls Units: text left to match title */
+  padding-left: 0;
+}
+
+.inline-controls::-webkit-scrollbar {
+  display: none; /* hide scrollbars on Chrome/Safari */
+}
+
+.inline-controls .acc-pill {
+  margin-left: -1px;
+  flex-shrink: 0;
+}
+
+
+  /* small-screen fit: slightly tighter paddings/fonts */
+@media (max-width: 420px){
+  .inline-controls{ gap:6px; }
+  .toggle-btn{ padding:6px 10px; }        /* was 8px 12px */
+  .acc-pill{ font-size:.85rem; padding:3px 8px; }
+}
+  .toggle-btn{
+    padding:8px 12px; border:1px solid var(--border); border-radius:999px;
+    background:var(--panel); color:var(--text); cursor:pointer;
+  }
+  .toggle-btn.active{ background:var(--accent); color:#001528; border-color:transparent; font-weight:700; }
+  .toggle-label{ color:var(--muted); font-size:.9rem; margin-left:6px; }
+
+  /* Tabs */
+  .tabs{
+    position:sticky; top:56px; z-index:45;
+    background:var(--bg-elev); border-bottom:1px solid var(--border);
+    overflow:auto; white-space:nowrap;
+  }
+  .tabs-inner{ display:flex; gap:8px; padding:8px 12px; }
+  .tab{
+    padding:10px 14px; border-radius:999px;
+    background:var(--panel); border:1px solid var(--border); color:var(--text);
+    cursor:pointer; user-select:none;
+  }
+  .tab.active{ background:var(--accent-2); color:#001528; border-color:transparent; font-weight:800; }
+
+  /* Main content */
+  .content{ 
+          padding:14px; 
+          max-width:1000px; 
+          margin:0 auto; }
+  .card{
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:var(--radius); margin-bottom:var(--gap);
+  }
+  .card .block{ padding:16px 18px; }
+  h2{ margin:0 0 8px; font-size:1.2rem; }
+  h3{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
+  label{ display:block; font-weight:700; margin:10px 0 6px; }
+
+  /* Consistent system font for all entry fields */
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 1rem;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    letter-spacing: 0.01em;
+  }
+  input::placeholder, textarea::placeholder{ font-family:inherit; color:#99a5b8; }
+  textarea{ min-height:88px; resize:none; overflow:hidden; }
+
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); }
+  @media (max-width:780px){ .row{ grid-template-columns:1fr } }
+
+  .note{
+    background:#0b1a2f; border:1px solid #1f3553; color:#cfe0ff;
+    border-radius:12px; padding:10px 12px;
+  }
+
+  /* Buttons */
+  .btn-row{ display:flex; flex-wrap:wrap; gap:10px; }
+  button,.btn{
+    padding:10px 14px; border:0; border-radius:10px; cursor:pointer; color:#001528;
+    background:var(--accent-2); font-weight:700;
+  }
+  .btn-ghost{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
+  .btn-dim{ background:#113158; color:#bcd8ff; border:1px solid var(--border); }
+  .btn-danger{ background:var(--danger); color:#fff; }
+  .btn-ok{ background:var(--ok); color:#00180f; }
+  button[disabled]{ opacity:.6; cursor:not-allowed; }
+
+  /* “Selectable” (light by default, dark when chosen) */
+  .btn-select{
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-select.active{
+    background: var(--accent-2);
+    color: #001528;
+    border-color: transparent;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.06) inset;
+  }
+
+  /* Allow ghost buttons to darken when we set .active in JS */
+  .btn-ghost.active{
+    background: var(--accent-2);
+    color:#001528;
+    border-color: transparent;
+  }
+
+  /* Match "Open email (optional)" button to others */
+#emailBtn {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+
+#emailBtn:hover:not([aria-disabled="true"]) {
+  background: var(--accent-2);
+  color: #001528;
+}
+
+#emailBtn:active:not([aria-disabled="true"]) {
+  background: #1b6cff;
+  color: #fff;
+  transform: scale(0.98);
+}
+
+#emailBtn[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+
+  /* Multi-trunk minor styles */
+  .mt-label{font-weight:700}
+  .badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#1b6cff;color:#001528;font-size:.75rem;vertical-align:middle}
+  .badge.hide{display:none}
+  .hint{font-size:.86rem;color:#ffc0c0;display:none}
+  .hint.show{display:block}
+
+  /* Clinometer (angle pill + lock in light blue) */
+  .clino-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .clino-wrap{
+    position:relative; height:180px; border:1px solid var(--border);
+    border-radius:12px; background:#0b1a2f; margin:10px 0; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* Clinometer lock button (no border when idle) */
+  .clino-lock{
+    width:140px; height:140px;
+    border:0; /* no border when not locked */
+    border-radius:999px;
+    background:#cfe0ff; /* light blue */
+    color:#0b2250;      /* dark navy text */
+    font-weight:900; font-size:1.15rem; cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.25) inset;
+  }
+ /* Lock button: darker blue when locked (less neon) */
+.clino-lock.active {
+  background: #2b66d6;          /* deeper blue */
+  color: #e8f0ff;
+  border: 2px solid #1b4ca3;    /* slightly darker border */
+}
+  .clino-lock:active{ transform:scale(.98); }
+
+/* Live angle box - dark blue like the clinometer card */
+.clino-readout {
+  background: #0f2236;               /* matches card background */
+  color: #cfe0ff;
+  border: 1px solid #1f3553;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 10px 0 12px;
+}
+.clino-readout .angle {
+  font-weight: 900;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+.clino-readout .status {
+  color: #99b8ff;
+  font-size: 0.92rem;
+  margin-top: 4px;
+}
+/* Calculate height button: lighter “active” state */
+#h-calc.active {
+  background: #4db2ff;          /* lighter blue flash */
+  color: #001528;
+  transition: background 0.25s, color 0.25s;
+}
+  /* Results */
+  .results{
+    background:#0b1a2f; border:1px solid var(--border);
+    border-radius:12px; padding:12px;
+  }
+  .results p{ margin:6px 0 }
+  .muted{ color:var(--muted) }
+  .tiny{ font-size:.86rem; color:var(--muted) }
+  .unit-tag{ color:#cfe0ff; font-weight:800 }
+
+  /* Spacing between generated description sections */
+.desc-section { 
+  margin: 12px 0 10px;
+}
+
+  /* Tabs content visibility */
+  .tabpane{ display:none }
+  .tabpane.active{ display:block }
+
+  /* Location accuracy chips */
+  .acc-chip{ display:inline-block; padding:2px 8px; border-radius:999px; font-weight:600; }
+ .acc-grey, .acc-pill.acc-grey, .acc-dot.acc-grey {
+  background:#46505e;      /* neutral grey */
+  color:#e2e8f0;
+  }
+  .acc-amber, .acc-pill.acc-amber, .acc-dot.acc-amber {
+    background:#ffb300;      /* bright golden yellow */
+    color:#2b1a00;           /* dark text for contrast */
+  }
+  .acc-green, .acc-pill.acc-green, .acc-dot.acc-green {
+    background:#1b5e2b; 
+    color:#e6fff2; 
+  }
+  .acc-red, .acc-pill.acc-red, .acc-dot.acc-red {
+    background:#7a2020; 
+    color:#ffdede; 
+  }
+
+ .acc-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    line-height: 1;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+  /* Running state for the Start/Stop toggle */
+  #loc-toggle.running{ background:#0b3b82; color:#fff; }
+
+  /* Reset Form Button — bright red fill by default, thicker border */
+  #resetFormResults{
+    background:#e53935;
+    color:#fff;
+    border:3px solid #6b0e0e;
+    border-radius:10px;
+    transition:background .15s, transform .1s, border-color .15s;
+  }
+  #resetFormResults:hover{
+    background:#d32f2f;
+    border-color:#8e0000;
+    transform:scale(1.02);
+  }
+  #resetFormResults:active{
+    background:#8e0000;
+    border-color:#5c0000;
+    transform:scale(.98);
+  }
+
+  /* Map space (+ small gap above) */
+  #loc-map { height: 300px; border-radius: 12px; overflow: hidden; margin-top:12px; }
+  .map-actions { display:flex; gap:8px; margin:8px 0 0; flex-wrap:wrap; }
+
+/* Global small pill in the header */
+.acc-pill{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:6px 10px; margin-left:8px;
+  border-radius:999px; font-weight:800; font-size:.95rem;
+  border:1px solid var(--border);
+  background:#404957; color:#d7dee8;  /* default (grey) */
+}
+
+
+
+/* Tiny status dot next to the Location tab */
+.acc-dot{
+  display:inline-block; width:10px; height:10px; margin-left:6px;
+  border-radius:50%;
+  border:1px solid rgba(0,0,0,.25);
+  vertical-align:middle;
+}
+  
+/* Connectivity card (medium border) */
+.conn-card{
+  border: 2px solid var(--border);   /* medium thickness */
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.conn-card .topline{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-bottom:8px;
+}
+.conn-card .status{
+  font-weight:800;
+}
+.conn-card .tiny{
+  color: var(--muted);
+}
+
+/* State colors */
+.conn-online{ border-color: var(--ok); }
+.conn-offline{ border-color: var(--danger); }
+
+/* Re-check button spacing to match your UI */
+#conn-recheck{ margin-top:8px; }
+
+/* Map offline callout card below the map */
+#map-offline-card{ display:none; }
+
+
+</style>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="row">
+    <div class="brand">ARA Field Tools</div>
+    <div class="inline-controls" aria-label="Global controls">
+      <span class="toggle-label">Units:</span>
+      <button type="button" id="unit-m"  class="toggle-btn active" aria-pressed="true">m</button>
+      <button type="button" id="unit-ft" class="toggle-btn" aria-pressed="false">ft</button>
+      <span class="toggle-label">Mode:</span>
+      <button type="button" id="mode-manual" class="toggle-btn active" aria-pressed="true">Manual</button>
+      <button type="button" id="mode-auto"   class="toggle-btn" aria-pressed="false">Auto</button>
+
+      <!-- Global best accuracy pill -->
+<span id="acc-pill-global"
+      class="acc-pill acc-red"
+      aria-live="polite"
+      title="Best location accuracy">
+  ±— m
+</span>
+
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tabs-inner">
+    <div class="tab active" data-tab="gen">General</div>
+<div class="tab" data-tab="loc">
+  Location
+  <span id="loc-tab-dot" class="acc-dot acc-red" title="Location accuracy status"></span>
+</div>
+    <div class="tab" data-tab="circ">Circumference</div>
+    <div class="tab" data-tab="height">Height</div>
+    <div class="tab" data-tab="canopy">Canopy</div>
+    <div class="tab" data-tab="results">Results</div>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- General -->
+  <section id="pane-gen" class="tabpane active">
+    <div class="card">
+      <div class="block">
+        <h2>General</h2>
+
+        <label for="treeName">Tree name</label>
+        <input id="treeName" type="text" placeholder="Tree name (e.g., Rossdale Poplar)">
+
+        <div class="row" style="margin-top:8px;">
+          <div>
+            <label for="species">Species</label>
+            <input id="species" type="text" placeholder="e.g., Populus balsamifera">
+          </div>
+          <div>
+            <label for="condition">Condition</label>
+            <select id="condition">
+              <option value="">— optional —</option>
+              <option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option><option>Dead</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="notes" style="margin-top:10px;">Notes</label>
+        <textarea id="notes" placeholder="Observations, access notes, landmarks, hazards…"></textarea>
+        <div class="tiny">Notes appear in the generated description.</div>
+      </div>
+    </div>
+         <!-- Connectivity card -->
+      <div id="conn-card" class="card conn-card conn-online" style="margin-top:12px;">
+        <div class="block">
+          <div class="topline">
+            <h3 style="margin:0;">Connectivity</h3>
+            <div class="tiny">Last checked: <span id="conn-checked">—</span></div>
+          </div>
+          <p id="conn-label" class="status">You’re online. Map tiles stream normally and email/share are enabled.</p>
+          <div class="tiny">Autosave is local and safe.</div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="conn-recheck" class="btn-ghost">Re-check</button>
+          </div>
+        </div>
+      </div>
+  </section>
+  <!-- Location -->
+  <section id="pane-loc" class="tabpane">
+    <div class="card">
+      <div class="block">
+        <h2>Location</h2>
+
+        <!-- Controls row -->
+        <div class="unit-toggle" style="flex-wrap:wrap; gap:8px;">
+          <button type="button" id="loc-toggle" class="btn-primary">Start tracking</button>
+          <button type="button" id="loc-hiacc"  class="toggle-btn" aria-pressed="false" title="Request highest accuracy">High accuracy</button>
+          <button type="button" id="loc-saver"  class="toggle-btn" aria-pressed="false" title="Reduce update rate to save battery">Battery saver</button>
+        </div>
+
+        <!-- Recent fix -->
+        <div class="results" style="margin-top:10px;">
+          <h3 style="margin:0 0 6px;">Recent fix</h3>
+          <p id="loc-recent-dd">DD: —</p>
+          <p>Altitude: <span id="loc-recent-alt">—</span></p>
+          <p>Accuracy: <span id="loc-recent-acc" class="acc-chip acc-grey">—</span></p>
+          <p>Age: <span id="loc-recent-age">—</span></p>
+          <p class="tiny" style="margin-top:6px;">Samples: <span id="loc-samples">0</span></p>
+        </div>
+
+        <!-- Best fix -->
+        <div class="results" style="margin-top:10px;">
+          <h3 style="margin:0 0 6px;">Best so far <span id="loc-best-badge" class="badge" style="display:none;">new</span></h3>
+          <p id="loc-best-dd">DD: —</p>
+          <p>Altitude: <span id="loc-best-alt">—</span></p>
+          <p>Accuracy: <span id="loc-best-acc" class="acc-chip acc-grey">—</span></p>
+          <p>Time: <span id="loc-best-time">—</span></p>
+        </div>
+
+        
+        <!-- Action buttons BELOW the best panel -->
+        <div class="unit-toggle" style="margin-top:10px;">
+          <button type="button" id="loc-use-recent" class="btn-ghost btn-select" disabled>Save recent</button>
+          <button type="button" id="loc-use-best"   class="btn-ghost btn-select" disabled>Save best</button>
+          <button type="button" id="loc-reset"      class="btn-ghost danger">Reset location</button>
+        </div>
+
+        <!-- Hidden storage used by description -->
+        <input type="hidden" id="lat"><input type="hidden" id="lng"><input type="hidden" id="acc">
+        <span id="loc-saved-alt" data-val="" style="display:none;"></span>
+        <span id="loc-saved-ts" data-ts="" style="display:none;"></span>
+
+        <!-- Map + actions -->
+        <div id="loc-map"></div>
+        <div class="map-actions">
+          <button type="button" id="map-to-recent" class="btn-ghost">Recenter to recent</button>
+          <button type="button" id="map-to-best"   class="btn-ghost">Recenter to best</button>
+        </div>
+        <!-- Shown only when offline -->
+<div id="map-offline-card" class="card" style="margin-top:10px; display:none;">
+  <div class="block">
+    <h3 style="margin:0 0 6px;">Map is offline</h3>
+    <p>Tiles may not load. Areas you viewed earlier might still appear from cache.</p>
+  </div>
+</div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Circumference -->
+  <section id="pane-circ" class="tabpane">
+    <div class="card">
+      <div class="block">
+        <h2>Circumference</h2>
+
+        <label for="treeType">Tree type</label>
+        <select id="treeType">
+          <option value="">— select —</option>
+          <option>Single trunk tree</option>
+          <option>Multi trunked tree</option>
+          <option>Grove</option>
+          <option>Forest</option>
+          <option>Clonal aspen</option>
+        </select>
+
+        <!-- Single trunk -->
+        <div id="single-circ-block" style="display:none;margin-top:10px;">
+          <label for="singleC">Circumference (<span class="unit-tag">m</span>)</label>
+          <input id="singleC" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 3.10">
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="single-update" class="btn-dim">Update circumference</button>
+          </div>
+          <div class="tiny">Diameter is calculated automatically (D = C / π).</div>
+        </div>
+
+        <!-- Multi-trunk -->
+        <div id="multi-block" style="display:none;margin-top:10px;">
+          <div class="note" style="margin-bottom:10px;">
+            <strong>Multi-trunk entry:</strong> add each trunk’s <em>circumference</em>. * Largest trunk counts 100%, others 50%.
+          </div>
+          <div id="mt-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="mt-add"    class="btn-dim">Add trunk</button>
+            <button type="button" id="mt-remove" class="btn-dim">Remove last</button>
+            <button type="button" id="mt-sort"   class="btn-ghost" title="Sort by diameter (desc)">Sort by diameter</button>
+            <button type="button" id="mt-calc"   class="btn-dim">Calculate multi-trunk</button>
+          </div>
+
+          <label for="mt-bulk" style="margin-top:12px;">Bulk paste (numbers + repeaters)</label>
+          <textarea id="mt-bulk" class="mono" placeholder="Examples:
+1.72, 0.98 1.10
+12x0.78   (12 repeats of 0.78)
+3×1.50    (× also works)"></textarea>
+          <div class="tiny">
+            Uses current unit (<span class="unit-tag">m</span>). Ignores text; keeps positive numbers only.
+            Supports <strong>NxVALUE</strong> like <strong>12x0.78</strong> or <strong>3×1.5</strong>.
+          </div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="mt-fill"  class="btn-ghost">Fill from bulk</button>
+            <button type="button" id="mt-clear" class="btn-ghost">Clear bulk</button>
+          </div>
+
+          <div id="mt-result" class="tiny" style="margin-top:8px;color:#cfe0ff;">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Height -->
+  <section id="pane-height" class="tabpane">
+    <div class="card">
+      <div class="block">
+
+        <div class="clino-head">
+          <h2>Height</h2>
+        </div>
+
+        <label for="h-angle">Angle to top of the tree (degrees)</label>
+        <input id="h-angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5">
+
+        <div class="row">
+          <div>
+            <label for="h-dist">Distance to trunk (<span class="unit-tag">m</span>)</label>
+            <input id="h-dist" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 23.40">
+          </div>
+          <div>
+            <label for="h-eye">Eye height (<span class="unit-tag">m</span>)</label>
+            <input id="h-eye" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 1.62">
+          </div>
+        </div>
+
+        <div class="btn-row" style="margin-top:10px;">
+          <button type="button" id="h-calc" class="btn-dim">Calculate height</button>
+        </div>
+
+        <!-- Clinometer -->
+<div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
+  <div class="block">
+
+    <!-- Live angle/status box — restored to original format -->
+<div class="clino-readout" id="clino-readout">
+  <h3 style="margin:0 0 6px;">Live angle</h3>
+  <p id="clino-live-angle" class="angle" style="margin:0;">—°</p>
+  <p id="clino-live-status" class="status">Sensor: idle · Cal: 0.0°</p>
+</div>
+
+    <!-- Clinometer lock area -->
+    <div class="clino-wrap" style="margin-top:12px;">
+      <button type="button" id="clino-lock" class="clino-lock">Start Clinometer</button>
+    </div>
+
+    <!-- Controls below -->
+    <div class="clino-controls" style="margin-top:10px;">
+      <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
+      <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
+    </div>
+
+  </div>
+</div>
+      </div>
+    </div>
+
+    <!-- Height formula shown under the clinometer card -->
+    <div class="card">
+      <div class="block">
+        <div class="tiny">
+          Height formula: <strong>height = tan(angle) × distance + eye height</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Canopy -->
+  <section id="pane-canopy" class="tabpane">
+    <div class="card">
+      <div class="block">
+        <h2>Canopy</h2>
+        <div class="row">
+          <div>
+            <label for="spreadMajor">Major axis (<span class="unit-tag">m</span>)</label>
+            <input id="spreadMajor" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 30.00">
+          </div>
+          <div>
+            <label for="spreadMinor">Minor axis (<span class="unit-tag">m</span>)</label>
+            <input id="spreadMinor" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 20.00">
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:10px;">
+          <button type="button" id="spread-calc" class="btn-dim">Calculate canopy spread</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- Results -->
+<section id="pane-results" class="tabpane">
+  <div class="card">
+    <div class="block">
+      <h2 id="results-title">Results</h2>
+
+      <!-- Key measurements (meters with feet in parentheses) -->
+      <div class="results" id="key-measurements" style="margin-top:6px;">
+        <p id="km-circ">Circumference: —</p>
+        <p id="km-height">Height: —</p>
+        <p id="km-canopy">Canopy spread: —</p>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Tree description</h3>
+      <div id="desc" class="results" style="margin-top:10px;">—</div>
+      <div class="tiny" style="margin-top:6px;">Timestamp uses local 24-hour time.</div>
+      <!-- Missing-data notice lives inside the description (at the end) -->
+    </div>
+
+    <div class="block">
+      <h3>Share & copy</h3>
+      <div class="btn-row">
+        <button type="button" id="copyDesc" class="btn-ghost" disabled>Copy description</button>
+        <button type="button" id="shareLink" class="btn-ghost" disabled>Copy share link</button>
+        <a id="emailBtn" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Photos</h3>
+      <div class="note" style="margin-top:6px;">
+        Placeholder for photos (coming soon). This box will show gallery thumbnails once logging is added.
+      </div>
+    </div>
+
+    <div class="block">
+      <button type="button" id="resetFormResults" class="btn-ghost danger" title="Reset the form (does not clear the log)">Reset form</button>
+    </div>
+  </div>
+</section>
+
+
+</div>
+<script>
+  if (window.Capacitor?.isNativePlatform?.()) {
+    window.Capacitor.Plugins?.StatusBar?.setOverlaysWebView?.({ overlay: false });
+  }
+</script>
+
+<script>
+/* ---------------- ARCHITECTURE & STATE ---------------- */
+// Consolidated global state variables for easier tracking
+let state = {
+    inputUnit: 'm', // 'm' or 'ft'
+    calcMode: 'manual', // 'manual' or 'auto'
+    lastSingle: null,
+    lastMulti: null,
+    lastHeight: null,
+    lastSpread: null,
+};
+const SAVE_KEY = 'ara-field-tools-state-v1';
+let ARA_RESETTING = false;
+let _asTimer = null; // Debounce timer for autosave
+
+/* -------- Small Helpers (utility functions) -------- */
+function $(s){ return document.querySelector(s); }
+function $all(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+function byId(id){ return document.getElementById(id); }
+function has(el){ return !!el; }
+const PI = Math.PI, FT_PER_M = 3.28084, M_PER_FT = 0.3048;
+const tanDeg = d => Math.tan(d * Math.PI / 180);
+const fmt2 = x => Number.isFinite(x) ? x.toFixed(2) : '—';
+const fmt1 = x => Number.isFinite(x) ? x.toFixed(1) : '—';
+const toM = (v, u) => u === 'm' ? v : v * M_PER_FT;
+const mToFt = m => m * FT_PER_M;
+const nowLocal24 = () => { var d = new Date(); var p = n => String(n).padStart(2, '0'); return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes()); };
+const escapeHtml = s => String(s || '').replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] });
+
+/* DMS helper for description (kept) */
+function toDMS(dec, isLat){
+  if (!Number.isFinite(dec)) return '—';
+  var hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
+  var v = Math.abs(dec);
+  var d = Math.floor(v); v = (v - d) * 60;
+  var m = Math.floor(v); var s = (v - m) * 60;
+  return d+'° '+m+"' "+s.toFixed(2)+'" '+hemi;
+}
+
+/* ---------------- DATA PERSISTENCE (Autosave Fix) ---------------- */
+
+function loadState() {
+    try {
+        const saved = localStorage.getItem(SAVE_KEY);
+        if (saved) {
+            const data = JSON.parse(saved);
+            state.inputUnit = data.inputUnit || 'm';
+            state.calcMode = data.calcMode || 'manual';
+            // NOTE: You would typically restore all form input values here
+        }
+    } catch(e) {
+        console.warn("Could not load state:", e);
+    }
+}
+
+function saveState(){
+  try{
+    // Collect all data needed to restore the session
+    const data = {
+      inputUnit: state.inputUnit,
+      calcMode: state.calcMode,
+      // 💡 TODO: Add logic here to serialize all form inputs (e.g., treeName, singleC, mt-list values, notes, etc.)
+      treeName: byId('treeName')?.value,
+      treeType: byId('treeType')?.value,
+      // ... and so on for all important inputs
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    console.log("State saved.");
+  }catch(e){
+    console.warn("Could not save state to localStorage:", e);
+  }
+}
+
+function autoSaveSoon(){
+  if(_asTimer) clearTimeout(_asTimer);
+  _asTimer = setTimeout(saveState, 600);
+}
+
+function clearSavedState(){
+    try {
+        localStorage.removeItem(SAVE_KEY);
+    } catch (e) {
+        console.warn("Could not clear state from localStorage:", e);
+    }
+}
+
+/* ---------------- APPLICATION LOGIC STUBS (Completed) ---------------- */
+
+// STUB: Placeholder for updating legacy results panel
+function updateResultsPanel(){}
+
+// STUB: Placeholder for generating description
+function generateDescription(){
+  const descEl = byId('desc');
+  const name = byId('treeName')?.value?.trim() || '—';
+  if (descEl) {
+    descEl.innerHTML = `<div class="desc-section">
+      <h3>Tree: ${escapeHtml(name)}</h3>
+      <p>Report generated: ${nowLocal24()}</p>
+    </div>
+    <div class="desc-section">
+      <p>Fill out the forms to generate a full report.</p>
+    </div>`;
+  }
+}
+
+// STUB: Calculation functions
+function recomputeSingle(){
+    // 💡 TODO: Add your single trunk calculation logic
+    // Example: state.lastSingle = { cM: ..., cFt: ..., dM: ..., dFt: ... };
+    console.log('recomputeSingle executed');
+}
+function calcMulti(){
+    // 💡 TODO: Add your multi trunk calculation logic
+    // Example: state.lastMulti = { cEqM: ..., cEqFt: ... };
+    console.log('calcMulti executed');
+}
+function calcHeight(){
+    // 💡 TODO: Add your height calculation logic
+    // Example: state.lastHeight = { hM: ..., hFt: ... };
+    console.log('calcHeight executed');
+}
+function calcSpread(){
+    // 💡 TODO: Add your spread calculation logic
+    // Example: state.lastSpread = { meanM: ..., meanFt: ... };
+    console.log('calcSpread executed');
+}
+function updateCopyButtons(){}
+function initConnectivity(){
+    // 💡 TODO: Add your logic for initializing the location/connection state
+    console.log('initConnectivity executed');
+}
+
+function updateKeyMeasurementsBox(){
+  const title = byId('results-title');
+  const name  = byId('treeName')?.value?.trim();
+  if (title) title.textContent = name ? (name + ' — Results') : 'Results';
+
+  const kmCirc   = byId('km-circ');
+  const kmHeight = byId('km-height');
+  const kmCanopy = byId('km-canopy');
+
+  const t = byId('treeType')?.value || '';
+
+  // Circumference line
+  if (t === 'Single trunk tree' && state.lastSingle){
+    kmCirc && (kmCirc.textContent = `Circumference: ${fmt2(state.lastSingle.cM)} m (${fmt2(state.lastSingle.cFt)} ft)`);
+  } else if (t === 'Multi trunked tree' && state.lastMulti){
+    kmCirc && (kmCirc.textContent = `Equivalent circumference: ${fmt2(state.lastMulti.cEqM)} m (${fmt2(state.lastMulti.cEqFt)} ft)`);
+  } else {
+    kmCirc && (kmCirc.textContent = 'Circumference: —');
+  }
+
+  // Height
+  kmHeight && (kmHeight.textContent =
+    state.lastHeight ? `Height: ${fmt2(state.lastHeight.hM)} m (${fmt2(state.lastHeight.hFt)} ft)` : 'Height: —'
+  );
+
+  // Canopy
+  kmCanopy && (kmCanopy.textContent =
+    state.lastSpread ? `Canopy spread: ${fmt2(state.lastSpread.meanM)} m (${fmt2(state.lastSpread.meanFt)} ft)` : 'Canopy spread: —'
+  );
+}
+
+function refreshResultsView(){
+  updateResultsPanel();       // keep legacy lines up to date
+  updateKeyMeasurementsBox(); // new “Key measurements” box
+  generateDescription();      // HTML + email/plain text stay in sync
+}
+
+function computeMissingBits(){
+  const missing = [];
+  const t = byId('treeType')?.value || '';
+  if (t === 'Single trunk tree'){
+    if (!state.lastSingle) missing.push('circumference (single trunk)');
+  } else if (t === 'Multi trunked tree'){
+    if (!state.lastMulti) missing.push('multi-trunk entry / calculation');
+  } else if (!t){
+    missing.push('tree type');
+  }
+  if (!state.lastHeight) missing.push('height');
+  if (!state.lastSpread) missing.push('canopy spread');
+  return missing;
+}
+
+/* ---------------- Header Controls (Buttons Fix) ---------------- */
+var unitM=byId('unit-m'), unitFt=byId('unit-ft');
+var modeManualBtn=byId('mode-manual'), modeAutoBtn=byId('mode-auto');
+var unitTags=$all('.unit-tag');
+
+function setUnit(u){
+  if(u===state.inputUnit) return;
+
+  function conv(inp){
+      if(!inp) return;
+      var v=parseFloat(inp.value);
+      if(!Number.isNaN(v)){
+          var m=toM(v,state.inputUnit);
+          inp.value=(u==='m'?m:m*FT_PER_M).toFixed(2);
+      }
+  }
+
+  // Convert inputs
+  [byId('singleC'), byId('h-dist'), byId('h-eye'), byId('spreadMajor'), byId('spreadMinor')].forEach(conv);
+  $all('#mt-list input[type="number"]').forEach(conv);
+
+  state.inputUnit = u;
+  var isM = u === 'm';
+
+  if(unitM){ unitM.classList.toggle('active', isM); unitM.setAttribute('aria-pressed',String(isM)); }
+  if(unitFt){ unitFt.classList.toggle('active', !isM); unitFt.setAttribute('aria-pressed',String(!isM)); }
+
+  unitTags.forEach(function(t){ t.textContent=isM?'m':'ft'; });
+  renumberTrunks(); // Function needs definition later
+
+  // Re-calculate if in auto mode
+  if(state.calcMode === 'auto'){ 
+    var tt = byId('treeType') ? byId('treeType').value : '';
+    if(tt==='Single trunk tree') recomputeSingle();
+    if(tt==='Multi trunked tree') calcMulti();
+    calcHeight(); calcSpread();
+  }
+  
+  refreshResultsView();
+  updateResultsPanel(); updateCopyButtons();
+  autoSaveSoon();
+}
+if(unitM) unitM.onclick = function(){ setUnit('m'); };
+if(unitFt) unitFt.onclick = function(){ setUnit('ft'); };
+
+function setCalcMode(m){
+  state.calcMode = m; 
+  var man = m === 'manual';
+
+  if(modeManualBtn){ modeManualBtn.classList.toggle('active', man); modeManualBtn.setAttribute('aria-pressed',String(man)); }
+  if(modeAutoBtn){ modeAutoBtn.classList.toggle('active', !man); modeAutoBtn.setAttribute('aria-pressed',String(!man)); }
+  
+  autoSaveSoon();
+}
+if(modeManualBtn) modeManualBtn.onclick = function(){ setCalcMode('manual'); };
+if(modeAutoBtn)   modeAutoBtn.onclick = function(){ setCalcMode('auto'); };
+
+/* ---------------- Tabs (Kept as is) ---------------- */
+$all('.tab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    $all('.tab').forEach(function(t){ t.classList.remove('active'); });
+    tab.classList.add('active');
+    var id = tab.getAttribute('data-tab');
+    $all('.tabpane').forEach(function(p){ p.classList.remove('active'); });
+    var pane = byId('pane-'+id); if(pane) pane.classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+
+/* ---------------- General (Kept as is) ---------------- */
+var notesEl = byId('notes');
+function autoGrow(el){ if(!el) return; el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
+if(notesEl) notesEl.addEventListener('input',function(){ autoGrow(notesEl); autoSaveSoon(); });
+
+/* ---------------- Circumference ---------------- */
+var treeType=byId('treeType'), singleBlock=byId('single-circ-block'), singleC=byId('singleC');
+var singleUpdateBtn = byId('single-update');
+
+var mtBlock=byId('multi-block'), mtList=byId('mt-list'), mtAdd=byId('mt-add'), mtRemove=byId('mt-remove'),
+    mtSort=byId('mt-sort'), mtCalc=byId('mt-calc'), mtBulk=byId('mt-bulk'), mtFill=byId('mt-fill'),
+    mtClear=byId('mt-clear'), mtResult=byId('mt-result');
+
+function updateTypeVisibility(){
+  var t=treeType ? treeType.value : '';
+  if(singleBlock) singleBlock.style.display=(t==='Single trunk tree')?'':'none';
+  if(mtBlock) mtBlock.style.display=(t==='Multi trunked tree')?'':'none';
+  if (t==='Multi trunked tree' && mtList && mtList.children.length===0){
+    addMtRow(); addMtRow();
+  }
+  refreshResultsView(); updateCopyButtons();
+  autoSaveSoon();
+}
+if(treeType) treeType.onchange=updateTypeVisibility; 
+
+/* Single trunk */
+function recomputeSingle(){ 
+    var v=parseFloat(singleC && singleC.value); 
+    if(Number.isFinite(v)&&v>0){ 
+        var cM=toM(v,state.inputUnit); 
+        var dM=cM/PI; 
+        state.lastSingle={cM:cM,cFt:mToFt(cM),dM:dM,dFt:mToFt(dM)}; 
+    } else state.lastSingle=null; 
+    refreshResultsView(); updateResultsPanel(); updateCopyButtons(); 
+    autoSaveSoon();
+} 
+if(singleC) singleC.addEventListener('input',function(){ if(state.calcMode==='auto') recomputeSingle(); autoSaveSoon(); }); 
+if(singleUpdateBtn) singleUpdateBtn.addEventListener('click',recomputeSingle); 
+
+/* Multi-trunk block functions */
+var MT_MAX=60;
+function clearMtLargest(){} // Stub for clearing visual badge
+function getMtRows(){ return mtList ? Array.prototype.slice.call(mtList.querySelectorAll('.mt-row')) : []; } 
+function renumberTrunks(){ 
+    var rows = getMtRows(); 
+    rows.forEach(function(row, i){ 
+        var idx=i+1; 
+        row.dataset.index=String(idx); 
+        var lab=row.querySelector('.mt-label'); 
+        var inp=row.querySelector('input[type="number"]'); 
+        if (inp) inp.id='mt-'+idx; 
+        if (lab){ 
+            lab.htmlFor='mt-'+idx; 
+            lab.textContent='Trunk '+idx+' circumference ('+state.inputUnit+')'; 
+        } 
+    }); 
+} 
+function maybeMtOutlierHint(val,h){ 
+    if(!h) return; 
+    if(!Number.isFinite(val)||val<=0){h.classList.remove('show');return} 
+    if(state.inputUnit==='m'){ 
+        if(val<0.20){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');} 
+        else if(val>12){h.textContent='Unusually large — check units?';h.classList.add('show');} 
+        else h.classList.remove('show'); 
+    } else { 
+        if(val<0.66){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');} 
+        else if(val>40){h.textContent='Unusually large — check units?';h.classList.add('show');} 
+        else h.classList.remove('show'); 
+    } 
+} 
+function addMtRow(val){ 
+    if(!mtList) return; 
+    if (getMtRows().length >= MT_MAX) return; 
+    var row=document.createElement('div'); 
+    row.className='row mt-row'; 
+    row.style.gridTemplateColumns='1fr'; 
+    var top=document.createElement('div'); 
+    top.style.display='flex'; 
+    top.style.alignItems='center'; 
+    var lab=document.createElement('label'); 
+    lab.className='mt-label'; 
+    var badge=document.createElement('span'); 
+    badge.className='badge hide'; 
+    badge.textContent='Largest'; 
+    var inp=document.createElement('input'); 
+    inp.type='number'; 
+    inp.step='0.01'; 
+    inp.inputMode='decimal'; 
+    if(val!==undefined && val!=='') inp.value=val; 
+    var hint=document.createElement('div'); 
+    hint.className='hint'; 
+    top.appendChild(lab); 
+    top.appendChild(badge); 
+    row.appendChild(top); 
+    row.appendChild(inp); 
+    row.appendChild(hint); 
+    mtList.appendChild(row); 
+    inp.addEventListener('input',function(){ 
+        hint.classList.remove('show'); 
+        if(state.calcMode==='auto') calcMulti(); 
+        autoSaveSoon();
+    }); 
+    inp.addEventListener('blur',function(){ maybeMtOutlierHint(parseFloat(inp.value),hint); }); 
+    renumberTrunks(); 
+    autoSaveSoon();
+} 
+if(mtAdd) mtAdd.onclick = addMtRow;
+
+function removeMtRow(){ 
+    var rows=getMtRows(); 
+    if(rows.length<=1) return; 
+    rows[rows.length-1].remove(); 
+    clearMtLargest(); 
+    renumberTrunks(); 
+    if(state.calcMode==='auto') calcMulti();
+    autoSaveSoon();
+} 
+if(mtRemove) mtRemove.onclick = removeMtRow;
+
+function parseMtBulk(text,limit){ 
+    limit = limit||MT_MAX; 
+    var vals=[]; 
+    if(!text) return vals; 
+    var s=String(text).replace(/[×X]/g,'x'); 
+    var repRE=/(\d+)\s*x\s*([-+]?\d*\.?\d+)/g, m; 
+    s=s.replace(repRE,function(_,nStr,vStr){ 
+        var n=parseInt(nStr,10), v=parseFloat(vStr); 
+        if(Number.isFinite(n)&&n>0&&Number.isFinite(v)&&v>0){ 
+            for(var i=0;i<n&&vals.length<limit;i++) vals.push(v); 
+        } 
+        return ' '; 
+    }); 
+    var singles=s.match(/[-+]?\d*\.?\d+/g)||[]; 
+    for(var j=0;j<singles.length && vals.length<limit;j++){ 
+        var v=parseFloat(singles[j]); 
+        if(Number.isFinite(v)&&v>0) vals.push(v); 
+    } 
+    return vals; 
+} 
+
+function mtFillFromBulk(){ 
+    if(!mtFill) return; 
+    mtFill.classList.add('active'); 
+    var vals=parseMtBulk(mtBulk?mtBulk.value:'',MT_MAX); 
+    if(vals.length===0){ 
+        setTimeout(function(){ mtFill.classList.remove('active'); }, 500); 
+        return; 
+    } 
+    if(mtList) mtList.innerHTML=''; 
+    vals.forEach(function(v){ addMtRow(v.toFixed(2)); }); 
+    if(mtResult) mtResult.textContent='—'; 
+    if(state.calcMode==='auto') calcMulti(); 
+    renumberTrunks(); 
+    setTimeout(function(){ mtFill.classList.remove('active'); }, 900);
+    autoSaveSoon(); 
+} 
+if(mtFill) mtFill.onclick = mtFillFromBulk;
+if(mtBulk) mtBulk.addEventListener('input', autoSaveSoon);
+
+
+function mtSortByDiameter(){ 
+    if(!mtList) return; 
+    
+    var rows = getMtRows(); 
+    var valid = [], invalid = []; 
+    
+    // 1. Parse and separate valid vs. invalid rows
+    rows.forEach(function(row){ 
+        var inp = row.querySelector('input[type="number"]'); 
+        var val = parseFloat(inp ? inp.value : null);
+        
+        // Store the original row element along with its value
+        if (Number.isFinite(val) && val > 0) {
+            // Convert to a base unit (meters) for accurate sorting, regardless of input unit
+            const valM = toM(val, state.inputUnit);
+            valid.push({ valueM: valM, row: row });
+        } else {
+            invalid.push(row);
+        }
+    });
+
+    // 2. Sort valid rows by diameter (largest first)
+    valid.sort((a, b) => b.valueM - a.valueM); 
+
+    // 3. Clear the list and re-append sorted rows
+    mtList.innerHTML = '';
+    
+    valid.forEach(function(item, i){
+        // Add "Largest" badge to the first (largest) trunk
+        const badge = item.row.querySelector('.badge');
+        if (badge) {
+            badge.classList.toggle('hide', i !== 0);
+            badge.classList.toggle('show', i === 0);
+        }
+        mtList.appendChild(item.row);
+    });
+    
+    // 4. Append invalid rows at the end
+    invalid.forEach(row => mtList.appendChild(row));
+    
+    // 5. Final housekeeping
+    renumberTrunks(); 
+    if(state.calcMode==='auto') calcMulti();
+    autoSaveSoon();
+} 
+if(mtSort) mtSort.onclick = mtSortByDiameter;
+
+
+/* ---------------- Initialization & Event Wiring (Efficiency Fix) ---------------- */
+
+function wireAutosaveInputs(){
+  // Any input/change should schedule a (debounced) save.
+  const selectors = 'input:not(#mt-bulk), select, textarea:not(#notes)';
+  document.querySelectorAll(selectors).forEach(el=>{
+    el.addEventListener('input', autoSaveSoon);
+    el.addEventListener('change', autoSaveSoon);
+  });
+    
+  // OPTIONAL: live description refresh on *any* edit
+  document.addEventListener('input', function(e){
+    // keep this lightweight — rebuild once per user edit
+    if (typeof refreshResultsView === 'function') refreshResultsView();
+  });
+}
+
+function initializeApp(){
+    loadState(); // Load saved unit and mode
+    setUnit(state.inputUnit); // Apply unit and trigger UI updates
+    setCalcMode(state.calcMode); // Apply calculation mode
+
+    // 💡 TODO: Add logic here to restore all form inputs from state.
+    byId('treeName').value = 'Restored Name'; // Example of restoration
+    byId('treeType').value = 'Single trunk tree'; // Example of restoration
+    updateTypeVisibility(); // Update visibility based on restored type
+    
+    wireAutosaveInputs(); // Wire up all form inputs
+    initConnectivity(); // Check location/connection
+    refreshResultsView(); // Draw the initial view
+}
+
+
+/* ---------------- Reset Button Handler (Completed) ---------------- */
+if(byId('resetFormResults')){
+    byId('resetFormResults').onclick = function(){
+      // Ask for confirmation
+      if(!confirm("Are you sure you want to reset the form? All entered data will be lost (except the log and current location data).")) return;
+      
+      ARA_RESETTING = true;
+      clearSavedState();
+      
+      // We store the current unit/mode before the hard refresh
+      try{
+        if (_asTimer) clearTimeout(_asTimer);
+        // Only save state.inputUnit and state.calcMode to restore the header controls on reload
+        localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit: state.inputUnit, calcMode: state.calcMode }));
+      }catch(e){ /* ignore */ }
+      
+      // Hard refresh to clear any transient runtime state and reset form fields
+      location.replace(location.href.split('#')[0]);
+    };
+}
+
+if(byId('treeName')){
+    byId('treeName').addEventListener('input', function(){
+      if (typeof updateKeyMeasurementsBox === 'function') updateKeyMeasurementsBox();
+      autoSaveSoon();
+    });
+}
+
+// Kick off the application
+initializeApp();
+
+</script>
+</body>
+</html>
