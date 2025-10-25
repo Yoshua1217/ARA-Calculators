@@ -797,7 +797,22 @@ function toDMS(dec, isLat){
     lastSpread ? `Canopy spread: ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)` : 'Canopy spread: —'
   );
 }
+function wireAutosaveInputs(){
+  // Any input/change should schedule a (debounced) save.
+  const selectors = 'input, select, textarea';
+  document.querySelectorAll(selectors).forEach(el=>{
+    el.addEventListener('input', autoSaveSoon);
+    el.addEventListener('change', autoSaveSoon);
+  });
 
+  // OPTIONAL: live description refresh on *any* edit
+  document.addEventListener('input', function(e){
+    // keep this lightweight — rebuild once per user edit
+    if (typeof refreshResultsView === 'function') refreshResultsView();
+  });
+}
+
+}
 function refreshResultsView(){
   updateResultsPanel();       // keep legacy lines up to date
   updateKeyMeasurementsBox(); // new “Key measurements” box
@@ -1939,15 +1954,19 @@ if (best && Number.isFinite(best.acc)){
     updateRecentUI(); updateBestUI(false);
   }
 
-  function applyFixToHidden(fix){
-    if (!fix) return;
-    if(latEl) latEl.value = fix.lat.toFixed(6);
-    if(lngEl) lngEl.value = fix.lng.toFixed(6);
-    if(accEl) accEl.value = Number.isFinite(fix.acc) ? fix.acc.toFixed(1) : '';
-    if(savedAlt && savedAlt.dataset) savedAlt.dataset.val = Number.isFinite(fix.alt) ? String(fix.alt) : '';
-    if(savedTs  && savedTs.dataset)  savedTs.dataset.ts   = String(fix.ts || Date.now());
-    if (typeof saveState === 'function') saveState();
-  }
+function applyFixToHidden(fix){
+  if (!fix) return;
+  if(latEl) latEl.value = fix.lat.toFixed(6);
+  if(lngEl) lngEl.value = fix.lng.toFixed(6);
+  if(accEl) accEl.value = Number.isFinite(fix.acc) ? fix.acc.toFixed(1) : '';
+  if(savedAlt && savedAlt.dataset) savedAlt.dataset.val = Number.isFinite(fix.alt) ? String(fix.alt) : '';
+  if(savedTs  && savedTs.dataset)  savedTs.dataset.ts   = String(fix.ts || Date.now());
+  if (typeof saveState === 'function') saveState();
+
+  // NEW: immediately rebuild description & key measurements
+  if (typeof refreshResultsView === 'function') refreshResultsView();
+}
+
 
   if(bToggle) bToggle.addEventListener('click', function(){ if (watchId == null) start(); else stop(); });
 if(tHiAcc)  tHiAcc.addEventListener('click',  function(){
@@ -2168,11 +2187,10 @@ function autoSaveSoon(){
     if (_asTimer) clearTimeout(_asTimer);
     _asTimer = setTimeout(function(){
       if (!window.ARA_RESETTING) saveState();
-            refreshResultsView();
     }, 250);
   }catch(e){ console.warn('autoSaveSoon failed', e); }
 }
-
+  
 /* ---------------- Connectivity card (online/offline) ---------------- */
 /* Paint “Connectivity” card + map hint */
 function connNowISO(){
@@ -2285,8 +2303,13 @@ function initConnectivity(){
       location.replace(location.href.split('#')[0]);
     };
   }
+  byId('treeName')?.addEventListener('input', function(){
+  if (typeof updateKeyMeasurementsBox === 'function') updateKeyMeasurementsBox();
+});
+
   // Connectivity: wire up events + initial check
 initConnectivity();
+  wireAutosaveInputs();
 
 </script>
 <script>
