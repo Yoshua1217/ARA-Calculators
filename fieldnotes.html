@@ -7,14 +7,17 @@
 
   <style>
     :root {
-      --bg: #020812;
-      --surface-1: #041019;
-      --surface-2: #061824;
-      --border-subtle: #213546;
+      /* Match the main app’s dark navy look */
+      --bg: #020816;
+      --surface-1: #04101c;
+      --surface-2: #071726;
+      --border-subtle: #1f3143;
+      --border-strong: #314a63;
       --accent: #2aa9ff;
       --accent-soft: rgba(42, 169, 255, 0.12);
       --text: #e4f2ff;
       --text-muted: #9bb1c6;
+      --danger: #f65b5b;
     }
 
     * {
@@ -25,51 +28,65 @@
       margin: 0;
       padding: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #062340 0, #020812 60%);
+      background:
+        radial-gradient(circle at top, #0a2340 0, transparent 55%),
+        radial-gradient(circle at bottom, #020812 0, #020816 55%);
       color: var(--text);
     }
 
     .page {
-      max-width: 720px;
+      max-width: 880px;
       margin: 0 auto;
-      padding: 1rem 1rem 1.5rem;
+      padding: 0.9rem 0.9rem 1.5rem;
     }
 
     header.app-header {
       display: flex;
       flex-direction: column;
       gap: 0.15rem;
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
     }
 
     .app-title {
       font-size: 0.9rem;
-      letter-spacing: 0.1em;
+      font-weight: 600;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--text-muted);
     }
 
     .app-subtitle {
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       font-weight: 600;
       display: flex;
-      align-items: baseline;
-      gap: 0.3rem;
+      align-items: center;
+      gap: 0.4rem;
     }
 
-    .app-subtitle span.accent {
+    .pill {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(5, 25, 42, 0.9);
+      color: var(--text-muted);
+    }
+
+    .pill-accent {
+      border-color: var(--accent);
+      background: var(--accent-soft);
       color: var(--accent);
-      font-size: 0.9rem;
       font-weight: 500;
     }
 
     .section-header {
-      margin: 0.75rem 0 0.5rem;
+      margin: 0.4rem 0 0.6rem;
     }
 
     .section-header h2 {
-      font-size: 1rem;
+      font-size: 0.95rem;
       margin: 0;
+      font-weight: 600;
     }
 
     .section-header p {
@@ -78,30 +95,33 @@
       color: var(--text-muted);
     }
 
+    /* Card layout, tuned to look like the main tool */
     .card {
-      border-radius: 16px;
-      background: linear-gradient(135deg, rgba(17, 51, 89, 0.7), rgba(3, 17, 32, 0.95));
-      border: 1px solid rgba(61, 112, 158, 0.7);
+      border-radius: 18px;
+      background: var(--surface-1);
+      border: 1px solid var(--border-subtle);
       box-shadow:
-        0 18px 40px rgba(0, 0, 0, 0.6),
-        0 0 0 1px rgba(5, 20, 35, 0.9) inset;
-      margin-bottom: 1rem;
+        0 14px 28px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(3, 14, 26, 0.9) inset;
+      margin-bottom: 0.8rem;
       overflow: hidden;
     }
 
     .card-header {
-      padding: 0.7rem 0.9rem 0.25rem;
-      border-bottom: 1px solid rgba(61, 112, 158, 0.5);
+      padding: 0.6rem 0.9rem 0.4rem;
+      border-bottom: 1px solid rgba(30, 52, 75, 0.8);
+      background: linear-gradient(180deg, rgba(5, 20, 34, 0.85), rgba(4, 16, 27, 0.95));
     }
 
     .card-header h3 {
       margin: 0;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 600;
     }
 
     .card-body {
       padding: 0.75rem 0.9rem 0.9rem;
+      background: var(--surface-1);
     }
 
     .hint {
@@ -118,11 +138,16 @@
       width: 100%;
       min-height: 120px;
       resize: none;
-      padding: 0.75rem 0.9rem;
-      border-radius: 10px;
+      padding: 0.7rem 0.8rem;
+      border-radius: 12px;
       border: 1px solid var(--border-subtle);
       background: var(--surface-2);
       outline: none;
+      font-size: 0.9rem;
+    }
+
+    #fn-notes::placeholder {
+      color: rgba(155, 177, 198, 0.7);
     }
 
     #fn-notes:focus {
@@ -137,14 +162,15 @@
       margin-top: 0.75rem;
     }
 
+    /* Ghost buttons styled like other app */
     .btn-ghost,
     .btn-ghost:link,
     .btn-ghost:visited {
       font-size: 0.85rem;
-      padding: 6px 10px;
+      padding: 6px 11px;
       border-radius: 999px;
-      border: 1px solid rgba(110, 178, 235, 0.7);
-      background: rgba(3, 18, 32, 0.9);
+      border: 1px solid rgba(110, 178, 235, 0.75);
+      background: rgba(3, 15, 27, 0.96);
       color: var(--text);
       text-decoration: none;
       display: inline-flex;
@@ -163,11 +189,17 @@
 
     .btn-ghost[disabled],
     .btn-ghost[aria-disabled="true"] {
-      opacity: 0.5;
+      opacity: 0.55;
       cursor: default;
     }
 
-    /* Label buttons wrapping file inputs */
+    .btn-ghost.active {
+      background: var(--accent-soft);
+      color: #001528;
+      border-color: transparent;
+    }
+
+    /* File inputs hidden inside label buttons */
     label.btn-ghost > input[type="file"] {
       display: none;
     }
@@ -175,14 +207,14 @@
     /* Photo grid */
     .fn-photo-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-      gap: 0.5rem;
-      margin-top: 0.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+      gap: 0.55rem;
+      margin-top: 0.6rem;
     }
 
     .fn-photo-thumb {
       position: relative;
-      border-radius: 10px;
+      border-radius: 12px;
       overflow: hidden;
       border: 1px solid var(--border-subtle);
       background: #000;
@@ -191,7 +223,7 @@
     .fn-photo-thumb img {
       display: block;
       width: 100%;
-      height: 80px;
+      height: 82px;
       object-fit: cover;
     }
 
@@ -204,17 +236,17 @@
       padding: 0 6px;
       font-size: 0.7rem;
       line-height: 1.4;
-      background: rgba(0, 0, 0, 0.65);
+      background: rgba(0, 0, 0, 0.7);
       color: #fff;
       cursor: pointer;
     }
 
     footer {
-      margin-top: 0.75rem;
+      margin-top: 0.8rem;
       font-size: 0.75rem;
       color: var(--text-muted);
       text-align: center;
-      opacity: 0.8;
+      opacity: 0.85;
     }
   </style>
 </head>
@@ -224,13 +256,13 @@
       <div class="app-title">ARA Field Tools</div>
       <div class="app-subtitle">
         Field notes
-        <span class="accent">beta</span>
+        <span class="pill pill-accent">Scratch pad</span>
       </div>
     </header>
 
     <section class="section-header">
       <h2>Session notes</h2>
-      <p>Free-form notes for sites, microclimates, waypoints, or general thoughts in the field.</p>
+      <p>Quick notes for sites, microclimates, waypoints, hazards, or general field thoughts.</p>
     </section>
 
     <!-- Notes card -->
@@ -242,7 +274,7 @@
         <textarea
           id="fn-notes"
           rows="5"
-          placeholder="Write your field notes here (sites, impressions, species lists, microclimate clues, etc.)…"
+          placeholder="Write your field notes here (site description, access, species list, impressions)…"
         ></textarea>
 
         <div class="btn-row">
@@ -259,8 +291,8 @@
       </div>
       <div class="card-body">
         <p class="hint">
-          Attach quick context shots (site, trail junction, bike, marker flag, soil, canopy, etc.).
-          Photos stay in memory only for now.
+          Attach context shots (site, trail junction, bike, marker flag, soil, canopy, etc.).
+          Photos are in-memory only right now.
         </p>
 
         <div class="btn-row">
@@ -294,7 +326,7 @@
     </div>
 
     <footer>
-      v0.1 · Field notes are not yet saved between sessions — treat this like a “scratch pad” for now.
+      v0.1 · Field notes and photos are not yet saved between sessions — treat as temporary.
     </footer>
   </div>
 
@@ -422,7 +454,6 @@
           autoGrowNotes();
           refreshNoteButtons();
         });
-        // Initial layout
         autoGrowNotes();
         refreshNoteButtons();
       }
@@ -438,7 +469,7 @@
       if (camInput){
         camInput.addEventListener('change', function(e){
           handleFiles(e.target.files);
-          camInput.value = ''; // let user pick same file again
+          camInput.value = ''; // allow same file again
         });
       }
 
