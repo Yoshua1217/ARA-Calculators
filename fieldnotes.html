@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ARA Field Tools — Field Notes</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <style>
+    :root {
+      --bg: #020812;
+      --surface-1: #041019;
+      --surface-2: #061824;
+      --border-subtle: #213546;
+      --accent: #2aa9ff;
+      --accent-soft: rgba(42, 169, 255, 0.12);
+      --text: #e4f2ff;
+      --text-muted: #9bb1c6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #062340 0, #020812 60%);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1rem 1rem 1.5rem;
+    }
+
+    header.app-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      margin-bottom: 1rem;
+    }
+
+    .app-title {
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .app-subtitle {
+      font-size: 1.3rem;
+      font-weight: 600;
+      display: flex;
+      align-items: baseline;
+      gap: 0.3rem;
+    }
+
+    .app-subtitle span.accent {
+      color: var(--accent);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .section-header {
+      margin: 0.75rem 0 0.5rem;
+    }
+
+    .section-header h2 {
+      font-size: 1rem;
+      margin: 0;
+    }
+
+    .section-header p {
+      margin: 0.15rem 0 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .card {
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(17, 51, 89, 0.7), rgba(3, 17, 32, 0.95));
+      border: 1px solid rgba(61, 112, 158, 0.7);
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(5, 20, 35, 0.9) inset;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 0.7rem 0.9rem 0.25rem;
+      border-bottom: 1px solid rgba(61, 112, 158, 0.5);
+    }
+
+    .card-header h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .card-body {
+      padding: 0.75rem 0.9rem 0.9rem;
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    #fn-notes {
+      width: 100%;
+      min-height: 120px;
+      resize: none;
+      padding: 0.75rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: var(--surface-2);
+      outline: none;
+    }
+
+    #fn-notes:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .btn-ghost,
+    .btn-ghost:link,
+    .btn-ghost:visited {
+      font-size: 0.85rem;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(110, 178, 235, 0.7);
+      background: rgba(3, 18, 32, 0.9);
+      color: var(--text);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.05s ease;
+    }
+
+    .btn-ghost:hover:not([disabled]):not([aria-disabled="true"]) {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost[disabled],
+    .btn-ghost[aria-disabled="true"] {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    /* Label buttons wrapping file inputs */
+    label.btn-ghost > input[type="file"] {
+      display: none;
+    }
+
+    /* Photo grid */
+    .fn-photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .fn-photo-thumb {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      background: #000;
+    }
+
+    .fn-photo-thumb img {
+      display: block;
+      width: 100%;
+      height: 80px;
+      object-fit: cover;
+    }
+
+    .fn-photo-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      border: none;
+      border-radius: 999px;
+      padding: 0 6px;
+      font-size: 0.7rem;
+      line-height: 1.4;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    footer {
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="app-header">
+      <div class="app-title">ARA Field Tools</div>
+      <div class="app-subtitle">
+        Field notes
+        <span class="accent">beta</span>
+      </div>
+    </header>
+
+    <section class="section-header">
+      <h2>Session notes</h2>
+      <p>Free-form notes for sites, microclimates, waypoints, or general thoughts in the field.</p>
+    </section>
+
+    <!-- Notes card -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Notes</h3>
+      </div>
+      <div class="card-body">
+        <textarea
+          id="fn-notes"
+          rows="5"
+          placeholder="Write your field notes here (sites, impressions, species lists, microclimate clues, etc.)…"
+        ></textarea>
+
+        <div class="btn-row">
+          <button type="button" id="fn-copy" class="btn-ghost" disabled>Copy text</button>
+          <a id="fn-email" class="btn-ghost" href="#" aria-disabled="true">Open email</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Photos card -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Photos</h3>
+      </div>
+      <div class="card-body">
+        <p class="hint">
+          Attach quick context shots (site, trail junction, bike, marker flag, soil, canopy, etc.).
+          Photos stay in memory only for now.
+        </p>
+
+        <div class="btn-row">
+          <!-- Camera input (opens camera where supported) -->
+          <label class="btn-ghost">
+            Use camera
+            <input
+              id="fn-add-camera"
+              type="file"
+              accept="image/*"
+              capture="environment"
+            >
+          </label>
+
+          <!-- Gallery / files input -->
+          <label class="btn-ghost">
+            Add from device
+            <input
+              id="fn-add-gallery"
+              type="file"
+              accept="image/*"
+              multiple
+            >
+          </label>
+        </div>
+
+        <p class="hint" id="fn-photo-hint" style="margin-top:0.5rem;">No photos yet.</p>
+
+        <div id="fn-photo-list" class="fn-photo-grid"></div>
+      </div>
+    </div>
+
+    <footer>
+      v0.1 · Field notes are not yet saved between sessions — treat this like a “scratch pad” for now.
+    </footer>
+  </div>
+
+  <script>
+    // Simple cross-browser copy helper
+    function copyText(text, btn){
+      if (!text) return;
+      var p;
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        p = navigator.clipboard.writeText(text);
+      } else {
+        p = new Promise(function(res){
+          var t = document.createElement('textarea');
+          t.value = text;
+          t.style.position = 'fixed';
+          t.style.opacity = '0';
+          document.body.appendChild(t);
+          t.select();
+          document.execCommand('copy');
+          document.body.removeChild(t);
+          res();
+        });
+      }
+      p.then(function(){
+        if (!btn) return;
+        var prev = btn.textContent;
+        btn.textContent = 'Copied ✓';
+        setTimeout(function(){ btn.textContent = prev; }, 1200);
+      }).catch(function(){});
+    }
+
+    (function(){
+      var notes     = document.getElementById('fn-notes');
+      var copyBtn   = document.getElementById('fn-copy');
+      var emailLink = document.getElementById('fn-email');
+      var camInput  = document.getElementById('fn-add-camera');
+      var galInput  = document.getElementById('fn-add-gallery');
+      var listEl    = document.getElementById('fn-photo-list');
+      var hintEl    = document.getElementById('fn-photo-hint');
+
+      // In-memory only for now
+      var photos = []; // { url, name }
+
+      function autoGrowNotes(){
+        if (!notes) return;
+        notes.style.height = 'auto';
+        notes.style.height = (notes.scrollHeight + 2) + 'px';
+      }
+
+      function refreshNoteButtons(){
+        if (!notes) return;
+        var text = notes.value.trim();
+        var hasText = !!text;
+
+        if (copyBtn) copyBtn.disabled = !hasText;
+
+        if (emailLink){
+          if (hasText){
+            var subject = 'ARA Field Note';
+            emailLink.href = 'mailto:?subject=' +
+              encodeURIComponent(subject) +
+              '&body=' + encodeURIComponent(text);
+            emailLink.setAttribute('aria-disabled', 'false');
+          } else {
+            emailLink.href = '#';
+            emailLink.setAttribute('aria-disabled', 'true');
+          }
+        }
+      }
+
+      function renderPhotos(){
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        if (!photos.length){
+          if (hintEl) hintEl.textContent = 'No photos yet.';
+          return;
+        }
+
+        if (hintEl){
+          hintEl.textContent = photos.length + ' photo' +
+            (photos.length > 1 ? 's' : '') +
+            ' attached (not saved after closing page).';
+        }
+
+        photos.forEach(function(p, idx){
+          var wrap = document.createElement('div');
+          wrap.className = 'fn-photo-thumb';
+
+          var img = document.createElement('img');
+          img.src = p.url;
+          img.alt = p.name || ('Photo ' + (idx + 1));
+
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'fn-photo-remove';
+          btn.textContent = '×';
+          btn.addEventListener('click', function(){
+            URL.revokeObjectURL(p.url);
+            photos.splice(idx, 1);
+            renderPhotos();
+          });
+
+          wrap.appendChild(img);
+          wrap.appendChild(btn);
+          listEl.appendChild(wrap);
+        });
+      }
+
+      function handleFiles(fileList){
+        if (!fileList || !fileList.length) return;
+        Array.prototype.forEach.call(fileList, function(file){
+          if (!file || !file.type || !file.type.startsWith('image/')) return;
+          photos.push({
+            name: file.name,
+            url: URL.createObjectURL(file)
+          });
+        });
+        renderPhotos();
+      }
+
+      // Events
+      if (notes){
+        notes.addEventListener('input', function(){
+          autoGrowNotes();
+          refreshNoteButtons();
+        });
+        // Initial layout
+        autoGrowNotes();
+        refreshNoteButtons();
+      }
+
+      if (copyBtn){
+        copyBtn.addEventListener('click', function(){
+          var text = (notes && notes.value.trim()) || '';
+          if (!text) return;
+          copyText(text, copyBtn);
+        });
+      }
+
+      if (camInput){
+        camInput.addEventListener('change', function(e){
+          handleFiles(e.target.files);
+          camInput.value = ''; // let user pick same file again
+        });
+      }
+
+      if (galInput){
+        galInput.addEventListener('change', function(e){
+          handleFiles(e.target.files);
+          galInput.value = '';
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
