@@ -122,6 +122,167 @@
       color:var(--text-main);
     }
 
+    /* Tag color tokens */
+:root {
+  --tag-microclimate: #a886ff;
+  --tag-habitat:      #2f8f4e;
+  --tag-species:      #4f7cff;
+  --tag-landscape:    #c29b5a;
+  --tag-moisture:     #2aa89a;
+  --tag-wildlife:     #f3a53b;
+  --tag-disturbance:  #ff6b4a;
+  --tag-navigation:   #6f7b8f;
+  --tag-weather:      #7b8aa4;
+  --tag-photo:        #e08fb6;
+}
+
+/* Tag pill on main card */
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  padding-inline: 14px;
+  border-radius: 999px;
+}
+
+.tag-current {
+  font-size: 0.9rem;
+}
+
+.tag-none {
+  opacity: 0.7;
+}
+
+/* Overlay shell */
+.tag-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1500;
+}
+
+.tag-overlay.open {
+  display: flex;
+}
+
+/* Panel */
+.tag-panel {
+  background: #061626;
+  border-radius: 18px;
+  padding: 16px 16px 12px;
+  width: min(520px, 92vw);
+  max-height: 80vh;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.75);
+  border: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+}
+
+.tag-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.tag-panel-header h2 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.tag-panel-intro {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* Tag list */
+.tag-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.tag-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(5,20,35,0.9);
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+}
+
+.tag-option:hover {
+  background: rgba(12,40,70,0.96);
+  transform: translateY(-1px);
+}
+
+/* Color dot */
+.tag-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  margin-top: 2px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.7);
+}
+
+/* Individual dot colors + border tints */
+.tag-microclimate { background: var(--tag-microclimate); }
+.tag-habitat      { background: var(--tag-habitat); }
+.tag-species      { background: var(--tag-species); }
+.tag-landscape    { background: var(--tag-landscape); }
+.tag-moisture     { background: var(--tag-moisture); }
+.tag-wildlife     { background: var(--tag-wildlife); }
+.tag-disturbance  { background: var(--tag-disturbance); }
+.tag-navigation   { background: var(--tag-navigation); }
+.tag-weather      { background: var(--tag-weather); }
+.tag-photo        { background: var(--tag-photo); }
+
+.tag-option[data-tag-id="microclimate"] { border-color: rgba(168,134,255,0.6); }
+.tag-option[data-tag-id="habitat"]      { border-color: rgba(47,143,78,0.6); }
+.tag-option[data-tag-id="species"]      { border-color: rgba(79,124,255,0.6); }
+.tag-option[data-tag-id="landscape"]    { border-color: rgba(194,155,90,0.6); }
+.tag-option[data-tag-id="moisture"]     { border-color: rgba(42,168,154,0.6); }
+.tag-option[data-tag-id="wildlife"]     { border-color: rgba(243,165,59,0.6); }
+.tag-option[data-tag-id="disturbance"]  { border-color: rgba(255,107,74,0.6); }
+.tag-option[data-tag-id="navigation"]   { border-color: rgba(111,123,143,0.6); }
+.tag-option[data-tag-id="weather"]      { border-color: rgba(123,138,164,0.6); }
+.tag-option[data-tag-id="photo"]        { border-color: rgba(224,143,182,0.6); }
+
+.tag-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.tag-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.tag-desc {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+/* Footer */
+.tag-panel-footer {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+
     .btn-primary{
       background:var(--accent);
       border-color:var(--accent);
@@ -309,9 +470,9 @@
 
     <!-- NOTE -->
     <section class="card">
-      <h2 class="card-title">Note</h2>
+      <h2 class="card-title">Field Note Text</h2>
 
-      <label for="noteTitle" class="field-label">Note name</label>
+      <label for="noteTitle" class="field-label">Note Title</label>
       <input id="noteTitle" class="text-input" type="text"
              placeholder="e.g., Rossdale east bank scout, July 12">
 
@@ -321,6 +482,24 @@
       <textarea id="noteText" placeholder="Quick notes, observations, hazards, landmarks…"></textarea>
       <p class="hint">This note stays on this device and can be copied or emailed out.</p>
     </section>
+
+    <!-- Tag card -->
+<section class="card">
+  <header class="card-header">
+    <h2 class="card-title">Tag</h2>
+    <p class="card-subtitle">
+      Optional label to categorize this note for your future Notebook view.
+    </p>
+  </header>
+  <div class="card-body">
+    <button type="button" id="tagPickerBtn" class="btn-ghost tag-pill">
+      <span id="tagCurrentLabel" class="tag-current tag-none">No tag selected</span>
+    </button>
+    <p class="hint">
+      Tap to choose a tag like “Microclimate”, “Habitat”, or “Trail marker”.
+    </p>
+  </div>
+</section>
 
     <!-- PHOTOS -->
     <section class="card">
@@ -380,6 +559,146 @@
       </div>
     </div>
   </div>
+<!-- Tag selection overlay -->
+<div id="tagOverlay" class="tag-overlay">
+  <div class="tag-backdrop"></div>
+  <div class="tag-panel">
+    <header class="tag-panel-header">
+      <h2>Choose a tag</h2>
+      <button type="button" class="tag-close btn-ghost" id="tagCloseBtn">Close</button>
+    </header>
+
+    <p class="tag-panel-intro">
+      Pick one tag for this note. You can change it anytime.
+    </p>
+
+    <ul class="tag-list" id="tagList">
+      <!-- Microclimate -->
+      <li class="tag-option"
+          data-tag-id="microclimate"
+          data-tag-name="Microclimate"
+          data-tag-color="var(--tag-microclimate)">
+        <span class="tag-color-dot tag-microclimate"></span>
+        <div class="tag-text">
+          <div class="tag-name">Microclimate</div>
+          <div class="tag-desc">For pockets of unique temperature, moisture, or shelter.</div>
+        </div>
+      </li>
+
+      <!-- Habitat -->
+      <li class="tag-option"
+          data-tag-id="habitat"
+          data-tag-name="Habitat"
+          data-tag-color="var(--tag-habitat)">
+        <span class="tag-color-dot tag-habitat"></span>
+        <div class="tag-text">
+          <div class="tag-name">Habitat</div>
+          <div class="tag-desc">For notes about understory, soil, and ecosystem type.</div>
+        </div>
+      </li>
+
+      <!-- Species Observation -->
+      <li class="tag-option"
+          data-tag-id="species"
+          data-tag-name="Species observation"
+          data-tag-color="var(--tag-species)">
+        <span class="tag-color-dot tag-species"></span>
+        <div class="tag-text">
+          <div class="tag-name">Species observation</div>
+          <div class="tag-desc">For specific plants, trees, or interesting specimens.</div>
+        </div>
+      </li>
+
+      <!-- Landscape Feature -->
+      <li class="tag-option"
+          data-tag-id="landscape"
+          data-tag-name="Landscape feature"
+          data-tag-color="var(--tag-landscape)">
+        <span class="tag-color-dot tag-landscape"></span>
+        <div class="tag-text">
+          <div class="tag-name">Landscape feature</div>
+          <div class="tag-desc">For slopes, ridges, gullies, terraces, and landforms.</div>
+        </div>
+      </li>
+
+      <!-- Moisture / Hydrology -->
+      <li class="tag-option"
+          data-tag-id="moisture"
+          data-tag-name="Moisture / hydrology"
+          data-tag-color="var(--tag-moisture)">
+        <span class="tag-color-dot tag-moisture"></span>
+        <div class="tag-text">
+          <div class="tag-name">Moisture / hydrology</div>
+          <div class="tag-desc">For springs, seep lines, wet hollows, and drainage patterns.</div>
+        </div>
+      </li>
+
+      <!-- Wildlife -->
+      <li class="tag-option"
+          data-tag-id="wildlife"
+          data-tag-name="Wildlife"
+          data-tag-color="var(--tag-wildlife)">
+        <span class="tag-color-dot tag-wildlife"></span>
+        <div class="tag-text">
+          <div class="tag-name">Wildlife</div>
+          <div class="tag-desc">For tracks, scat, nests, calls, or animal sign.</div>
+        </div>
+      </li>
+
+      <!-- Condition / Disturbance -->
+      <li class="tag-option"
+          data-tag-id="disturbance"
+          data-tag-name="Condition / disturbance"
+          data-tag-color="var(--tag-disturbance)">
+        <span class="tag-color-dot tag-disturbance"></span>
+        <div class="tag-text">
+          <div class="tag-name">Condition / disturbance</div>
+          <div class="tag-desc">For fire scars, windthrow, beetle kill, or human impact.</div>
+        </div>
+      </li>
+
+      <!-- Trail marker / Navigation -->
+      <li class="tag-option"
+          data-tag-id="navigation"
+          data-tag-name="Trail marker / navigation"
+          data-tag-color="var(--tag-navigation)">
+        <span class="tag-color-dot tag-navigation"></span>
+        <div class="tag-text">
+          <div class="tag-name">Trail marker / navigation</div>
+          <div class="tag-desc">For waypoints, landmarks, bike spots, or tricky turns.</div>
+        </div>
+      </li>
+
+      <!-- Weather -->
+      <li class="tag-option"
+          data-tag-id="weather"
+          data-tag-name="Weather"
+          data-tag-color="var(--tag-weather)">
+        <span class="tag-color-dot tag-weather"></span>
+        <div class="tag-text">
+          <div class="tag-name">Weather</div>
+          <div class="tag-desc">For fog pockets, frost, wind, and local weather quirks.</div>
+        </div>
+      </li>
+
+      <!-- Photo focus -->
+      <li class="tag-option"
+          data-tag-id="photo"
+          data-tag-name="Photo focus"
+          data-tag-color="var(--tag-photo)">
+        <span class="tag-color-dot tag-photo"></span>
+        <div class="tag-text">
+          <div class="tag-name">Photo focus</div>
+          <div class="tag-desc">For notes built mostly around photos and visuals.</div>
+        </div>
+      </li>
+    </ul>
+
+    <div class="tag-panel-footer">
+      <button type="button" class="btn-ghost" id="tagClearBtn">Clear tag</button>
+    </div>
+  </div>
+</div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function(){
@@ -427,6 +746,53 @@
 
       const SAVE_KEY = 'ara_field_notes_v2';
       let _saveTimer = null;
+      
+/* ------------ Tag selection state ------------ */
+let selectedTagId = null;
+
+const tagPickerBtn   = document.getElementById('tagPickerBtn');
+const tagCurrentLabel= document.getElementById('tagCurrentLabel');
+const tagOverlay     = document.getElementById('tagOverlay');
+const tagCloseBtn    = document.getElementById('tagCloseBtn');
+const tagClearBtn    = document.getElementById('tagClearBtn');
+
+function openTagOverlay(){
+  if (!tagOverlay) return;
+  tagOverlay.classList.add('open');
+}
+
+function closeTagOverlay(){
+  if (!tagOverlay) return;
+  tagOverlay.classList.remove('open');
+}
+
+/**
+ * Apply a tag selection in UI + state.
+ * @param {string|null} id 
+ * @param {string} [name] 
+ * @param {string} [color] 
+ */
+function applyTagSelection(id, name, color){
+  selectedTagId = id || null;
+
+  if (!tagCurrentLabel) return;
+
+  if (!id){
+    tagCurrentLabel.textContent = 'No tag selected';
+    tagCurrentLabel.classList.add('tag-none');
+    tagPickerBtn && (tagPickerBtn.style.borderColor = '');
+  } else {
+    tagCurrentLabel.textContent = name || 'Tagged';
+    tagCurrentLabel.classList.remove('tag-none');
+    if (tagPickerBtn && color){
+      tagPickerBtn.style.borderColor = color;
+      tagPickerBtn.style.boxShadow = '0 0 0 1px ' + color.replace('rgba','rgba').replace(')',',0.5)');
+    }
+  }
+
+  // Nudge autosave if available
+  if (typeof autoSaveSoon === 'function') autoSaveSoon();
+}
 
       // photos = [{id, src, fromCamera}]
       let photos = [];
@@ -438,6 +804,7 @@
           return {
             title: noteTitleEl.value || '',
             note:  noteEl.value || '',
+            tagId: selectedTagId || '',
             photos: photos.map(p => ({ src:p.src, fromCamera: !!p.fromCamera }))
           };
         }catch(e){
@@ -471,6 +838,19 @@
             noteEl.value = st.note;
             autoGrowNote();
           }
+          if (st.tagId) {
+  const opt = document.querySelector('.tag-option[data-tag-id="' + st.tagId + '"]');
+  if (opt) {
+    applyTagSelection(
+      st.tagId,
+      opt.dataset.tagName,
+      opt.dataset.tagColor
+    );
+  }
+} else {
+  applyTagSelection(null);
+}
+
           if(Array.isArray(st.photos)){
             photos = st.photos.map(p => ({
               id: 'p'+Date.now()+Math.random().toString(16).slice(2),
@@ -504,6 +884,41 @@
         updateShareButtons();
       });
       autoGrowNote();
+// Open overlay when user taps the pill
+if (tagPickerBtn) {
+  tagPickerBtn.addEventListener('click', openTagOverlay);
+}
+
+// Close button
+if (tagCloseBtn) {
+  tagCloseBtn.addEventListener('click', closeTagOverlay);
+}
+
+// Click outside panel closes too
+if (tagOverlay) {
+  tagOverlay.addEventListener('click', function(e){
+    if (e.target === tagOverlay) closeTagOverlay();
+  });
+}
+
+// Clear tag
+if (tagClearBtn) {
+  tagClearBtn.addEventListener('click', function(){
+    applyTagSelection(null);
+    closeTagOverlay();
+  });
+}
+
+// Tag option clicks
+document.querySelectorAll('.tag-option').forEach(function(opt){
+  opt.addEventListener('click', function(){
+    const id    = opt.dataset.tagId;
+    const name  = opt.dataset.tagName;
+    const color = opt.dataset.tagColor;
+    applyTagSelection(id, name, color);
+    closeTagOverlay();
+  });
+});
 
       /* ---------- photos ---------- */
       function addPhotoFromDataUrl(dataUrl, fromCamera){
