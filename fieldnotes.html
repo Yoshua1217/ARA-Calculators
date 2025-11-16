@@ -5,6 +5,8 @@
   <title>ARA Field Tools – Field notes</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- Leaflet for map in Location tab -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     :root{
       --bg-main:#020b16;
@@ -121,167 +123,6 @@
       background:transparent;
       color:var(--text-main);
     }
-
-    /* Tag color tokens */
-:root {
-  --tag-microclimate: #a886ff;
-  --tag-habitat:      #2f8f4e;
-  --tag-species:      #4f7cff;
-  --tag-landscape:    #c29b5a;
-  --tag-moisture:     #2aa89a;
-  --tag-wildlife:     #f3a53b;
-  --tag-disturbance:  #ff6b4a;
-  --tag-navigation:   #6f7b8f;
-  --tag-weather:      #7b8aa4;
-  --tag-photo:        #e08fb6;
-}
-
-/* Tag pill on main card */
-.tag-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 140px;
-  padding-inline: 14px;
-  border-radius: 999px;
-}
-
-.tag-current {
-  font-size: 0.9rem;
-}
-
-.tag-none {
-  opacity: 0.7;
-}
-
-/* Overlay shell */
-.tag-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 1500;
-}
-
-.tag-overlay.open {
-  display: flex;
-}
-
-/* Panel */
-.tag-panel {
-  background: #061626;
-  border-radius: 18px;
-  padding: 16px 16px 12px;
-  width: min(520px, 92vw);
-  max-height: 80vh;
-  box-shadow: 0 18px 40px rgba(0,0,0,0.75);
-  border: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  flex-direction: column;
-}
-
-.tag-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 4px;
-}
-
-.tag-panel-header h2 {
-  font-size: 1.05rem;
-  margin: 0;
-}
-
-.tag-panel-intro {
-  margin: 0 0 10px;
-  font-size: 0.85rem;
-  opacity: 0.8;
-}
-
-/* Tag list */
-.tag-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.tag-option {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.04);
-  background: rgba(5,20,35,0.9);
-  cursor: pointer;
-  margin-bottom: 6px;
-  transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
-}
-
-.tag-option:hover {
-  background: rgba(12,40,70,0.96);
-  transform: translateY(-1px);
-}
-
-/* Color dot */
-.tag-color-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  margin-top: 2px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.7);
-}
-
-/* Individual dot colors + border tints */
-.tag-microclimate { background: var(--tag-microclimate); }
-.tag-habitat      { background: var(--tag-habitat); }
-.tag-species      { background: var(--tag-species); }
-.tag-landscape    { background: var(--tag-landscape); }
-.tag-moisture     { background: var(--tag-moisture); }
-.tag-wildlife     { background: var(--tag-wildlife); }
-.tag-disturbance  { background: var(--tag-disturbance); }
-.tag-navigation   { background: var(--tag-navigation); }
-.tag-weather      { background: var(--tag-weather); }
-.tag-photo        { background: var(--tag-photo); }
-
-.tag-option[data-tag-id="microclimate"] { border-color: rgba(168,134,255,0.6); }
-.tag-option[data-tag-id="habitat"]      { border-color: rgba(47,143,78,0.6); }
-.tag-option[data-tag-id="species"]      { border-color: rgba(79,124,255,0.6); }
-.tag-option[data-tag-id="landscape"]    { border-color: rgba(194,155,90,0.6); }
-.tag-option[data-tag-id="moisture"]     { border-color: rgba(42,168,154,0.6); }
-.tag-option[data-tag-id="wildlife"]     { border-color: rgba(243,165,59,0.6); }
-.tag-option[data-tag-id="disturbance"]  { border-color: rgba(255,107,74,0.6); }
-.tag-option[data-tag-id="navigation"]   { border-color: rgba(111,123,143,0.6); }
-.tag-option[data-tag-id="weather"]      { border-color: rgba(123,138,164,0.6); }
-.tag-option[data-tag-id="photo"]        { border-color: rgba(224,143,182,0.6); }
-
-.tag-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.tag-name {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.tag-desc {
-  font-size: 0.8rem;
-  opacity: 0.8;
-}
-
-/* Footer */
-.tag-panel-footer {
-  margin-top: 8px;
-  display: flex;
-  justify-content: flex-end;
-}
-
 
     .btn-primary{
       background:var(--accent);
@@ -459,6 +300,245 @@
     }
 
     .hidden{ display:none !important; }
+
+    /* Tag color tokens */
+    :root {
+      --tag-microclimate: #a886ff;
+      --tag-habitat:      #2f8f4e;
+      --tag-species:      #4f7cff;
+      --tag-landscape:    #c29b5a;
+      --tag-moisture:     #2aa89a;
+      --tag-wildlife:     #f3a53b;
+      --tag-disturbance:  #ff6b4a;
+      --tag-navigation:   #6f7b8f;
+      --tag-weather:      #7b8aa4;
+      --tag-photo:        #e08fb6;
+    }
+
+    /* Tag pill on main card */
+    .tag-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 140px;
+      padding-inline: 14px;
+      border-radius: 999px;
+    }
+
+    .tag-current {
+      font-size: 0.9rem;
+    }
+
+    .tag-none {
+      opacity: 0.7;
+    }
+
+    /* Overlay shell */
+    .tag-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1500;
+    }
+
+    .tag-overlay.open {
+      display: flex;
+    }
+
+    /* Panel */
+    .tag-panel {
+      background: #061626;
+      border-radius: 18px;
+      padding: 16px 16px 12px;
+      width: min(520px, 92vw);
+      max-height: 80vh;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.75);
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tag-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .tag-panel-header h2 {
+      font-size: 1.05rem;
+      margin: 0;
+    }
+
+    .tag-panel-intro {
+      margin: 0 0 10px;
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+
+    /* Tag list */
+    .tag-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .tag-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(5,20,35,0.9);
+      cursor: pointer;
+      margin-bottom: 6px;
+      transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+    }
+
+    .tag-option:hover {
+      background: rgba(12,40,70,0.96);
+      transform: translateY(-1px);
+    }
+
+    /* Color dot */
+    .tag-color-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      margin-top: 2px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.7);
+    }
+
+    /* Individual dot colors + border tints */
+    .tag-microclimate { background: var(--tag-microclimate); }
+    .tag-habitat      { background: var(--tag-habitat); }
+    .tag-species      { background: var(--tag-species); }
+    .tag-landscape    { background: var(--tag-landscape); }
+    .tag-moisture     { background: var(--tag-moisture); }
+    .tag-wildlife     { background: var(--tag-wildlife); }
+    .tag-disturbance  { background: var(--tag-disturbance); }
+    .tag-navigation   { background: var(--tag-navigation); }
+    .tag-weather      { background: var(--tag-weather); }
+    .tag-photo        { background: var(--tag-photo); }
+
+    .tag-option[data-tag-id="microclimate"] { border-color: rgba(168,134,255,0.6); }
+    .tag-option[data-tag-id="habitat"]      { border-color: rgba(47,143,78,0.6); }
+    .tag-option[data-tag-id="species"]      { border-color: rgba(79,124,255,0.6); }
+    .tag-option[data-tag-id="landscape"]    { border-color: rgba(194,155,90,0.6); }
+    .tag-option[data-tag-id="moisture"]     { border-color: rgba(42,168,154,0.6); }
+    .tag-option[data-tag-id="wildlife"]     { border-color: rgba(243,165,59,0.6); }
+    .tag-option[data-tag-id="disturbance"]  { border-color: rgba(255,107,74,0.6); }
+    .tag-option[data-tag-id="navigation"]   { border-color: rgba(111,123,143,0.6); }
+    .tag-option[data-tag-id="weather"]      { border-color: rgba(123,138,164,0.6); }
+    .tag-option[data-tag-id="photo"]        { border-color: rgba(224,143,182,0.6); }
+
+    .tag-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tag-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .tag-desc {
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+
+    /* Footer */
+    .tag-panel-footer {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Tabs for Note / Location */
+    .tab-bar{
+      display:flex;
+      gap:8px;
+      padding:2px 2px 8px;
+      margin:0 2px 4px;
+    }
+    .tab-btn{
+      flex:0 0 auto;
+      border-radius:999px;
+      border:1px solid var(--border-soft);
+      background:var(--chip-bg);
+      color:var(--text-muted);
+      padding:6px 14px;
+      font-size:0.82rem;
+      cursor:pointer;
+    }
+    .tab-btn.active{
+      background:var(--accent);
+      border-color:var(--accent-soft);
+      color:#f9fbff;
+      font-weight:600;
+    }
+    .tab-pane{ display:none; }
+    .tab-pane.active{ display:block; }
+
+    /* Location summary card on main pane */
+    .location-summary{
+      margin-top:6px;
+      font-size:0.82rem;
+    }
+    .loc-line{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      margin:2px 0;
+      font-size:0.78rem;
+    }
+    .loc-label{
+      color:var(--text-muted);
+      flex:0 0 auto;
+      min-width:70px;
+    }
+    .loc-value{
+      text-align:right;
+      flex:1 1 auto;
+      word-break:break-all;
+    }
+
+    /* Location tab styles */
+    .loc-title{
+      font-size:0.9rem;
+      font-weight:600;
+      margin:0 0 4px;
+    }
+    .loc-meta{
+      font-size:0.76rem;
+      color:var(--text-muted);
+      margin:4px 0 0;
+    }
+    .loc-map{
+      margin-top:10px;
+      height:260px;
+      border-radius:14px;
+      overflow:hidden;
+      border:1px solid var(--border-soft);
+    }
+    .loc-acc-pill{
+      display:inline-block;
+      padding:2px 8px;
+      border-radius:999px;
+      font-size:0.75rem;
+      font-weight:600;
+      background:#1f2933;
+    }
+    .loc-acc-good{ background:#166534; color:#dcfce7; }
+    .loc-acc-ok{ background:#854d0e; color:#fef3c7; }
+    .loc-acc-poor{ background:#7f1d1d; color:#fee2e2; }
   </style>
 </head>
 <body>
@@ -468,73 +548,194 @@
       <div class="app-subtitle">Field notes (beta)</div>
     </header>
 
-    <!-- NOTE -->
-    <section class="card">
-      <h2 class="card-title">Field Note Text</h2>
+    <!-- Tabs -->
+    <div class="tab-bar">
+      <button type="button" class="tab-btn active" data-tab="note">Field note</button>
+      <button type="button" class="tab-btn" data-tab="location">Location</button>
+    </div>
 
-      <label for="noteTitle" class="field-label">Note Title</label>
-      <input id="noteTitle" class="text-input" type="text"
-             placeholder="e.g., Rossdale east bank scout, July 12">
+    <!-- NOTE PANE -->
+    <div id="pane-note" class="tab-pane active">
+      <!-- NOTE -->
+      <section class="card">
+        <h2 class="card-title">Field Note Text</h2>
 
-      <div style="height:8px;"></div>
+        <label for="noteTitle" class="field-label">Note Title</label>
+        <input id="noteTitle" class="text-input" type="text"
+               placeholder="e.g., Rossdale east bank scout, July 12">
 
-      <label for="noteText" class="field-label">Field note</label>
-      <textarea id="noteText" placeholder="Quick notes, observations, hazards, landmarks…"></textarea>
-      <p class="hint">This note stays on this device and can be copied or emailed out.</p>
-    </section>
+        <div style="height:8px;"></div>
 
-    <!-- Tag card -->
-<section class="card">
-  <header class="card-header">
-    <h2 class="card-title">Tag</h2>
-    <p class="card-subtitle">
-      Optional label to categorize this note for your future Notebook view.
-    </p>
-  </header>
-  <div class="card-body">
-    <button type="button" id="tagPickerBtn" class="btn-ghost tag-pill">
-      <span id="tagCurrentLabel" class="tag-current tag-none">No tag selected</span>
-    </button>
-    <p class="hint">
-      Tap to choose a tag like “Microclimate”, “Habitat”, or “Trail marker”.
-    </p>
-  </div>
-</section>
+        <label for="noteText" class="field-label">Field note</label>
+        <textarea id="noteText" placeholder="Quick notes, observations, hazards, landmarks…"></textarea>
+        <p class="hint">This note stays on this device and can be copied or emailed out.</p>
+      </section>
 
-    <!-- PHOTOS -->
-    <section class="card">
-      <h2 class="card-title">Photos</h2>
-      <div class="photo-actions">
-        <label class="btn-ghost btn-small" for="photoDevice">
-          <span>📁</span><span>Choose from gallery</span>
-          <input id="photoDevice" class="file-input-hidden" type="file" accept="image/*" multiple>
-        </label>
-        <label class="btn-ghost btn-small" for="photoCamera">
-          <span>📷</span><span>Take photo</span>
-          <input id="photoCamera" class="file-input-hidden" type="file" accept="image/*" capture="environment">
-        </label>
-      </div>
+      <!-- Tag card -->
+      <section class="card">
+        <header class="card-header">
+          <h2 class="card-title">Tag</h2>
+          <p class="card-subtitle">
+            Optional label to categorize this note for your future Notebook view.
+          </p>
+        </header>
+        <div class="card-body">
+          <button type="button" id="tagPickerBtn" class="btn-ghost tag-pill">
+            <span id="tagCurrentLabel" class="tag-current tag-none">No tag selected</span>
+          </button>
+          <p class="hint">
+            Tap to choose a tag like “Microclimate”, “Habitat”, or “Trail marker”.
+          </p>
+        </div>
+      </section>
 
-      <div id="photoGrid" class="photo-grid"></div>
-      <p class="hint">Images don’t transfer automatically in email – you’ll need to attach them separately.</p>
-    </section>
+      <!-- Location SUMMARY card (under tags) -->
+      <section class="card" id="locationSummaryCard">
+        <h2 class="card-title">Location (saved)</h2>
+        <p class="hint" id="locationSummaryEmpty">
+          No location saved yet. Use the Location tab to capture a fix for this note.
+        </p>
+        <div id="locationSummaryContent" class="location-summary hidden">
+          <div class="loc-line">
+            <span class="loc-label">DD</span>
+            <span class="loc-value" id="locSummaryDD">—</span>
+          </div>
+          <div class="loc-line">
+            <span class="loc-label">DMS</span>
+            <span class="loc-value" id="locSummaryDMS">—</span>
+          </div>
+          <div class="loc-line">
+            <span class="loc-label">Altitude</span>
+            <span class="loc-value" id="locSummaryAlt">—</span>
+          </div>
+          <div class="loc-line">
+            <span class="loc-label">Accuracy</span>
+            <span class="loc-value" id="locSummaryAcc">—</span>
+          </div>
+          <div class="loc-line">
+            <span class="loc-label">Recorded</span>
+            <span class="loc-value" id="locSummaryTime">—</span>
+          </div>
+          <div class="btn-row">
+            <a id="locSummaryMapsLink"
+               class="btn-ghost btn-small btn-ghost-link"
+               href="#"
+               target="_blank"
+               rel="noopener">Open in maps</a>
+          </div>
+        </div>
+      </section>
 
-    <!-- SHARE / MANAGE -->
-    <section class="card bottom-section">
-      <h2 class="card-title">Share / manage</h2>
-      <div class="bottom-row">
-        <button type="button" id="copyNoteBtn" class="btn-ghost">Copy note text</button>
-        <a id="emailBtn" class="btn-ghost btn-ghost-link" href="#" aria-disabled="true">Open email</a>
-        <button type="button" id="saveNotebookBtn" class="btn-ghost" disabled>Save to notebook</button>
-      </div>
+      <!-- PHOTOS -->
+      <section class="card">
+        <h2 class="card-title">Photos</h2>
+        <div class="photo-actions">
+          <label class="btn-ghost btn-small" for="photoDevice">
+            <span>📁</span><span>Choose from gallery</span>
+            <input id="photoDevice" class="file-input-hidden" type="file" accept="image/*" multiple>
+          </label>
+          <label class="btn-ghost btn-small" for="photoCamera">
+            <span>📷</span><span>Take photo</span>
+            <input id="photoCamera" class="file-input-hidden" type="file" accept="image/*" capture="environment">
+          </label>
+        </div>
 
-      <div class="divider"></div>
+        <div id="photoGrid" class="photo-grid"></div>
+        <p class="hint">Images don’t transfer automatically in email – you’ll need to attach them separately.</p>
+      </section>
 
-      <div class="bottom-row">
-        <button type="button" id="resetBtn" class="btn-danger-outline">Reset form</button>
-      </div>
-      <p class="tiny-note">Autosave is local to this device. Reset clears this page and its autosave.</p>
-    </section>
+      <!-- SHARE / MANAGE -->
+      <section class="card bottom-section">
+        <h2 class="card-title">Share / manage</h2>
+        <div class="bottom-row">
+          <button type="button" id="copyNoteBtn" class="btn-ghost">Copy note text</button>
+          <a id="emailBtn" class="btn-ghost btn-ghost-link" href="#" aria-disabled="true">Open email</a>
+          <button type="button" id="saveNotebookBtn" class="btn-ghost" disabled>Save to notebook</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="bottom-row">
+          <button type="button" id="resetBtn" class="btn-danger-outline">Reset form</button>
+        </div>
+        <p class="tiny-note">Autosave is local to this device. Reset clears this page and its autosave.</p>
+      </section>
+    </div>
+
+    <!-- LOCATION PANE -->
+    <div id="pane-location" class="tab-pane">
+      <section class="card">
+        <h2 class="card-title">Location</h2>
+        <p class="hint">
+          Track GPS to attach a precise spot to this field note. GPS works offline; map tiles may need connectivity.
+        </p>
+
+        <div class="btn-row">
+          <button type="button" id="locToggle" class="btn-primary btn-small">Start tracking</button>
+          <button type="button" id="locHiAcc" class="btn-ghost btn-small" aria-pressed="false">High accuracy</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="loc-block">
+          <h3 class="loc-title">Recent fix</h3>
+          <p class="loc-line">
+            <span class="loc-label">DD</span>
+            <span class="loc-value" id="locRecentDD">—</span>
+          </p>
+          <p class="loc-line">
+            <span class="loc-label">Altitude</span>
+            <span class="loc-value" id="locRecentAlt">—</span>
+          </p>
+          <p class="loc-line">
+            <span class="loc-label">Accuracy</span>
+            <span class="loc-value" id="locRecentAcc">—</span>
+          </p>
+          <p class="loc-line">
+            <span class="loc-label">Age</span>
+            <span class="loc-value" id="locRecentAge">—</span>
+          </p>
+          <p class="loc-meta">Samples: <span id="locSamples">0</span></p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="loc-block">
+          <h3 class="loc-title">Best so far</h3>
+          <p class="loc-line">
+            <span class="loc-label">DD</span>
+            <span class="loc-value" id="locBestDD">—</span>
+          </p>
+          <p class="loc-line">
+            <span class="loc-label">Altitude</span>
+            <span class="loc-value" id="locBestAlt">—</span>
+          </p>
+          <p class="loc-line">
+            <span class="loc-label">Accuracy</span>
+            <span class="loc-value" id="locBestAcc">—</span>
+          </p>
+          <p class="loc-line">
+            <span class="loc-label">Time</span>
+            <span class="loc-value" id="locBestTime">—</span>
+          </p>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" id="locUseRecent" class="btn-ghost btn-small" disabled>Use recent</button>
+          <button type="button" id="locUseBest"   class="btn-ghost btn-small" disabled>Use best</button>
+          <button type="button" id="locReset"     class="btn-danger-outline btn-small">Reset location</button>
+        </div>
+
+        <div id="locMap" class="loc-map"></div>
+
+        <!-- hidden saved location for this note -->
+        <input type="hidden" id="locLat">
+        <input type="hidden" id="locLng">
+        <input type="hidden" id="locAcc">
+        <input type="hidden" id="locAlt">
+        <input type="hidden" id="locTs">
+      </section>
+    </div>
   </div>
 
   <!-- Image overlay -->
@@ -552,153 +753,156 @@
   <div id="resetModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal">
       <h3 class="modal-title">Reset this note?</h3>
-      <p class="modal-body">This clears the text, photos, and the autosaved copy on this device.</p>
+      <p class="modal-body">This clears the text, photos, location, and the autosaved copy on this device.</p>
       <div class="modal-actions">
         <button type="button" id="resetCancel" class="btn-ghost btn-small">Cancel</button>
         <button type="button" id="resetConfirm" class="btn-danger-outline btn-small">Reset</button>
       </div>
     </div>
   </div>
-<!-- Tag selection overlay -->
-<div id="tagOverlay" class="tag-overlay">
-  <div class="tag-backdrop"></div>
-  <div class="tag-panel">
-    <header class="tag-panel-header">
-      <h2>Choose a tag</h2>
-      <button type="button" class="tag-close btn-ghost" id="tagCloseBtn">Close</button>
-    </header>
 
-    <p class="tag-panel-intro">
-      Pick one tag for this note. You can change it anytime.
-    </p>
+  <!-- Tag selection overlay -->
+  <div id="tagOverlay" class="tag-overlay">
+    <div class="tag-backdrop"></div>
+    <div class="tag-panel">
+      <header class="tag-panel-header">
+        <h2>Choose a tag</h2>
+        <button type="button" class="tag-close btn-ghost" id="tagCloseBtn">Close</button>
+      </header>
 
-    <ul class="tag-list" id="tagList">
-      <!-- Microclimate -->
-      <li class="tag-option"
-          data-tag-id="microclimate"
-          data-tag-name="Microclimate"
-          data-tag-color="var(--tag-microclimate)">
-        <span class="tag-color-dot tag-microclimate"></span>
-        <div class="tag-text">
-          <div class="tag-name">Microclimate</div>
-          <div class="tag-desc">For pockets of unique temperature, moisture, or shelter.</div>
-        </div>
-      </li>
+      <p class="tag-panel-intro">
+        Pick one tag for this note. You can change it anytime.
+      </p>
 
-      <!-- Habitat -->
-      <li class="tag-option"
-          data-tag-id="habitat"
-          data-tag-name="Habitat"
-          data-tag-color="var(--tag-habitat)">
-        <span class="tag-color-dot tag-habitat"></span>
-        <div class="tag-text">
-          <div class="tag-name">Habitat</div>
-          <div class="tag-desc">For notes about understory, soil, and ecosystem type.</div>
-        </div>
-      </li>
+      <ul class="tag-list" id="tagList">
+        <!-- Microclimate -->
+        <li class="tag-option"
+            data-tag-id="microclimate"
+            data-tag-name="Microclimate"
+            data-tag-color="var(--tag-microclimate)">
+          <span class="tag-color-dot tag-microclimate"></span>
+          <div class="tag-text">
+            <div class="tag-name">Microclimate</div>
+            <div class="tag-desc">For pockets of unique temperature, moisture, or shelter.</div>
+          </div>
+        </li>
 
-      <!-- Species Observation -->
-      <li class="tag-option"
-          data-tag-id="species"
-          data-tag-name="Species observation"
-          data-tag-color="var(--tag-species)">
-        <span class="tag-color-dot tag-species"></span>
-        <div class="tag-text">
-          <div class="tag-name">Species observation</div>
-          <div class="tag-desc">For specific plants, trees, or interesting specimens.</div>
-        </div>
-      </li>
+        <!-- Habitat -->
+        <li class="tag-option"
+            data-tag-id="habitat"
+            data-tag-name="Habitat"
+            data-tag-color="var(--tag-habitat)">
+          <span class="tag-color-dot tag-habitat"></span>
+          <div class="tag-text">
+            <div class="tag-name">Habitat</div>
+            <div class="tag-desc">For notes about understory, soil, and ecosystem type.</div>
+          </div>
+        </li>
 
-      <!-- Landscape Feature -->
-      <li class="tag-option"
-          data-tag-id="landscape"
-          data-tag-name="Landscape feature"
-          data-tag-color="var(--tag-landscape)">
-        <span class="tag-color-dot tag-landscape"></span>
-        <div class="tag-text">
-          <div class="tag-name">Landscape feature</div>
-          <div class="tag-desc">For slopes, ridges, gullies, terraces, and landforms.</div>
-        </div>
-      </li>
+        <!-- Species Observation -->
+        <li class="tag-option"
+            data-tag-id="species"
+            data-tag-name="Species observation"
+            data-tag-color="var(--tag-species)">
+          <span class="tag-color-dot tag-species"></span>
+          <div class="tag-text">
+            <div class="tag-name">Species observation</div>
+            <div class="tag-desc">For specific plants, trees, or interesting specimens.</div>
+          </div>
+        </li>
 
-      <!-- Moisture / Hydrology -->
-      <li class="tag-option"
-          data-tag-id="moisture"
-          data-tag-name="Moisture / hydrology"
-          data-tag-color="var(--tag-moisture)">
-        <span class="tag-color-dot tag-moisture"></span>
-        <div class="tag-text">
-          <div class="tag-name">Moisture / hydrology</div>
-          <div class="tag-desc">For springs, seep lines, wet hollows, and drainage patterns.</div>
-        </div>
-      </li>
+        <!-- Landscape Feature -->
+        <li class="tag-option"
+            data-tag-id="landscape"
+            data-tag-name="Landscape feature"
+            data-tag-color="var(--tag-landscape)">
+          <span class="tag-color-dot tag-landscape"></span>
+          <div class="tag-text">
+            <div class="tag-name">Landscape feature</div>
+            <div class="tag-desc">For slopes, ridges, gullies, terraces, and landforms.</div>
+          </div>
+        </li>
 
-      <!-- Wildlife -->
-      <li class="tag-option"
-          data-tag-id="wildlife"
-          data-tag-name="Wildlife"
-          data-tag-color="var(--tag-wildlife)">
-        <span class="tag-color-dot tag-wildlife"></span>
-        <div class="tag-text">
-          <div class="tag-name">Wildlife</div>
-          <div class="tag-desc">For tracks, scat, nests, calls, or animal sign.</div>
-        </div>
-      </li>
+        <!-- Moisture / Hydrology -->
+        <li class="tag-option"
+            data-tag-id="moisture"
+            data-tag-name="Moisture / hydrology"
+            data-tag-color="var(--tag-moisture)">
+          <span class="tag-color-dot tag-moisture"></span>
+          <div class="tag-text">
+            <div class="tag-name">Moisture / hydrology</div>
+            <div class="tag-desc">For springs, seep lines, wet hollows, and drainage patterns.</div>
+          </div>
+        </li>
 
-      <!-- Condition / Disturbance -->
-      <li class="tag-option"
-          data-tag-id="disturbance"
-          data-tag-name="Condition / disturbance"
-          data-tag-color="var(--tag-disturbance)">
-        <span class="tag-color-dot tag-disturbance"></span>
-        <div class="tag-text">
-          <div class="tag-name">Condition / disturbance</div>
-          <div class="tag-desc">For fire scars, windthrow, beetle kill, or human impact.</div>
-        </div>
-      </li>
+        <!-- Wildlife -->
+        <li class="tag-option"
+            data-tag-id="wildlife"
+            data-tag-name="Wildlife"
+            data-tag-color="var(--tag-wildlife)">
+          <span class="tag-color-dot tag-wildlife"></span>
+          <div class="tag-text">
+            <div class="tag-name">Wildlife</div>
+            <div class="tag-desc">For tracks, scat, nests, calls, or animal sign.</div>
+          </div>
+        </li>
 
-      <!-- Trail marker / Navigation -->
-      <li class="tag-option"
-          data-tag-id="navigation"
-          data-tag-name="Trail marker / navigation"
-          data-tag-color="var(--tag-navigation)">
-        <span class="tag-color-dot tag-navigation"></span>
-        <div class="tag-text">
-          <div class="tag-name">Trail marker / navigation</div>
-          <div class="tag-desc">For waypoints, landmarks, bike spots, or tricky turns.</div>
-        </div>
-      </li>
+        <!-- Condition / Disturbance -->
+        <li class="tag-option"
+            data-tag-id="disturbance"
+            data-tag-name="Condition / disturbance"
+            data-tag-color="var(--tag-disturbance)">
+          <span class="tag-color-dot tag-disturbance"></span>
+          <div class="tag-text">
+            <div class="tag-name">Condition / disturbance</div>
+            <div class="tag-desc">For fire scars, windthrow, beetle kill, or human impact.</div>
+          </div>
+        </li>
 
-      <!-- Weather -->
-      <li class="tag-option"
-          data-tag-id="weather"
-          data-tag-name="Weather"
-          data-tag-color="var(--tag-weather)">
-        <span class="tag-color-dot tag-weather"></span>
-        <div class="tag-text">
-          <div class="tag-name">Weather</div>
-          <div class="tag-desc">For fog pockets, frost, wind, and local weather quirks.</div>
-        </div>
-      </li>
+        <!-- Trail marker / Navigation -->
+        <li class="tag-option"
+            data-tag-id="navigation"
+            data-tag-name="Trail marker / navigation"
+            data-tag-color="var(--tag-navigation)">
+          <span class="tag-color-dot tag-navigation"></span>
+          <div class="tag-text">
+            <div class="tag-name">Trail marker / navigation</div>
+            <div class="tag-desc">For waypoints, landmarks, bike spots, or tricky turns.</div>
+          </div>
+        </li>
 
-      <!-- Photo focus -->
-      <li class="tag-option"
-          data-tag-id="photo"
-          data-tag-name="Photo focus"
-          data-tag-color="var(--tag-photo)">
-        <span class="tag-color-dot tag-photo"></span>
-        <div class="tag-text">
-          <div class="tag-name">Photo focus</div>
-          <div class="tag-desc">For notes built mostly around photos and visuals.</div>
-        </div>
-      </li>
-    </ul>
+        <!-- Weather -->
+        <li class="tag-option"
+            data-tag-id="weather"
+            data-tag-name="Weather"
+            data-tag-color="var(--tag-weather)">
+          <span class="tag-color-dot tag-weather"></span>
+          <div class="tag-text">
+            <div class="tag-name">Weather</div>
+            <div class="tag-desc">For fog pockets, frost, wind, and local weather quirks.</div>
+          </div>
+        </li>
 
-    <div class="tag-panel-footer">
-      <button type="button" class="btn-ghost" id="tagClearBtn">Clear tag</button>
+        <!-- Photo focus -->
+        <li class="tag-option"
+            data-tag-id="photo"
+            data-tag-name="Photo focus"
+            data-tag-color="var(--tag-photo)">
+          <span class="tag-color-dot tag-photo"></span>
+          <div class="tag-text">
+            <div class="tag-name">Photo focus</div>
+            <div class="tag-desc">For notes built mostly around photos and visuals.</div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="tag-panel-footer">
+        <button type="button" class="btn-ghost" id="tagClearBtn">Clear tag</button>
+      </div>
     </div>
   </div>
-</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', function(){
@@ -706,6 +910,14 @@
       function nowLocalPretty(){
         const d=new Date(); const pad=n=>String(n).padStart(2,'0');
         return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+      }
+      function toDMS(dec, isLat){
+        if (!Number.isFinite(dec)) return '—';
+        var hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
+        var v = Math.abs(dec);
+        var d = Math.floor(v); v = (v - d) * 60;
+        var m = Math.floor(v); var s = (v - m) * 60;
+        return d+'° '+m+"' "+s.toFixed(2)+'" '+hemi;
       }
 
       function copyToClipboard(txt){
@@ -725,6 +937,7 @@
         });
       }
 
+      /* ------- DOM refs: note / photos / tags ------- */
       const noteTitleEl   = byId('noteTitle');
       const noteEl        = byId('noteText');
       const photoDevice   = byId('photoDevice');
@@ -744,74 +957,119 @@
       const resetCancel   = byId('resetCancel');
       const resetConfirm  = byId('resetConfirm');
 
-      const SAVE_KEY = 'ara_field_notes_v2';
+      const saveNotebookBtn = byId('saveNotebookBtn'); // still placeholder
+
+      /* Tabs */
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const tabPanes   = document.querySelectorAll('.tab-pane');
+
+      /* Tag UI */
+      let selectedTagId = null;
+      const tagPickerBtn    = byId('tagPickerBtn');
+      const tagCurrentLabel = byId('tagCurrentLabel');
+      const tagOverlay      = byId('tagOverlay');
+      const tagCloseBtn     = byId('tagCloseBtn');
+      const tagClearBtn     = byId('tagClearBtn');
+
+      /* Location summary UI (main pane) */
+      const locSummaryEmpty   = byId('locationSummaryEmpty');
+      const locSummaryContent = byId('locationSummaryContent');
+      const locSummaryDD      = byId('locSummaryDD');
+      const locSummaryDMS     = byId('locSummaryDMS');
+      const locSummaryAlt     = byId('locSummaryAlt');
+      const locSummaryAcc     = byId('locSummaryAcc');
+      const locSummaryTime    = byId('locSummaryTime');
+      const locSummaryMapsLink= byId('locSummaryMapsLink');
+
+      /* Location tab UI */
+      const locToggle    = byId('locToggle');
+      const locHiAccBtn  = byId('locHiAcc');
+      const locRecentDD  = byId('locRecentDD');
+      const locRecentAlt = byId('locRecentAlt');
+      const locRecentAcc = byId('locRecentAcc');
+      const locRecentAge = byId('locRecentAge');
+      const locSamplesEl = byId('locSamples');
+
+      const locBestDD    = byId('locBestDD');
+      const locBestAlt   = byId('locBestAlt');
+      const locBestAcc   = byId('locBestAcc');
+      const locBestTime  = byId('locBestTime');
+
+      const locUseRecent = byId('locUseRecent');
+      const locUseBest   = byId('locUseBest');
+      const locResetBtn  = byId('locReset');
+
+      const locMapEl     = byId('locMap');
+
+      /* Hidden saved location for this note */
+      const locLatEl = byId('locLat');
+      const locLngEl = byId('locLng');
+      const locAccEl = byId('locAcc');
+      const locAltEl = byId('locAlt');
+      const locTsEl  = byId('locTs');
+
+      const SAVE_KEY = 'ara_field_notes_v3';
       let _saveTimer = null;
-      
-/* ------------ Tag selection state ------------ */
-let selectedTagId = null;
 
-const tagPickerBtn   = document.getElementById('tagPickerBtn');
-const tagCurrentLabel= document.getElementById('tagCurrentLabel');
-const tagOverlay     = document.getElementById('tagOverlay');
-const tagCloseBtn    = document.getElementById('tagCloseBtn');
-const tagClearBtn    = document.getElementById('tagClearBtn');
-
-function openTagOverlay(){
-  if (!tagOverlay) return;
-  tagOverlay.classList.add('open');
-}
-
-function closeTagOverlay(){
-  if (!tagOverlay) return;
-  tagOverlay.classList.remove('open');
-}
-
-/**
- * Apply a tag selection in UI + state.
- * @param {string|null} id 
- * @param {string} [name] 
- * @param {string} [color] 
- */
-function applyTagSelection(id, name, color){
-  selectedTagId = id || null;
-
-  if (!tagCurrentLabel) return;
-
-  if (!id){
-    tagCurrentLabel.textContent = 'No tag selected';
-    tagCurrentLabel.classList.add('tag-none');
-    tagPickerBtn && (tagPickerBtn.style.borderColor = '');
-  } else {
-    tagCurrentLabel.textContent = name || 'Tagged';
-    tagCurrentLabel.classList.remove('tag-none');
-    if (tagPickerBtn && color){
-      tagPickerBtn.style.borderColor = color;
-      tagPickerBtn.style.boxShadow = '0 0 0 1px ' + color.replace('rgba','rgba').replace(')',',0.5)');
-    }
-  }
-
-  // Nudge autosave if available
-  if (typeof autoSaveSoon === 'function') autoSaveSoon();
-}
-
-      // photos = [{id, src, fromCamera}]
+      /* Photos state */
       let photos = [];
       let currentOverlayPhoto = null;
 
-      /* ---------- autosave ---------- */
+      /* Location runtime state */
+      let locWatchId = null;
+      let locHiAccOn = false;
+      let locRecent  = null; // {lat,lng,acc,alt,ts}
+      let locBest    = null; // same shape
+      let locSamples = 0;
+      let locAgeTimer = null;
+
+      /* Leaflet map state */
+      let locMap = null;
+      let locTiles = null;
+      let locRecentMarker = null;
+      let locBestMarker   = null;
+      let locAccCircle    = null;
+
+      /* ---------- Helpers ---------- */
+      function autoGrowNote(){
+        if(!noteEl) return;
+        noteEl.style.height='auto';
+        noteEl.style.height=(noteEl.scrollHeight+2)+'px';
+      }
+
+      function saveStateSoon(){
+        try{
+          if(_saveTimer) clearTimeout(_saveTimer);
+          _saveTimer = setTimeout(saveState, 250);
+        }catch(e){}
+      }
+
       function getState(){
         try{
           return {
             title: noteTitleEl.value || '',
             note:  noteEl.value || '',
             tagId: selectedTagId || '',
-            photos: photos.map(p => ({ src:p.src, fromCamera: !!p.fromCamera }))
+            photos: photos.map(p => ({ src:p.src, fromCamera: !!p.fromCamera })),
+            location: {
+              saved: {
+                lat: locLatEl.value || '',
+                lng: locLngEl.value || '',
+                acc: locAccEl.value || '',
+                alt: locAltEl.value || '',
+                ts:  locTsEl.value || ''
+              },
+              recent: locRecent,
+              best:   locBest,
+              samples: locSamples
+            }
           };
         }catch(e){
           console.warn('getState failed', e);
           return null;
         }
       }
+
       function saveState(){
         try{
           const st=getState();
@@ -820,105 +1078,373 @@ function applyTagSelection(id, name, color){
           console.warn('saveState failed', e);
         }
       }
-      function saveStateSoon(){
-        try{
-          if(_saveTimer) clearTimeout(_saveTimer);
-          _saveTimer = setTimeout(saveState, 250);
-        }catch(e){}
-      }
-      function loadState(){
-        try{
-          const raw = localStorage.getItem(SAVE_KEY);
-          if(!raw) return;
-          const st = JSON.parse(raw);
-          if(st.title){
-            noteTitleEl.value = st.title;
-          }
-          if(st.note){
-            noteEl.value = st.note;
-            autoGrowNote();
-          }
-          if (st.tagId) {
-  const opt = document.querySelector('.tag-option[data-tag-id="' + st.tagId + '"]');
-  if (opt) {
-    applyTagSelection(
-      st.tagId,
-      opt.dataset.tagName,
-      opt.dataset.tagColor
-    );
-  }
-} else {
-  applyTagSelection(null);
-}
 
-          if(Array.isArray(st.photos)){
-            photos = st.photos.map(p => ({
-              id: 'p'+Date.now()+Math.random().toString(16).slice(2),
-              src: p.src,
-              fromCamera: !!p.fromCamera
-            }));
-            renderPhotos();
-          }
-          updateShareButtons();
-        }catch(e){
-          console.warn('loadState failed', e);
-        }
-      }
       function clearState(){
         try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
       }
 
-      /* ---------- note auto-grow ---------- */
-      function autoGrowNote(){
-        if(!noteEl) return;
-        noteEl.style.height='auto';
-        noteEl.style.height=(noteEl.scrollHeight+2)+'px';
+      /* ---------- Tabs ---------- */
+      tabButtons.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const tab = btn.getAttribute('data-tab');
+          tabButtons.forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          tabPanes.forEach(p=>{
+            p.classList.toggle('active', p.id === 'pane-'+tab);
+          });
+          if(tab === 'location'){
+            ensureLocMap();
+          }
+        });
+      });
+
+      /* ---------- Tag overlay + state ---------- */
+      function openTagOverlay(){
+        if (!tagOverlay) return;
+        tagOverlay.classList.add('open');
       }
-      noteEl.addEventListener('input', function(){
-        autoGrowNote();
+
+      function closeTagOverlay(){
+        if (!tagOverlay) return;
+        tagOverlay.classList.remove('open');
+      }
+
+      function applyTagSelection(id, name, color){
+        selectedTagId = id || null;
+        if (!tagCurrentLabel) return;
+
+        if (!id){
+          tagCurrentLabel.textContent = 'No tag selected';
+          tagCurrentLabel.classList.add('tag-none');
+          if(tagPickerBtn){
+            tagPickerBtn.style.borderColor = '';
+            tagPickerBtn.style.boxShadow = '';
+          }
+        } else {
+          tagCurrentLabel.textContent = name || 'Tagged';
+          tagCurrentLabel.classList.remove('tag-none');
+          if (tagPickerBtn && color){
+            tagPickerBtn.style.borderColor = color;
+            tagPickerBtn.style.boxShadow = '0 0 0 1px rgba(255,255,255,0.14)';
+          }
+        }
+        saveStateSoon();
+      }
+
+      if (tagPickerBtn) {
+        tagPickerBtn.addEventListener('click', openTagOverlay);
+      }
+      if (tagCloseBtn) {
+        tagCloseBtn.addEventListener('click', closeTagOverlay);
+      }
+      if (tagOverlay) {
+        tagOverlay.addEventListener('click', function(e){
+          if (e.target === tagOverlay) closeTagOverlay();
+        });
+      }
+      if (tagClearBtn) {
+        tagClearBtn.addEventListener('click', function(){
+          applyTagSelection(null);
+          closeTagOverlay();
+        });
+      }
+      document.querySelectorAll('.tag-option').forEach(function(opt){
+        opt.addEventListener('click', function(){
+          const id    = opt.dataset.tagId;
+          const name  = opt.dataset.tagName;
+          const color = opt.dataset.tagColor;
+          applyTagSelection(id, name, color);
+          closeTagOverlay();
+        });
+      });
+
+      /* ---------- Location: map helpers ---------- */
+      function ensureLocMap(){
+        if (locMap || !window.L || !locMapEl) return;
+        locMap = L.map(locMapEl, {
+          zoomControl: true,
+          attributionControl:false
+        }).setView([53.5444,-113.4909], 11);
+        locTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom:19
+        }).addTo(locMap);
+
+        // if we already have a best or recent, center on it
+        const centerFix = locBest || locRecent;
+        if(centerFix){
+          locMap.setView([centerFix.lat, centerFix.lng], 16);
+          updateLocMapGraphics();
+        }
+      }
+
+      function updateLocMapGraphics(){
+        if(!locMap) return;
+
+        // recent
+        if(locRecent){
+          const ll=[locRecent.lat, locRecent.lng];
+          if(!locRecentMarker){
+            locRecentMarker = L.marker(ll,{title:'Recent fix'}).addTo(locMap);
+          }else{
+            locRecentMarker.setLatLng(ll);
+          }
+          if(Number.isFinite(locRecent.acc)){
+            if(!locAccCircle){
+              locAccCircle = L.circle(ll,{
+                radius: locRecent.acc,
+                color:'#60a5fa',
+                fillColor:'#60a5fa',
+                fillOpacity:0.18,
+                weight:1
+              }).addTo(locMap);
+            }else{
+              locAccCircle.setLatLng(ll).setRadius(locRecent.acc);
+            }
+          }
+        }else{
+          if(locRecentMarker){ locMap.removeLayer(locRecentMarker); locRecentMarker=null; }
+          if(locAccCircle){ locMap.removeLayer(locAccCircle); locAccCircle=null; }
+        }
+
+        // best
+        if(locBest){
+          const ll=[locBest.lat, locBest.lng];
+          if(!locBestMarker){
+            locBestMarker = L.marker(ll,{title:'Best fix'}).addTo(locMap);
+          }else{
+            locBestMarker.setLatLng(ll);
+          }
+        }else if(locBestMarker){
+          locMap.removeLayer(locBestMarker); locBestMarker=null;
+        }
+      }
+
+      /* ---------- Location UI updates ---------- */
+      function classifyAcc(m){
+        if(!Number.isFinite(m)) return '';
+        if(m <= 5) return 'good';
+        if(m < 20) return 'ok';
+        return 'poor';
+      }
+
+      function renderAccTextSpan(el, acc){
+        if(!el) return;
+        el.textContent = '—';
+        el.className = 'loc-value';
+        if(!Number.isFinite(acc)) return;
+        el.textContent = '±'+acc.toFixed(1)+' m';
+        const bucket = classifyAcc(acc);
+        let extra='';
+        if(bucket === 'good') extra=' loc-acc-good';
+        else if(bucket === 'ok') extra=' loc-acc-ok';
+        else if(bucket === 'poor') extra=' loc-acc-poor';
+        el.className = 'loc-value loc-acc-pill'+extra;
+      }
+
+      function updateRecentUI(){
+        if(locRecent){
+          locRecentDD.textContent = locRecent.lat.toFixed(6)+', '+locRecent.lng.toFixed(6);
+          locRecentAlt.textContent = Number.isFinite(locRecent.alt) ? locRecent.alt.toFixed(1)+' m' : '—';
+          renderAccTextSpan(locRecentAcc, locRecent.acc);
+
+          if(locAgeTimer) clearInterval(locAgeTimer);
+          locAgeTimer = setInterval(()=>{
+            const secs = Math.max(0, (Date.now() - locRecent.ts)/1000);
+            locRecentAge.textContent = secs.toFixed(1)+' s';
+          }, 250);
+
+          locUseRecent.disabled = false;
+        }else{
+          locRecentDD.textContent = '—';
+          locRecentAlt.textContent = '—';
+          locRecentAge.textContent = '—';
+          locRecentAcc.textContent = '—';
+          locRecentAcc.className = 'loc-value';
+          locUseRecent.disabled = true;
+          if(locAgeTimer){ clearInterval(locAgeTimer); locAgeTimer=null; }
+        }
+        locSamplesEl.textContent = String(locSamples);
+        ensureLocMap();
+        updateLocMapGraphics();
+      }
+
+      function updateBestUI(){
+        if(locBest){
+          locBestDD.textContent  = locBest.lat.toFixed(6)+', '+locBest.lng.toFixed(6);
+          locBestAlt.textContent = Number.isFinite(locBest.alt) ? locBest.alt.toFixed(1)+' m' : '—';
+          renderAccTextSpan(locBestAcc, locBest.acc);
+          locBestTime.textContent = new Date(locBest.ts).toLocaleString();
+          locUseBest.disabled = false;
+        }else{
+          locBestDD.textContent = '—';
+          locBestAlt.textContent = '—';
+          locBestAcc.textContent = '—';
+          locBestAcc.className = 'loc-value';
+          locBestTime.textContent = '—';
+          locUseBest.disabled = true;
+        }
+        ensureLocMap();
+        updateLocMapGraphics();
+      }
+
+      function updateSavedLocationSummary(){
+        const lat = parseFloat(locLatEl.value);
+        const lng = parseFloat(locLngEl.value);
+        const acc = parseFloat(locAccEl.value);
+        const alt = parseFloat(locAltEl.value);
+        const ts  = locTsEl.value ? parseInt(locTsEl.value,10) : NaN;
+
+        const hasFix = Number.isFinite(lat) && Number.isFinite(lng);
+        if(!hasFix){
+          locSummaryContent.classList.add('hidden');
+          locSummaryEmpty.classList.remove('hidden');
+          return;
+        }
+
+        locSummaryEmpty.classList.add('hidden');
+        locSummaryContent.classList.remove('hidden');
+
+        locSummaryDD.textContent = lat.toFixed(6)+', '+lng.toFixed(6);
+        locSummaryDMS.textContent = toDMS(lat,true)+' | '+toDMS(lng,false);
+        locSummaryAlt.textContent = Number.isFinite(alt) ? alt.toFixed(1)+' m' : '—';
+        locSummaryAcc.textContent = Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : '±—';
+
+        if(Number.isFinite(ts)){
+          locSummaryTime.textContent = new Date(ts).toLocaleString();
+        }else{
+          locSummaryTime.textContent = nowLocalPretty();
+        }
+
+        const url = 'https://maps.google.com/?q='+lat.toFixed(6)+','+lng.toFixed(6);
+        locSummaryMapsLink.href = url;
+      }
+
+      function applyFixToSaved(fix){
+        if(!fix) return;
+        locLatEl.value = fix.lat.toFixed(6);
+        locLngEl.value = fix.lng.toFixed(6);
+        locAccEl.value = Number.isFinite(fix.acc) ? fix.acc.toFixed(1) : '';
+        locAltEl.value = Number.isFinite(fix.alt) ? fix.alt.toFixed(1) : '';
+        locTsEl.value  = String(fix.ts || Date.now());
+        updateSavedLocationSummary();
         saveStateSoon();
         updateShareButtons();
-      });
-      noteTitleEl.addEventListener('input', function(){
+      }
+
+      /* ---------- Location tracking ---------- */
+      function setLocRunningUI(running){
+        if(!locToggle) return;
+        if(running){
+          locToggle.textContent = 'Stop tracking';
+        }else{
+          locToggle.textContent = 'Start tracking';
+        }
+      }
+
+      function handlePosition(pos){
+        const c = pos.coords;
+        const now = Date.now();
+        const alt = Number.isFinite(c.altitude) ? c.altitude : NaN;
+        const acc = Number.isFinite(c.accuracy) ? c.accuracy : NaN;
+
+        locSamples++;
+        locRecent = {
+          lat: c.latitude,
+          lng: c.longitude,
+          acc: acc,
+          alt: alt,
+          ts: now
+        };
+        if(!locBest || (Number.isFinite(acc) && acc < locBest.acc)){
+          locBest = { ...locRecent };
+        }
+        updateRecentUI();
+        updateBestUI();
+      }
+
+      function handlePositionError(err){
+        console.warn('Geolocation error', err);
+        setLocRunningUI(false);
+        locWatchId = null;
+      }
+
+      function startLocationTracking(){
+        if(locWatchId !== null) return;
+        if(!navigator.geolocation){
+          alert('Geolocation not available on this device.');
+          return;
+        }
+        const opts = {
+          enableHighAccuracy: locHiAccOn,
+          maximumAge: 0,
+          timeout: 20000
+        };
+        locWatchId = navigator.geolocation.watchPosition(handlePosition, handlePositionError, opts);
+        setLocRunningUI(true);
+      }
+
+      function stopLocationTracking(){
+        if(locWatchId !== null && navigator.geolocation && navigator.geolocation.clearWatch){
+          navigator.geolocation.clearWatch(locWatchId);
+        }
+        locWatchId = null;
+        setLocRunningUI(false);
+      }
+
+      function resetLocationAll(){
+        stopLocationTracking();
+        locRecent = null;
+        locBest   = null;
+        locSamples= 0;
+        if(locAgeTimer){ clearInterval(locAgeTimer); locAgeTimer=null; }
+
+        // clear saved too
+        locLatEl.value='';
+        locLngEl.value='';
+        locAccEl.value='';
+        locAltEl.value='';
+        locTsEl.value='';
+
+        updateRecentUI();
+        updateBestUI();
+        updateLocMapGraphics();
+        updateSavedLocationSummary();
         saveStateSoon();
         updateShareButtons();
-      });
-      autoGrowNote();
-// Open overlay when user taps the pill
-if (tagPickerBtn) {
-  tagPickerBtn.addEventListener('click', openTagOverlay);
-}
+      }
 
-// Close button
-if (tagCloseBtn) {
-  tagCloseBtn.addEventListener('click', closeTagOverlay);
-}
+      if(locToggle){
+        locToggle.addEventListener('click', ()=>{
+          if(locWatchId === null) startLocationTracking();
+          else stopLocationTracking();
+        });
+      }
 
-// Click outside panel closes too
-if (tagOverlay) {
-  tagOverlay.addEventListener('click', function(e){
-    if (e.target === tagOverlay) closeTagOverlay();
-  });
-}
+      if(locHiAccBtn){
+        locHiAccBtn.addEventListener('click', ()=>{
+          locHiAccOn = !locHiAccOn;
+          locHiAccBtn.setAttribute('aria-pressed', String(locHiAccOn));
+          locHiAccBtn.classList.toggle('active', locHiAccOn);
+          if(locWatchId !== null){
+            stopLocationTracking();
+            startLocationTracking();
+          }
+        });
+      }
 
-// Clear tag
-if (tagClearBtn) {
-  tagClearBtn.addEventListener('click', function(){
-    applyTagSelection(null);
-    closeTagOverlay();
-  });
-}
-
-// Tag option clicks
-document.querySelectorAll('.tag-option').forEach(function(opt){
-  opt.addEventListener('click', function(){
-    const id    = opt.dataset.tagId;
-    const name  = opt.dataset.tagName;
-    const color = opt.dataset.tagColor;
-    applyTagSelection(id, name, color);
-    closeTagOverlay();
-  });
-});
+      if(locUseRecent){
+        locUseRecent.addEventListener('click', ()=>{
+          applyFixToSaved(locRecent);
+        });
+      }
+      if(locUseBest){
+        locUseBest.addEventListener('click', ()=>{
+          applyFixToSaved(locBest);
+        });
+      }
+      if(locResetBtn){
+        locResetBtn.addEventListener('click', resetLocationAll);
+      }
 
       /* ---------- photos ---------- */
       function addPhotoFromDataUrl(dataUrl, fromCamera){
@@ -1025,6 +1551,33 @@ document.querySelectorAll('.tag-option').forEach(function(opt){
         if(note){
           parts.push('Field note ('+nowLocalPretty()+')','',note,'');
         }
+
+        // Location block if saved
+        const lat = parseFloat(locLatEl.value);
+        const lng = parseFloat(locLngEl.value);
+        if(Number.isFinite(lat) && Number.isFinite(lng)){
+          const acc = parseFloat(locAccEl.value);
+          const alt = parseFloat(locAltEl.value);
+          const ts  = locTsEl.value ? parseInt(locTsEl.value,10) : NaN;
+          const ddLine  = 'DD: '+lat.toFixed(6)+', '+lng.toFixed(6);
+          const dmsLine = 'DMS: '+toDMS(lat,true)+' | '+toDMS(lng,false);
+          const altLine = 'Altitude: '+(Number.isFinite(alt)? alt.toFixed(1)+' m' : '—');
+          const accLine = 'Accuracy: '+(Number.isFinite(acc)? '±'+acc.toFixed(1)+' m' : '±—');
+          const whenLine= 'Recorded: '+(Number.isFinite(ts)? new Date(ts).toLocaleString() : nowLocalPretty());
+          const mapsURL = 'https://maps.google.com/?q='+lat.toFixed(6)+','+lng.toFixed(6);
+
+          parts.push(
+            'Location',
+            ddLine,
+            dmsLine,
+            altLine,
+            accLine,
+            whenLine,
+            'Google Maps: '+mapsURL,
+            ''
+          );
+        }
+
         if(photos.length){
           parts.push('Photos: '+photos.length+' image(s) – not attached, stored on device.');
         }
@@ -1038,7 +1591,8 @@ document.querySelectorAll('.tag-option').forEach(function(opt){
         const hasContent =
           (noteTitleEl.value && noteTitleEl.value.trim().length>0) ||
           (noteEl.value && noteEl.value.trim().length>0) ||
-          photos.length>0;
+          photos.length>0 ||
+          (locLatEl.value && locLngEl.value);
 
         copyNoteBtn.disabled = !hasContent;
         if(hasContent){
@@ -1099,15 +1653,87 @@ document.querySelectorAll('.tag-option').forEach(function(opt){
           // clear photos
           photos=[];
           renderPhotos();
+          // clear location
+          resetLocationAll();
           // clear autosave
           clearState();
           updateShareButtons();
         });
       }
 
-      /* ---------- initial load ---------- */
+      /* ---------- loadState ---------- */
+      function loadState(){
+        try{
+          const raw = localStorage.getItem(SAVE_KEY);
+          if(!raw) return;
+          const st = JSON.parse(raw);
+
+          if(st.title){
+            noteTitleEl.value = st.title;
+          }
+          if(st.note){
+            noteEl.value = st.note;
+            autoGrowNote();
+          }
+
+          if (st.tagId) {
+            const opt = document.querySelector('.tag-option[data-tag-id="' + st.tagId + '"]');
+            if (opt) {
+              applyTagSelection(
+                st.tagId,
+                opt.dataset.tagName,
+                opt.dataset.tagColor
+              );
+            }
+          } else {
+            applyTagSelection(null);
+          }
+
+          if(Array.isArray(st.photos)){
+            photos = st.photos.map(p => ({
+              id: 'p'+Date.now()+Math.random().toString(16).slice(2),
+              src: p.src,
+              fromCamera: !!p.fromCamera
+            }));
+            renderPhotos();
+          }
+
+          if(st.location){
+            const loc = st.location;
+            if(loc.saved){
+              locLatEl.value = loc.saved.lat || '';
+              locLngEl.value = loc.saved.lng || '';
+              locAccEl.value = loc.saved.acc || '';
+              locAltEl.value = loc.saved.alt || '';
+              locTsEl.value  = loc.saved.ts  || '';
+            }
+            locRecent  = loc.recent || null;
+            locBest    = loc.best   || null;
+            locSamples = loc.samples || 0;
+            updateRecentUI();
+            updateBestUI();
+            updateSavedLocationSummary();
+          }
+        }catch(e){
+          console.warn('loadState failed', e);
+        }
+      }
+
+      /* ---------- initial wiring ---------- */
+      noteEl.addEventListener('input', function(){
+        autoGrowNote();
+        saveStateSoon();
+        updateShareButtons();
+      });
+      noteTitleEl.addEventListener('input', function(){
+        saveStateSoon();
+        updateShareButtons();
+      });
+      autoGrowNote();
+
       loadState();
       updateShareButtons();
+      ensureLocMap();
     });
   </script>
 </body>
