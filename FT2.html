@@ -1,0 +1,2347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ARA Field Tools</title>
+<style>
+  :root{
+    /* Dark blue palette */
+    --bg:#0d1b2a;
+    --bg-elev:#0f2236;
+    --panel:#14253d;
+    --panel-2:#172a47;
+    --text:#e8eef6;
+    --muted:#a9b7c7;
+    --accent:#2ea3ff;
+    --accent-2:#4db2ff;
+    --ok:#1fa37a;
+    --danger:#d93c3c;
+    --border:#1f3553;
+    --radius:14px;
+    --gap:14px;
+  }
+  *{ box-sizing:border-box }
+  html,body{ height:100% }
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    padding-top:35px;
+    background:var(--bg); color:var(--text);
+  }
+
+  /* Fixed header */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(180deg, #0d1b2a, #0f2236);
+    border-bottom:1px solid var(--border);
+    padding:10px 14px;
+  }
+  
+/* Fixed header */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  background:linear-gradient(180deg, #0d1b2a, #0f2236);
+  border-bottom:1px solid var(--border);
+  padding:10px 14px;
+}
+
+.topbar .row{
+  display:flex;
+  flex-direction:column;      /* stack title over controls */
+  align-items:flex-start;     /* left edges line up */
+  gap:8px;
+}
+
+.brand {
+  font-weight: 800;
+  letter-spacing: .2px;
+  font-size: 1.05rem;
+  color: #eaf3ff;
+  line-height: 1.1;
+  padding-left: 2px; /* alignment fix */
+}
+.inline-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none; /* hide scrollbars on Firefox */
+  gap: 4px; /* tighter gap between buttons */
+  margin-left: -5px; /* pulls Units: text left to match title */
+  padding-left: 0;
+}
+
+.inline-controls::-webkit-scrollbar {
+  display: none; /* hide scrollbars on Chrome/Safari */
+}
+
+.inline-controls .acc-pill {
+  margin-left: -1px;
+  flex-shrink: 0;
+}
+
+
+  /* small-screen fit: slightly tighter paddings/fonts */
+@media (max-width: 420px){
+  .inline-controls{ gap:6px; }
+  .toggle-btn{ padding:6px 10px; }        /* was 8px 12px */
+  .acc-pill{ font-size:.85rem; padding:3px 8px; }
+}
+  .toggle-btn{
+    padding:8px 12px; border:1px solid var(--border); border-radius:999px;
+    background:var(--panel); color:var(--text); cursor:pointer;
+  }
+  .toggle-btn.active{ background:var(--accent); color:#001528; border-color:transparent; font-weight:700; }
+  .toggle-label{ color:var(--muted); font-size:.9rem; margin-left:6px; }
+
+  /* Tabs */
+  .tabs{
+    position:sticky; top:56px; z-index:45;
+    background:var(--bg-elev); border-bottom:1px solid var(--border);
+    overflow:auto; white-space:nowrap;
+  }
+  .tabs-inner{ display:flex; gap:8px; padding:8px 12px; }
+  .tab{
+    padding:10px 14px; border-radius:999px;
+    background:var(--panel); border:1px solid var(--border); color:var(--text);
+    cursor:pointer; user-select:none;
+  }
+  .tab.active{ background:var(--accent-2); color:#001528; border-color:transparent; font-weight:800; }
+
+  /* Main content */
+  .content{ 
+          padding:14px; 
+          max-width:1000px; 
+          margin:0 auto; }
+  .card{
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:var(--radius); margin-bottom:var(--gap);
+  }
+  .card .block{ padding:16px 18px; }
+  h2{ margin:0 0 8px; font-size:1.2rem; }
+  h3{ margin:0 0 8px; font-size:1.05rem; color:#d6e6ff; }
+  label{ display:block; font-weight:700; margin:10px 0 6px; }
+
+  /* Consistent system font for all entry fields */
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 1rem;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    letter-spacing: 0.01em;
+  }
+  input::placeholder, textarea::placeholder{ font-family:inherit; color:#99a5b8; }
+  textarea{ min-height:88px; resize:none; overflow:hidden; }
+
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); }
+  @media (max-width:780px){ .row{ grid-template-columns:1fr } }
+
+  .note{
+    background:#0b1a2f; border:1px solid #1f3553; color:#cfe0ff;
+    border-radius:12px; padding:10px 12px;
+  }
+
+  /* Buttons */
+  .btn-row{ display:flex; flex-wrap:wrap; gap:10px; }
+  button,.btn{
+    padding:10px 14px; border:0; border-radius:10px; cursor:pointer; color:#001528;
+    background:var(--accent-2); font-weight:700;
+  }
+  .btn-ghost{ background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
+  .btn-dim{ background:#113158; color:#bcd8ff; border:1px solid var(--border); }
+  .btn-danger{ background:var(--danger); color:#fff; }
+  .btn-ok{ background:var(--ok); color:#00180f; }
+  button[disabled]{ opacity:.6; cursor:not-allowed; }
+
+  /* “Selectable” (light by default, dark when chosen) */
+  .btn-select{
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-select.active{
+    background: var(--accent-2);
+    color: #001528;
+    border-color: transparent;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.06) inset;
+  }
+
+  /* Allow ghost buttons to darken when we set .active in JS */
+  .btn-ghost.active{
+    background: var(--accent-2);
+    color:#001528;
+    border-color: transparent;
+  }
+
+  /* Match "Open email (optional)" button to others */
+#emailBtn {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+
+#emailBtn:hover:not([aria-disabled="true"]) {
+  background: var(--accent-2);
+  color: #001528;
+}
+
+#emailBtn:active:not([aria-disabled="true"]) {
+  background: #1b6cff;
+  color: #fff;
+  transform: scale(0.98);
+}
+
+#emailBtn[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+
+  /* Multi-trunk minor styles */
+  .mt-label{font-weight:700}
+  .badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#1b6cff;color:#001528;font-size:.75rem;vertical-align:middle}
+  .badge.hide{display:none}
+  .hint{font-size:.86rem;color:#ffc0c0;display:none}
+  .hint.show{display:block}
+
+  /* Clinometer (angle pill + lock in light blue) */
+  .clino-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .clino-wrap{
+    position:relative; height:180px; border:1px solid var(--border);
+    border-radius:12px; background:#0b1a2f; margin:10px 0; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* Clinometer lock button (no border when idle) */
+  .clino-lock{
+    width:140px; height:140px;
+    border:0; /* no border when not locked */
+    border-radius:999px;
+    background:#cfe0ff; /* light blue */
+    color:#0b2250;      /* dark navy text */
+    font-weight:900; font-size:1.15rem; cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.25) inset;
+  }
+ /* Lock button: darker blue when locked (less neon) */
+.clino-lock.active {
+  background: #2b66d6;          /* deeper blue */
+  color: #e8f0ff;
+  border: 2px solid #1b4ca3;    /* slightly darker border */
+}
+  .clino-lock:active{ transform:scale(.98); }
+
+/* Live angle box - dark blue like the clinometer card */
+.clino-readout {
+  background: #0f2236;               /* matches card background */
+  color: #cfe0ff;
+  border: 1px solid #1f3553;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 10px 0 12px;
+}
+.clino-readout .angle {
+  font-weight: 900;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+.clino-readout .status {
+  color: #99b8ff;
+  font-size: 0.92rem;
+  margin-top: 4px;
+}
+/* Calculate height button: lighter “active” state */
+#h-calc.active {
+  background: #4db2ff;          /* lighter blue flash */
+  color: #001528;
+  transition: background 0.25s, color 0.25s;
+}
+  /* Results */
+  .results{
+    background:#0b1a2f; border:1px solid var(--border);
+    border-radius:12px; padding:12px;
+  }
+  .results p{ margin:6px 0 }
+  .muted{ color:var(--muted) }
+  .tiny{ font-size:.86rem; color:var(--muted) }
+  .unit-tag{ color:#cfe0ff; font-weight:800 }
+
+  /* Spacing between generated description sections */
+.desc-section { 
+  margin: 12px 0 10px;
+}
+
+  /* Tabs content visibility */
+  .tabpane{ display:none }
+  .tabpane.active{ display:block }
+
+  /* Location accuracy chips */
+  .acc-chip{ display:inline-block; padding:2px 8px; border-radius:999px; font-weight:600; }
+ .acc-grey, .acc-pill.acc-grey, .acc-dot.acc-grey {
+  background:#46505e;      /* neutral grey */
+  color:#e2e8f0;
+  }
+  .acc-amber, .acc-pill.acc-amber, .acc-dot.acc-amber {
+    background:#ffb300;      /* bright golden yellow */
+    color:#2b1a00;           /* dark text for contrast */
+  }
+  .acc-green, .acc-pill.acc-green, .acc-dot.acc-green {
+    background:#1b5e2b; 
+    color:#e6fff2; 
+  }
+  .acc-red, .acc-pill.acc-red, .acc-dot.acc-red {
+    background:#7a2020; 
+    color:#ffdede; 
+  }
+
+ .acc-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+    line-height: 1;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+  /* Running state for the Start/Stop toggle */
+  #loc-toggle.running{ background:#0b3b82; color:#fff; }
+
+  /* Reset Form Button — bright red fill by default, thicker border */
+  #resetFormResults{
+    background:#e53935;
+    color:#fff;
+    border:3px solid #6b0e0e;
+    border-radius:10px;
+    transition:background .15s, transform .1s, border-color .15s;
+  }
+  #resetFormResults:hover{
+    background:#d32f2f;
+    border-color:#8e0000;
+    transform:scale(1.02);
+  }
+  #resetFormResults:active{
+    background:#8e0000;
+    border-color:#5c0000;
+    transform:scale(.98);
+  }
+
+  /* Map space (+ small gap above) */
+  #loc-map { height: 300px; border-radius: 12px; overflow: hidden; margin-top:12px; }
+  .map-actions { display:flex; gap:8px; margin:8px 0 0; flex-wrap:wrap; }
+
+/* Global small pill in the header */
+.acc-pill{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:6px 10px; margin-left:8px;
+  border-radius:999px; font-weight:800; font-size:.95rem;
+  border:1px solid var(--border);
+  background:#404957; color:#d7dee8;  /* default (grey) */
+}
+
+
+
+/* Tiny status dot next to the Location tab */
+.acc-dot{
+  display:inline-block; width:10px; height:10px; margin-left:6px;
+  border-radius:50%;
+  border:1px solid rgba(0,0,0,.25);
+  vertical-align:middle;
+}
+  
+/* Connectivity card (medium border) */
+.conn-card{
+  border: 2px solid var(--border);   /* medium thickness */
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+.conn-card .topline{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-bottom:8px;
+}
+.conn-card .status{
+  font-weight:800;
+}
+.conn-card .tiny{
+  color: var(--muted);
+}
+
+/* State colors */
+.conn-online{ border-color: var(--ok); }
+.conn-offline{ border-color: var(--danger); }
+
+/* Re-check button spacing to match your UI */
+#conn-recheck{ margin-top:8px; }
+
+/* Map offline callout card below the map */
+#map-offline-card{ display:none; }
+
+
+</style>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="row">
+    <div class="brand">ARA Field Tools</div>
+    <div class="inline-controls" aria-label="Global controls">
+      <span class="toggle-label">Units:</span>
+      <button type="button" id="unit-m"  class="toggle-btn active" aria-pressed="true">m</button>
+      <button type="button" id="unit-ft" class="toggle-btn" aria-pressed="false">ft</button>
+      <span class="toggle-label">Mode:</span>
+      <button type="button" id="mode-manual" class="toggle-btn active" aria-pressed="true">Manual</button>
+      <button type="button" id="mode-auto"   class="toggle-btn" aria-pressed="false">Auto</button>
+
+      <!-- Global best accuracy pill -->
+<span id="acc-pill-global"
+      class="acc-pill acc-red"
+      aria-live="polite"
+      title="Best location accuracy">
+  ±— m
+</span>
+
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tabs-inner">
+    <div class="tab active" data-tab="gen">General</div>
+<div class="tab" data-tab="loc">
+  Location
+  <span id="loc-tab-dot" class="acc-dot acc-red" title="Location accuracy status"></span>
+</div>
+    <div class="tab" data-tab="circ">Circumference</div>
+    <div class="tab" data-tab="height">Height</div>
+    <div class="tab" data-tab="canopy">Canopy</div>
+    <div class="tab" data-tab="results">Results</div>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- General -->
+  <section id="pane-gen" class="tabpane active">
+    <div class="card">
+      <div class="block">
+        <h2>General</h2>
+
+        <label for="treeName">Tree name</label>
+        <input id="treeName" type="text" placeholder="Tree name (e.g., Rossdale Poplar)">
+
+        <div class="row" style="margin-top:8px;">
+          <div>
+            <label for="species">Species</label>
+            <input id="species" type="text" placeholder="e.g., Populus balsamifera">
+          </div>
+          <div>
+            <label for="condition">Condition</label>
+            <select id="condition">
+              <option value="">— optional —</option>
+              <option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option><option>Dead</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="notes" style="margin-top:10px;">Notes</label>
+        <textarea id="notes" placeholder="Observations, access notes, landmarks, hazards…"></textarea>
+        <div class="tiny">Notes appear in the generated description.</div>
+      </div>
+    </div>
+         <!-- Connectivity card -->
+      <div id="conn-card" class="card conn-card conn-online" style="margin-top:12px;">
+        <div class="block">
+          <div class="topline">
+            <h3 style="margin:0;">Connectivity</h3>
+            <div class="tiny">Last checked: <span id="conn-checked">—</span></div>
+          </div>
+          <p id="conn-label" class="status">You’re online. Map tiles stream normally and email/share are enabled.</p>
+          <div class="tiny">Autosave is local and safe.</div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="conn-recheck" class="btn-ghost">Re-check</button>
+          </div>
+        </div>
+      </div>
+  </section>
+  <!-- Location -->
+  <section id="pane-loc" class="tabpane">
+    <div class="card">
+      <div class="block">
+        <h2>Location</h2>
+
+        <!-- Controls row -->
+        <div class="unit-toggle" style="flex-wrap:wrap; gap:8px;">
+          <button type="button" id="loc-toggle" class="btn-primary">Start tracking</button>
+          <button type="button" id="loc-hiacc"  class="toggle-btn" aria-pressed="false" title="Request highest accuracy">High accuracy</button>
+          <button type="button" id="loc-saver"  class="toggle-btn" aria-pressed="false" title="Reduce update rate to save battery">Battery saver</button>
+        </div>
+
+        <!-- Recent fix -->
+        <div class="results" style="margin-top:10px;">
+          <h3 style="margin:0 0 6px;">Recent fix</h3>
+          <p id="loc-recent-dd">DD: —</p>
+          <p>Altitude: <span id="loc-recent-alt">—</span></p>
+          <p>Accuracy: <span id="loc-recent-acc" class="acc-chip acc-grey">—</span></p>
+          <p>Age: <span id="loc-recent-age">—</span></p>
+          <p class="tiny" style="margin-top:6px;">Samples: <span id="loc-samples">0</span></p>
+        </div>
+
+        <!-- Best fix -->
+        <div class="results" style="margin-top:10px;">
+          <h3 style="margin:0 0 6px;">Best so far <span id="loc-best-badge" class="badge" style="display:none;">new</span></h3>
+          <p id="loc-best-dd">DD: —</p>
+          <p>Altitude: <span id="loc-best-alt">—</span></p>
+          <p>Accuracy: <span id="loc-best-acc" class="acc-chip acc-grey">—</span></p>
+          <p>Time: <span id="loc-best-time">—</span></p>
+        </div>
+
+        
+        <!-- Action buttons BELOW the best panel -->
+        <div class="unit-toggle" style="margin-top:10px;">
+          <button type="button" id="loc-use-recent" class="btn-ghost btn-select" disabled>Save recent</button>
+          <button type="button" id="loc-use-best"   class="btn-ghost btn-select" disabled>Save best</button>
+          <button type="button" id="loc-reset"      class="btn-ghost danger">Reset location</button>
+        </div>
+
+        <!-- Hidden storage used by description -->
+        <input type="hidden" id="lat"><input type="hidden" id="lng"><input type="hidden" id="acc">
+        <span id="loc-saved-alt" data-val="" style="display:none;"></span>
+        <span id="loc-saved-ts" data-ts="" style="display:none;"></span>
+
+        <!-- Map + actions -->
+        <div id="loc-map"></div>
+        <div class="map-actions">
+          <button type="button" id="map-to-recent" class="btn-ghost">Recenter to recent</button>
+          <button type="button" id="map-to-best"   class="btn-ghost">Recenter to best</button>
+        </div>
+        <!-- Shown only when offline -->
+<div id="map-offline-card" class="card" style="margin-top:10px; display:none;">
+  <div class="block">
+    <h3 style="margin:0 0 6px;">Map is offline</h3>
+    <p>Tiles may not load. Areas you viewed earlier might still appear from cache.</p>
+  </div>
+</div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Circumference -->
+  <section id="pane-circ" class="tabpane">
+    <div class="card">
+      <div class="block">
+        <h2>Circumference</h2>
+
+        <label for="treeType">Tree type</label>
+        <select id="treeType">
+          <option value="">— select —</option>
+          <option>Single trunk tree</option>
+          <option>Multi trunked tree</option>
+          <option>Grove</option>
+          <option>Forest</option>
+          <option>Clonal aspen</option>
+        </select>
+
+        <!-- Single trunk -->
+        <div id="single-circ-block" style="display:none;margin-top:10px;">
+          <label for="singleC">Circumference (<span class="unit-tag">m</span>)</label>
+          <input id="singleC" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 3.10">
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="single-update" class="btn-dim">Update circumference</button>
+          </div>
+          <div class="tiny">Diameter is calculated automatically (D = C / π).</div>
+        </div>
+
+        <!-- Multi-trunk -->
+        <div id="multi-block" style="display:none;margin-top:10px;">
+          <div class="note" style="margin-bottom:10px;">
+            <strong>Multi-trunk entry:</strong> add each trunk’s <em>circumference</em>. * Largest trunk counts 100%, others 50%.
+          </div>
+          <div id="mt-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="mt-add"    class="btn-dim">Add trunk</button>
+            <button type="button" id="mt-remove" class="btn-dim">Remove last</button>
+            <button type="button" id="mt-sort"   class="btn-ghost" title="Sort by diameter (desc)">Sort by diameter</button>
+            <button type="button" id="mt-calc"   class="btn-dim">Calculate multi-trunk</button>
+          </div>
+
+          <label for="mt-bulk" style="margin-top:12px;">Bulk paste (numbers + repeaters)</label>
+          <textarea id="mt-bulk" class="mono" placeholder="Examples:
+1.72, 0.98 1.10
+12x0.78   (12 repeats of 0.78)
+3×1.50    (× also works)"></textarea>
+          <div class="tiny">
+            Uses current unit (<span class="unit-tag">m</span>). Ignores text; keeps positive numbers only.
+            Supports <strong>NxVALUE</strong> like <strong>12x0.78</strong> or <strong>3×1.5</strong>.
+          </div>
+          <div class="btn-row" style="margin-top:8px;">
+            <button type="button" id="mt-fill"  class="btn-ghost">Fill from bulk</button>
+            <button type="button" id="mt-clear" class="btn-ghost">Clear bulk</button>
+          </div>
+
+          <div id="mt-result" class="tiny" style="margin-top:8px;color:#cfe0ff;">—</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Height -->
+  <section id="pane-height" class="tabpane">
+    <div class="card">
+      <div class="block">
+
+        <div class="clino-head">
+          <h2>Height</h2>
+        </div>
+
+        <label for="h-angle">Angle to top of the tree (degrees)</label>
+        <input id="h-angle" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 37.5">
+
+        <div class="row">
+          <div>
+            <label for="h-dist">Distance to trunk (<span class="unit-tag">m</span>)</label>
+            <input id="h-dist" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 23.40">
+          </div>
+          <div>
+            <label for="h-eye">Eye height (<span class="unit-tag">m</span>)</label>
+            <input id="h-eye" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 1.62">
+          </div>
+        </div>
+
+        <div class="btn-row" style="margin-top:10px;">
+          <button type="button" id="h-calc" class="btn-dim">Calculate height</button>
+        </div>
+
+        <!-- Clinometer -->
+<div class="card" id="clino-card" style="margin-top:12px;background:#10253f;">
+  <div class="block">
+
+    <!-- Live angle/status box — restored to original format -->
+<div class="clino-readout" id="clino-readout">
+  <h3 style="margin:0 0 6px;">Live angle</h3>
+  <p id="clino-live-angle" class="angle" style="margin:0;">—°</p>
+  <p id="clino-live-status" class="status">Sensor: idle · Cal: 0.0°</p>
+</div>
+
+    <!-- Clinometer lock area -->
+    <div class="clino-wrap" style="margin-top:12px;">
+      <button type="button" id="clino-lock" class="clino-lock">Start Clinometer</button>
+    </div>
+
+    <!-- Controls below -->
+    <div class="clino-controls" style="margin-top:10px;">
+      <button type="button" id="clino-zero"  class="btn-ghost">Zero (calibrate)</button>
+      <button type="button" id="clino-reset" class="btn-ghost">Reset sensor</button>
+    </div>
+
+  </div>
+</div>
+      </div>
+    </div>
+
+    <!-- Height formula shown under the clinometer card -->
+    <div class="card">
+      <div class="block">
+        <div class="tiny">
+          Height formula: <strong>height = tan(angle) × distance + eye height</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Canopy -->
+  <section id="pane-canopy" class="tabpane">
+    <div class="card">
+      <div class="block">
+        <h2>Canopy</h2>
+        <div class="row">
+          <div>
+            <label for="spreadMajor">Major axis (<span class="unit-tag">m</span>)</label>
+            <input id="spreadMajor" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 30.00">
+          </div>
+          <div>
+            <label for="spreadMinor">Minor axis (<span class="unit-tag">m</span>)</label>
+            <input id="spreadMinor" type="number" step="0.01" inputmode="decimal" placeholder="e.g. 20.00">
+          </div>
+        </div>
+        <div class="btn-row" style="margin-top:10px;">
+          <button type="button" id="spread-calc" class="btn-dim">Calculate canopy spread</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- Results -->
+<section id="pane-results" class="tabpane">
+  <div class="card">
+    <div class="block">
+      <h2 id="results-title">Results</h2>
+
+      <!-- Key measurements (meters with feet in parentheses) -->
+      <div class="results" id="key-measurements" style="margin-top:6px;">
+        <p id="km-circ">Circumference: —</p>
+        <p id="km-height">Height: —</p>
+        <p id="km-canopy">Canopy spread: —</p>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Tree description</h3>
+      <div id="desc" class="results" style="margin-top:10px;">—</div>
+      <div class="tiny" style="margin-top:6px;">Timestamp uses local 24-hour time.</div>
+      <!-- Missing-data notice lives inside the description (at the end) -->
+    </div>
+
+    <div class="block">
+      <h3>Share & copy</h3>
+<div class="btn-row">
+  <button type="button" id="copyDesc" class="btn-ghost" disabled>Copy description</button>
+  <button type="button" id="shareLink" class="btn-ghost" disabled>Copy share link</button>
+  <a id="emailBtn" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
+</div>
+    </div>
+
+    <div class="block">
+      <h3>Photos</h3>
+      <div class="note" style="margin-top:6px;">
+        Placeholder for photos (coming soon). This box will show gallery thumbnails once logging is added.
+      </div>
+    </div>
+
+    <div class="block">
+      <button type="button" id="resetFormResults" class="btn-ghost danger" title="Reset the form (does not clear the log)">Reset form</button>
+    </div>
+  </div>
+</section>
+
+
+</div>
+<script>
+  if (window.Capacitor?.isNativePlatform?.()) {
+    window.Capacitor.Plugins?.StatusBar?.setOverlaysWebView?.({ overlay: false });
+  }
+</script>
+
+<script>
+/* -------- small helpers (no optional chaining) -------- */
+window.ARA_RESETTING = false;
+function $(s){ return document.querySelector(s); }
+function $all(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+function byId(id){ return document.getElementById(id); }
+function has(el){ return !!el; }
+
+/* ---------------- Core helpers ---------------- */
+const PI=Math.PI, FT_PER_M=3.28084, M_PER_FT=0.3048;
+const tanDeg=d=>Math.tan(d*Math.PI/180);
+const fmt2=x=>Number.isFinite(x)?x.toFixed(2):'—', fmt1=x=>Number.isFinite(x)?x.toFixed(1):'—';
+const toM=(v,u)=>u==='m'?v:v*M_PER_FT, mToFt=m=>m*FT_PER_M;
+const nowLocal24=()=>{var d=new Date();var p=n=>String(n).padStart(2,'0');return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());};
+const escapeHtml=s=>String(s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});
+
+/* DMS helper for description */
+function toDMS(dec, isLat){
+  if (!Number.isFinite(dec)) return '—';
+  var hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
+  var v = Math.abs(dec);
+  var d = Math.floor(v); v = (v - d) * 60;
+  var m = Math.floor(v); var s = (v - m) * 60;
+  return d+'° '+m+"' "+s.toFixed(2)+'" '+hemi;
+}
+
+  function updateKeyMeasurementsBox(){
+  const title = byId('results-title');
+  const name  = byId('treeName')?.value?.trim();
+  if (title) title.textContent = name ? (name + ' — Results') : 'Results';
+
+  const kmCirc   = byId('km-circ');
+  const kmHeight = byId('km-height');
+  const kmCanopy = byId('km-canopy');
+
+  const t = byId('treeType')?.value || '';
+
+  // Circumference line
+  if (t === 'Single trunk tree' && lastSingle){
+    kmCirc && (kmCirc.textContent = `Circumference: ${fmt2(lastSingle.cM)} m (${fmt2(lastSingle.cFt)} ft)`);
+  } else if (t === 'Multi trunked tree' && lastMulti){
+    kmCirc && (kmCirc.textContent = `Equivalent circumference: ${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft)`);
+  } else {
+    kmCirc && (kmCirc.textContent = 'Circumference: —');
+  }
+
+  // Height
+  kmHeight && (kmHeight.textContent =
+    lastHeight ? `Height: ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)` : 'Height: —'
+  );
+
+  // Canopy
+  kmCanopy && (kmCanopy.textContent =
+    lastSpread ? `Canopy spread: ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)` : 'Canopy spread: —'
+  );
+}
+function wireAutosaveInputs(){
+  // Any input/change should schedule a (debounced) save.
+  const selectors = 'input, select, textarea';
+  document.querySelectorAll(selectors).forEach(el=>{
+    el.addEventListener('input', autoSaveSoon);
+    el.addEventListener('change', autoSaveSoon);
+  });
+
+  // OPTIONAL: live description refresh on *any* edit
+  document.addEventListener('input', function(e){
+    // keep this lightweight — rebuild once per user edit
+    if (typeof refreshResultsView === 'function') refreshResultsView();
+  });
+}
+function refreshResultsView(){
+  updateResultsPanel();       // keep legacy lines up to date
+  updateKeyMeasurementsBox(); // new “Key measurements” box
+  generateDescription();      // HTML + email/plain text stay in sync
+}
+
+function computeMissingBits(){
+  const missing = [];
+  const t = byId('treeType')?.value || '';
+  if (t === 'Single trunk tree'){
+    if (!lastSingle) missing.push('circumference (single trunk)');
+  } else if (t === 'Multi trunked tree'){
+    if (!lastMulti) missing.push('multi-trunk entry / calculation');
+  } else if (!t){
+    missing.push('tree type');
+  }
+  if (!lastHeight) missing.push('height');
+  if (!lastSpread) missing.push('canopy spread');
+  return missing;
+}
+
+/* ---------------- State ---------------- */
+var inputUnit='m', calcMode='manual';
+var lastSingle=null, lastMulti=null, lastHeight=null, lastSpread=null;
+
+/* ---------------- Header controls ---------------- */
+var unitM=byId('unit-m'), unitFt=byId('unit-ft');
+var modeManualBtn=byId('mode-manual'), modeAutoBtn=byId('mode-auto');
+var unitTags=$all('.unit-tag');
+
+function setUnit(u){
+  if(u===inputUnit) return;
+  function conv(inp){ if(!inp) return; var v=parseFloat(inp.value); if(!Number.isNaN(v)){ var m=toM(v,inputUnit); inp.value=(u==='m'?m:m*FT_PER_M).toFixed(2); } }
+  [byId('singleC'), byId('h-dist'), byId('h-eye'), byId('spreadMajor'), byId('spreadMinor')].forEach(conv);
+  $all('#mt-list input[type="number"]').forEach(conv);
+  inputUnit=u;
+  var isM=u==='m';
+  if(unitM){ unitM.classList.toggle('active',isM); unitM.setAttribute('aria-pressed',String(isM)); }
+  if(unitFt){ unitFt.classList.toggle('active',!isM); unitFt.setAttribute('aria-pressed',String(!isM)); }
+  unitTags.forEach(function(t){ t.textContent=isM?'m':'ft'; });
+  renumberTrunks();
+  if(calcMode==='auto'){ 
+    var tt = byId('treeType') ? byId('treeType').value : '';
+    if(tt==='Single trunk tree') recomputeSingle();
+    if(tt==='Multi trunked tree') calcMulti();
+    calcHeight(); calcSpread();
+  }
+    refreshResultsView();
+  updateResultsPanel(); updateCopyButtons();
+}
+if(unitM) unitM.onclick=function(){ setUnit('m'); };
+if(unitFt) unitFt.onclick=function(){ setUnit('ft'); };
+
+function setCalcMode(m){
+  calcMode=m; var man=m==='manual';
+  if(modeManualBtn){ modeManualBtn.classList.toggle('active',man); modeManualBtn.setAttribute('aria-pressed',String(man)); }
+  if(modeAutoBtn){ modeAutoBtn.classList.toggle('active',!man); modeAutoBtn.setAttribute('aria-pressed',String(!man)); }
+}
+if(modeManualBtn) modeManualBtn.onclick=function(){ setCalcMode('manual'); };
+if(modeAutoBtn)   modeAutoBtn.onclick=function(){ setCalcMode('auto'); };
+
+/* ---------------- Tabs ---------------- */
+$all('.tab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    $all('.tab').forEach(function(t){ t.classList.remove('active'); });
+    tab.classList.add('active');
+    var id = tab.getAttribute('data-tab');
+    $all('.tabpane').forEach(function(p){ p.classList.remove('active'); });
+    var pane = byId('pane-'+id); if(pane) pane.classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+
+/* ---------------- General ---------------- */
+var notesEl = byId('notes');
+function autoGrow(el){ if(!el) return; el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
+if(notesEl) notesEl.addEventListener('input',function(){ autoGrow(notesEl); });
+
+/* ---------------- Circumference ---------------- */
+var treeType=byId('treeType'), singleBlock=byId('single-circ-block'), singleC=byId('singleC');
+var singleUpdateBtn = byId('single-update');
+
+var mtBlock=byId('multi-block'), mtList=byId('mt-list'), mtAdd=byId('mt-add'), mtRemove=byId('mt-remove'),
+    mtSort=byId('mt-sort'), mtCalc=byId('mt-calc'), mtBulk=byId('mt-bulk'), mtFill=byId('mt-fill'),
+    mtClear=byId('mt-clear'), mtResult=byId('mt-result');
+
+function updateTypeVisibility(){
+  var t=treeType ? treeType.value : '';
+  if(singleBlock) singleBlock.style.display=(t==='Single trunk tree')?'':'none';
+  if(mtBlock)     mtBlock.style.display=(t==='Multi trunked tree')?'':'none';
+  if (t==='Multi trunked tree' && mtList && mtList.children.length===0){ addMtRow(); addMtRow(); }
+  // was: updateResultsPanel(); updateCopyButtons();
+  refreshResultsView(); updateCopyButtons();
+}
+if(treeType) treeType.onchange=updateTypeVisibility;
+
+/* Single trunk */
+function recomputeSingle(){
+  var v=parseFloat(singleC && singleC.value);
+  if(Number.isFinite(v)&&v>0){ var cM=toM(v,inputUnit); var dM=cM/PI; lastSingle={cM:cM,cFt:mToFt(cM),dM:dM,dFt:mToFt(dM)}; }
+  else lastSingle=null;
+    refreshResultsView();
+  updateResultsPanel(); updateCopyButtons();
+}
+if(singleC) singleC.addEventListener('input',function(){ if(calcMode==='auto') recomputeSingle(); });
+if(singleUpdateBtn) singleUpdateBtn.addEventListener('click',recomputeSingle);
+
+/* Multi-trunk block */
+var MT_MAX=60;
+function getMtRows(){ return mtList ? Array.prototype.slice.call(mtList.querySelectorAll('.mt-row')) : []; }
+function renumberTrunks(){
+  var rows = getMtRows();
+  rows.forEach(function(row, i){
+    var idx=i+1;
+    row.dataset.index=String(idx);
+    var lab=row.querySelector('.mt-label');
+    var inp=row.querySelector('input[type="number"]');
+    if (inp) inp.id='mt-'+idx;
+    if (lab){ lab.htmlFor='mt-'+idx; lab.textContent='Trunk '+idx+' circumference ('+inputUnit+')'; }
+  });
+}
+function addMtRow(val){
+  if(!mtList) return;
+  if (getMtRows().length >= MT_MAX) return;
+  var row=document.createElement('div');
+  row.className='row mt-row'; row.style.gridTemplateColumns='1fr';
+  var top=document.createElement('div');
+  top.style.display='flex'; top.style.alignItems='center';
+  var lab=document.createElement('label'); lab.className='mt-label';
+  var badge=document.createElement('span'); badge.className='badge hide'; badge.textContent='Largest';
+  var inp=document.createElement('input'); inp.type='number'; inp.step='0.01'; inp.inputMode='decimal'; if(val!==undefined && val!=='') inp.value=val;
+  var hint=document.createElement('div'); hint.className='hint';
+  top.appendChild(lab); top.appendChild(badge);
+  row.appendChild(top); row.appendChild(inp); row.appendChild(hint);
+  mtList.appendChild(row);
+  inp.addEventListener('input',function(){ hint.classList.remove('show'); if(calcMode==='auto') calcMulti(); });
+  inp.addEventListener('blur',function(){ maybeMtOutlierHint(parseFloat(inp.value),hint); });
+  renumberTrunks();
+}
+function removeMtRow(){
+  var rows=getMtRows(); if(rows.length<=1) return;
+  rows[rows.length-1].remove(); clearMtLargest(); renumberTrunks();
+  if(calcMode==='auto') calcMulti();
+}
+function maybeMtOutlierHint(val,h){
+  if(!h) return;
+  if(!Number.isFinite(val)||val<=0){h.classList.remove('show');return}
+  if(inputUnit==='m'){
+    if(val<0.20){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
+    else if(val>12){h.textContent='Unusually large — check units?';h.classList.add('show');}
+    else h.classList.remove('show');
+  } else {
+    if(val<0.66){h.textContent='Unusually small — check units/decimal?';h.classList.add('show');}
+    else if(val>40){h.textContent='Unusually large — check units?';h.classList.add('show');}
+    else h.classList.remove('show');
+  }
+}
+function parseMtBulk(text,limit){
+  limit = limit||MT_MAX;
+  var vals=[]; if(!text) return vals; var s=String(text).replace(/[×X]/g,'x');
+  var repRE=/(\d+)\s*x\s*([-+]?\d*\.?\d+)/g, m;
+  s=s.replace(repRE,function(_,nStr,vStr){
+    var n=parseInt(nStr,10), v=parseFloat(vStr);
+    if(Number.isFinite(n)&&n>0&&Number.isFinite(v)&&v>0){ for(var i=0;i<n&&vals.length<limit;i++) vals.push(v); }
+    return ' ';
+  });
+  var singles=s.match(/[-+]?\d*\.?\d+/g)||[];
+  for(var j=0;j<singles.length && vals.length<limit;j++){
+    var v=parseFloat(singles[j]); if(Number.isFinite(v)&&v>0) vals.push(v);
+  }
+  return vals;
+}
+function mtFillFromBulk(){
+  if(!mtFill) return;
+  mtFill.classList.add('active');
+  var vals=parseMtBulk(mtBulk?mtBulk.value:'',MT_MAX);
+  if(vals.length===0){ setTimeout(function(){ mtFill.classList.remove('active'); }, 500); return; }
+  if(mtList) mtList.innerHTML='';
+  vals.forEach(function(v){ addMtRow(v.toFixed(2)); });
+  if(mtResult) mtResult.textContent='—';
+  if(calcMode==='auto') calcMulti();
+  renumberTrunks();
+  setTimeout(function(){ mtFill.classList.remove('active'); }, 900);
+}
+function mtSortByDiameter(){
+  if(!mtList) return;
+  var rows=Array.prototype.slice.call(mtList.children);
+  var valid=[], invalid=[];
+  rows.forEach(function(row){
+    var inp=row.querySelector('input[type="number"]'); var v=parseFloat(inp && inp.value);
+    if(Number.isFinite(v)&&v>0){ var cM=toM(v,inputUnit), dM=cM/PI; valid.push({row:row,dM:dM}); }
+    else invalid.push(row);
+  });
+  if(valid.length<2){ renumberTrunks(); return; }
+  valid.sort(function(a,b){ return b.dM-a.dM; });
+  var frag=document.createDocumentFragment(); valid.forEach(function(v){ frag.appendChild(v.row); }); invalid.forEach(function(r){ frag.appendChild(r); });
+  mtList.innerHTML=''; mtList.appendChild(frag);
+  clearMtLargest(); renumberTrunks();
+  if(calcMode==='auto') calcMulti();
+}
+function clearMtLargest(){
+  if(!mtList) return;
+  mtList.querySelectorAll('.mt-label').forEach(function(el){ el.classList.remove('largest-label'); });
+  mtList.querySelectorAll('.badge').forEach(function(b){ b.classList.add('hide'); b.textContent='Largest'; });
+}
+function calcMulti(){
+  clearMtLargest();
+  var items=mtList ? Array.prototype.slice.call(mtList.querySelectorAll('input')) : [];
+  var valid=items.map(function(inp){ return {inp:inp,val:parseFloat(inp.value),row:inp.closest('.row')} })
+    .filter(function(o){ return Number.isFinite(o.val)&&o.val>0; });
+  if(valid.length===0){
+    lastMulti=null; if(mtResult) mtResult.textContent='Enter at least one trunk circumference.';   // was: updateResultsPanel(); updateCopyButtons();
+  refreshResultsView(); updateCopyButtons();
+ return;
+  }
+  var withD=valid.map(function(r,i){ var cM=toM(r.val,inputUnit); var dM=cM/PI; return {row:r.row,cM:cM,dM:dM,idx:i+1}; });
+  var eps=1e-9; var dmax=Math.max.apply(null,withD.map(function(x){return x.dM;}));
+  var maxRows=withD.filter(function(x){ return Math.abs(x.dM-dmax)<eps; });
+  var sumAll=withD.reduce(function(a,x){return a+x.dM;},0);
+  var dEqM=dmax+0.5*(sumAll-dmax); var cEqM=dEqM*PI; var cAvgM=withD.reduce(function(a,x){return a+x.cM;},0)/withD.length;
+  var badgeText=(maxRows.length>1)?'Tied for largest':'Largest';
+  maxRows.forEach(function(r){
+    var lab=r.row.querySelector('.mt-label'); var badge=r.row.querySelector('.badge');
+    if(lab) lab.classList.add('largest-label'); if(badge){ badge.textContent=badgeText; badge.classList.remove('hide'); }
+  });
+  lastMulti={
+    trunks: withD.map(function(t){ return {index:t.idx,cM:t.cM,cFt:mToFt(t.cM),dM:t.dM,dFt:mToFt(t.dM),isLargest:Math.abs(t.dM-dmax)<eps}; }),
+    dEqM:dEqM, cEqM:cEqM, dEqFt:mToFt(dEqM), cEqFt:mToFt(cEqM),
+    cAvgM:cAvgM, cAvgFt:mToFt(cAvgM), tie:maxRows.length>1
+  };
+  if(mtResult) mtResult.textContent='Calculated '+withD.length+' trunk'+(withD.length>1?'s':'')+'.';
+  // was: updateResultsPanel(); updateCopyButtons();
+  refreshResultsView(); updateCopyButtons();
+}
+if(mtAdd)    mtAdd.onclick=function(){ addMtRow(); };
+if(mtRemove) mtRemove.onclick=function(){ removeMtRow(); };
+if(mtSort)   mtSort.onclick=mtSortByDiameter;
+if(mtCalc)   mtCalc.onclick=calcMulti;
+if(mtFill)   mtFill.onclick=mtFillFromBulk;
+if(mtClear)  mtClear.onclick=function(){ if(mtBulk) mtBulk.value=''; };
+
+/* ---------------- Height ---------------- */
+var hAngle=byId('h-angle'), hDist=byId('h-dist'), hEye=byId('h-eye'), hCalc=byId('h-calc');
+function calcHeight(){
+  var a=parseFloat(hAngle && hAngle.value), d=parseFloat(hDist && hDist.value), e=parseFloat(hEye && hEye.value);
+  if(!Number.isFinite(a)||!Number.isFinite(d)||!Number.isFinite(e)){ lastHeight=null;   refreshResultsView();
+updateResultsPanel(); updateCopyButtons(); return; }
+  var dM=toM(d,inputUnit), eM=toM(e,inputUnit); var hM=tanDeg(a)*dM+eM;
+  lastHeight={hM:hM,hFt:mToFt(hM),angleDeg:Number(a.toFixed(1)),dM:dM,eM:eM};
+    refreshResultsView();
+  updateResultsPanel(); updateCopyButtons();
+  if(hCalc){ hCalc.classList.add('active'); setTimeout(function(){ hCalc.classList.remove('active'); },900); }
+}
+if(hCalc) hCalc.onclick=calcHeight;
+[hAngle,hDist,hEye].forEach(function(inp){ if(inp) inp.addEventListener('input',function(){ if(calcMode==='auto') calcHeight(); }); });
+
+  /* ---------------- Canopy ---------------- */
+var spreadMajor = byId('spreadMajor'),
+    spreadMinor = byId('spreadMinor'),
+    spreadCalcBtn = byId('spread-calc');
+
+function calcSpread(){
+  var maj = parseFloat(spreadMajor && spreadMajor.value);
+  var min = parseFloat(spreadMinor && spreadMinor.value);
+
+  if (!Number.isFinite(maj) || !Number.isFinite(min) || maj <= 0 || min <= 0){
+    lastSpread = null;
+      refreshResultsView();
+    updateResultsPanel();
+    updateCopyButtons();
+    return;
+  }
+
+  // Convert to meters if needed
+  var majM = toM(maj, inputUnit);
+  var minM = toM(min, inputUnit);
+  var meanM = (majM + minM) / 2;
+
+  lastSpread = {
+    majorM: majM,
+    minorM: minM,
+    meanM: meanM,
+    meanFt: mToFt(meanM)
+  };
+  refreshResultsView();
+  updateResultsPanel();
+  updateCopyButtons();
+
+  if (spreadCalcBtn){
+    spreadCalcBtn.classList.add('active');
+    setTimeout(function(){ spreadCalcBtn.classList.remove('active'); }, 900);
+  }
+}
+
+// Hook up events
+if (spreadCalcBtn) spreadCalcBtn.addEventListener('click', calcSpread);
+[spreadMajor, spreadMinor].forEach(function(inp){
+  if (inp) inp.addEventListener('input', function(){
+    if (calcMode === 'auto') calcSpread();
+  });
+});
+
+/* ---------------- Clinometer (single-button start/lock) ---------------- */
+let clinoOn = false, zeroOffsetRad = 0, locked = false;
+let lastLiveDeg = NaN; // current live (unlocked) reading in degrees
+
+const elLock       = document.getElementById('clino-lock');
+const elZero       = document.getElementById('clino-zero');
+const elReset      = document.getElementById('clino-reset');
+const elReadAngle  = document.getElementById('clino-live-angle');
+const elReadStatus = document.getElementById('clino-live-status');
+
+const toDeg = rad => rad * 180 / Math.PI;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+function buzz(ms = 30){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch{} }
+
+async function requestIOSPermissionIfNeeded(){
+  const any = window.DeviceOrientationEvent;
+  if(!any) return true;
+  if(typeof any.requestPermission === 'function'){
+    try { return (await any.requestPermission()) === 'granted'; } catch { return false; }
+  }
+  return true;
+}
+
+function computePitchFromEvent(ev){
+  const beta = typeof ev.beta === 'number' ? ev.beta : 0;
+  const rad  = (beta * Math.PI/180) - zeroOffsetRad;
+  return clamp(toDeg(rad), -89.9, 89.9);
+}
+
+function renderClinoReadout(deg){
+  lastLiveDeg = deg; // store latest live value
+  const txt = Number.isFinite(deg) ? fmt1(deg) + '°' : '—°';
+  elReadAngle.textContent = locked ? `${txt} (locked)` : txt;
+}
+
+function renderClinoStatus(state){
+  const label = state === 'running'   ? 'Sensor: running'
+              : state === 'stopped'   ? 'Sensor: stopped'
+              : state === 'permission'? 'Sensor: permission denied'
+              :                         'Sensor: idle';
+  const cal   = fmt1(toDeg(zeroOffsetRad)) + '°';
+  elReadStatus.textContent = `${label} · Cal: ${cal}`;
+}
+
+function getAngleFromReadout(){
+  // Parse the numeric part from "29.7°" or "29.7° (locked)"
+  const m = String(elReadAngle.textContent).match(/-?\d+(?:\.\d+)?/);
+  return m ? parseFloat(m[0]) : NaN;
+}
+
+let onOrientation = null;
+
+function startClinometer(){
+  if (clinoOn) return;
+  clinoOn = true;
+  renderClinoStatus('running');
+  elLock.textContent = 'Lock';
+
+  requestIOSPermissionIfNeeded().then(ok=>{
+    if(!ok){
+      clinoOn = false;
+      renderClinoStatus('permission');
+      elLock.textContent = 'Start Clinometer';
+      return;
+    }
+    onOrientation = ev => {
+      if(!clinoOn || locked) return;
+      const deg = computePitchFromEvent(ev);
+      renderClinoReadout(deg);
+    };
+    window.addEventListener('deviceorientation', onOrientation, {passive:true});
+  });
+}
+
+function stopClinometer(){
+  if(!clinoOn) return;
+  clinoOn = false;
+  if(onOrientation) window.removeEventListener('deviceorientation', onOrientation);
+  onOrientation = null;
+  renderClinoStatus('stopped');
+  elLock.textContent = 'Start Clinometer';
+}
+
+function zeroCalibrate(){
+  const current = Number.isFinite(lastLiveDeg) ? lastLiveDeg : getAngleFromReadout();
+  if(!Number.isFinite(current)) return;
+  zeroOffsetRad += (current * Math.PI/180);
+  renderClinoStatus(clinoOn ? 'running' : 'idle');
+  buzz(20);
+}
+
+function resetSensor(){
+  locked = false;
+  zeroOffsetRad = 0;
+  renderClinoReadout(NaN);
+  if (clinoOn){
+    elLock.classList.remove('active');
+    elLock.textContent = 'Lock';
+    renderClinoStatus('running');
+  } else {
+    elLock.classList.remove('active');
+    elLock.textContent = 'Start Clinometer';
+    renderClinoStatus('idle');
+  }
+  buzz(10);
+}
+
+function toggleLock(){
+  // First click starts the sensor
+  if(!clinoOn){
+    startClinometer();
+    buzz(50);
+    return;
+  }
+  // Toggle lock/unlock while running
+  if(!locked){
+    locked = true;
+    elLock.textContent = 'Unlock';
+    elLock.classList.add('active');
+    const current = Number.isFinite(lastLiveDeg) ? lastLiveDeg : getAngleFromReadout();
+    if (Number.isFinite(current)) {
+      document.getElementById('h-angle').value = current.toFixed(1);
+      if (calcMode === 'auto') calcHeight();
+    }
+    renderClinoReadout(current);
+    buzz(40);
+  } else {
+    locked = false;
+    elLock.textContent = 'Lock';
+    elLock.classList.remove('active');
+    // Immediately refresh readout from stored last value
+    renderClinoReadout(lastLiveDeg);
+  }
+}
+
+elLock.addEventListener('click', toggleLock);
+elZero.addEventListener('click', zeroCalibrate);
+elReset.addEventListener('click', resetSensor);
+
+// Stop sensor when tab goes to background
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stopClinometer(); });
+
+// Initialize live box so it isn’t blank
+renderClinoStatus('idle');
+renderClinoReadout(NaN);
+
+/* ---------------- Results & Quick Copy ---------------- */
+var resHeight=byId('res-height'), resEqCirc=byId('res-eqcirc'), resAvgCirc=byId('res-avgcirc'), resSpread=byId('res-spread');
+function updateResultsPanel(){
+  if(resHeight) resHeight.textContent = lastHeight ? ('Height: '+fmt2(lastHeight.hM)+' m ('+fmt2(lastHeight.hFt)+' ft)') : 'Height: —';
+  var t=treeType ? treeType.value : '';
+  if(t==='Multi trunked tree' && lastMulti){
+    if(resEqCirc) resEqCirc.textContent='Equivalent circumference: '+fmt2(lastMulti.cEqM)+' m ('+fmt2(lastMulti.cEqFt)+' ft)';
+    if(resAvgCirc){ resAvgCirc.style.display=''; resAvgCirc.textContent='Average circumference (multi): '+fmt2(lastMulti.cAvgM)+' m ('+fmt2(lastMulti.cAvgFt)+' ft)'; }
+  } else if(t==='Single trunk tree' && lastSingle){
+    if(resEqCirc) resEqCirc.textContent='Entered circumference: '+fmt2(lastSingle.cM)+' m ('+fmt2(lastSingle.cFt)+' ft)';
+    if(resAvgCirc){ resAvgCirc.style.display='none'; resAvgCirc.textContent='Average circumference (multi): —'; }
+  } else {
+    if(resEqCirc) resEqCirc.textContent='Equivalent / Entered circumference: —';
+    if(resAvgCirc){ resAvgCirc.style.display=(t==='Multi trunked tree')?'':'none'; resAvgCirc.textContent='Average circumference (multi): —'; }
+  }
+  if(resSpread) resSpread.textContent = lastSpread ? ('Final canopy spread: '+fmt2(lastSpread.meanM)+' m ('+fmt2(lastSpread.meanFt)+' ft)') : 'Final canopy spread: —';
+}
+var copyHeight=byId('copyHeight'), copyEqCirc=byId('copyEqCirc'), copyAvgCirc=byId('copyAvgCirc'), copySpreadBtn=byId('copySpread');
+function updateCopyButtons(){
+  if(copyHeight) copyHeight.disabled=!(lastHeight&&Number.isFinite(lastHeight.hM));
+  var t=treeType ? treeType.value : '';
+  if(t==='Multi trunked tree'){
+    if(copyEqCirc) copyEqCirc.disabled=!(lastMulti&&Number.isFinite(lastMulti.cEqM));
+    if(copyAvgCirc) copyAvgCirc.disabled=!(lastMulti&&Number.isFinite(lastMulti.cAvgM));
+  } else if(t==='Single trunk tree'){
+    if(copyEqCirc) copyEqCirc.disabled=!(lastSingle&&Number.isFinite(lastSingle.cM));
+    if(copyAvgCirc) copyAvgCirc.disabled=true;
+  } else {
+    if(copyEqCirc) copyEqCirc.disabled=true;
+    if(copyAvgCirc) copyAvgCirc.disabled=true;
+  }
+  if(copySpreadBtn) copySpreadBtn.disabled=!(lastSpread&&Number.isFinite(lastSpread.meanM));
+}
+function copyText(txt,btn){
+  (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt)
+    : new Promise(function(res){ var t=document.createElement('input'); t.value=txt; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); res(); })
+  ).then(function(){
+    var o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(function(){ btn.textContent=o; },1200);
+  }).catch(function(){});
+}
+if(copyHeight)   copyHeight.onclick=function(){ if(lastHeight) copyText(fmt2(lastHeight.hM),copyHeight); };
+if(copyEqCirc)   copyEqCirc.onclick=function(){
+  var t=treeType ? treeType.value : '';
+  if(t==='Multi trunked tree'&&lastMulti) copyText(fmt2(lastMulti.cEqM),copyEqCirc);
+  if(t==='Single trunk tree'&&lastSingle) copyText(fmt2(lastSingle.cM),copyEqCirc);
+};
+if(copyAvgCirc)  copyAvgCirc.onclick=function(){ if(lastMulti) copyText(fmt2(lastMulti.cAvgM),copyAvgCirc); };
+if(copySpreadBtn)copySpreadBtn.onclick=function(){ if(lastSpread) copyText(fmt2(lastSpread.meanM),copySpreadBtn); };
+
+/* ---------------- Description / Share ---------------- */
+var treeNameInput=byId('treeName'), species=byId('species'), condition=byId('condition');
+var descBox=byId('desc'), genDesc=byId('genDesc'), copyDesc=byId('copyDesc'), shareBtn=byId('shareLink'), emailBtn=byId('emailBtn');
+
+function ensureOnDemand(){
+  if((treeType && treeType.value==='Multi trunked tree')){
+    var any=$all('#mt-list input').some(function(i){ return Number.isFinite(parseFloat(i.value)); });
+    if(any && !lastMulti) calcMulti();
+  }
+  var a=parseFloat(hAngle && hAngle.value), d=parseFloat(hDist && hDist.value), e=parseFloat(hEye && hEye.value);
+  if(Number.isFinite(a)&&Number.isFinite(d)&&Number.isFinite(e)&&!lastHeight) calcHeight();
+  if(!lastSpread && (Number.isFinite(parseFloat(spreadMajor && spreadMajor.value))||Number.isFinite(parseFloat(spreadMinor && spreadMinor.value)))) calcSpread();
+  if(treeType && treeType.value==='Single trunk tree' && !lastSingle && Number.isFinite(parseFloat(singleC && singleC.value))) recomputeSingle();
+}
+
+  function buildDescription(){
+  // helpers
+  var parts = [];
+  var add = (html) => { var d=document.createElement('div'); d.className='desc-section'; d.innerHTML=html; parts.push(d); };
+
+  // current basics
+  var name = (byId('treeName') && byId('treeName').value || '').trim();
+  var sp   = (byId('species')  && byId('species').value  || '').trim();
+  var cond = (byId('condition')&& byId('condition').value|| '').trim();
+  var type = (byId('treeType') && byId('treeType').value || '').trim();
+
+  // ---------- 1) General ----------
+  (function(){
+    var lines = [];
+    if (name) lines.push('<p><strong>Tree</strong>: '+escapeHtml(name)+'</p>');
+    if (sp)   lines.push('<p><strong>Species</strong>: '+escapeHtml(sp)+'</p>');
+    if (cond) lines.push('<p><strong>Condition</strong>: '+escapeHtml(cond)+'</p>');
+    if (type) lines.push('<p><strong>Type</strong>: '+escapeHtml(type)+'</p>');
+    if (lines.length) add(lines.join(''));
+  })();
+
+  // ---------- 2) Location (if saved) ----------
+  (function(){
+    var latEl=byId('lat'), lngEl=byId('lng'), accEl=byId('acc');
+    var latIn=parseFloat(latEl && latEl.value), lngIn=parseFloat(lngEl && lngEl.value);
+    if (!Number.isFinite(latIn) || !Number.isFinite(lngIn)) return;
+
+    var accIn=parseFloat(accEl && accEl.value);
+    var savedAlt=byId('loc-saved-alt'); 
+    var savedTs =byId('loc-saved-ts');
+    var altSaved = (savedAlt && savedAlt.dataset && savedAlt.dataset.val) ? parseFloat(savedAlt.dataset.val) : NaN;
+    var tsSaved  = (savedTs  && savedTs.dataset  && savedTs.dataset.ts ) ? parseInt(savedTs.dataset.ts,10) : NaN;
+    var locWhen  = Number.isFinite(tsSaved) ? new Date(tsSaved).toLocaleString() : nowLocal24();
+
+    // make a copy-friendly, clickable Maps URL
+    var mapsURL = 'https://maps.google.com/?q=' + latIn.toFixed(6) + ',' + lngIn.toFixed(6);
+
+    var html = ''
+      + '<p><strong>Location</strong></p>'
+      + '<ul>'
+      +   '<li>DD: '  + latIn.toFixed(6) + ', ' + lngIn.toFixed(6) + '</li>'
+      +   '<li>DMS: ' + toDMS(latIn, true) + '  |  ' + toDMS(lngIn, false) + '</li>'
+      +   '<li>Altitude: ' + (Number.isFinite(altSaved)? altSaved.toFixed(1)+' m' : '—') + '</li>'
+      +   '<li>Accuracy: ' + (Number.isFinite(accIn)? ('±'+accIn.toFixed(1)+' m') : '±—') + '</li>'
+      +   '<li>Recorded: ' + locWhen + '</li>'
+      +   '<li>Google Maps: <a href="'+mapsURL+'" target="_blank" rel="noopener">'+mapsURL+'</a></li>'
+      + '</ul>';
+    add(html);
+  })();
+
+  // ---------- 3) Circumference (Single / Multi) ----------
+  (function(){
+    var html = '';
+    if (type === 'Single trunk tree' && lastSingle){
+      html += '<p><strong>Circumference</strong></p>'
+           +  '<ul>'
+           +    '<li>Circumference: '+fmt2(lastSingle.cM)+' m ('+fmt2(lastSingle.cFt)+' ft)'
+           +    ' → Diameter: '+fmt2(lastSingle.dM)+' m ('+fmt2(lastSingle.dFt)+' ft)</li>'
+           +  '</ul>';
+    }
+    if (type === 'Multi trunked tree' && lastMulti){
+      var items = lastMulti.trunks.map(function(t){
+        var inner = 'T'+t.index+': '+fmt2(t.cM)+' m ('+fmt2(t.cFt)+' ft) → '+fmt2(t.dM)+' m ('+fmt2(t.dFt)+' ft)';
+        return '<li>'+(t.isLargest?('<strong>'+inner+'</strong>'):inner)+'</li>';
+      }).join('');
+      var dAvgM = lastMulti.cAvgM/PI, dAvgFt = mToFt(dAvgM);
+
+      html += '<p><strong>Individual trunks (circumference → diameter)</strong></p>'
+           +  '<ul>'+items+'</ul>'
+           +  '<p><strong>Full Tree Circumference (circumference → diameter)</strong></p>'
+           +  '<ul>'
+           +    '<li>Equivalent circumference: '+fmt2(lastMulti.cEqM)+' m ('+fmt2(lastMulti.cEqFt)+' ft)'
+           +      ' → '+fmt2(lastMulti.dEqM)+' m ('+fmt2(lastMulti.dEqFt)+' ft)</li>'
+           +    '<li>Average circumference: '+fmt2(lastMulti.cAvgM)+' m ('+fmt2(lastMulti.cAvgFt)+' ft)'
+           +      ' → '+fmt2(dAvgM)+' m ('+fmt2(dAvgFt)+' ft)</li>'
+           +  '</ul>';
+    }
+    if (html) add(html);
+  })();
+
+  // ---------- 4) Height ----------
+  (function(){
+    if (!lastHeight) return;
+    var html = ''
+      + '<p><strong>Height</strong></p>'
+      + '<ul>'
+      +   '<li>Tree height: '+fmt2(lastHeight.hM)+' m ('+fmt2(lastHeight.hFt)+' ft)</li>'
+      +   '<li>height = tan('+fmt1(lastHeight.angleDeg)+'°) × '+fmt2(lastHeight.dM)+' m + '
+      +      fmt2(lastHeight.eM)+' m = '+fmt2(lastHeight.hM)+' m ('+fmt2(lastHeight.hFt)+' ft)</li>'
+      + '</ul>';
+    add(html);
+  })();
+
+  // ---------- 5) Canopy ----------
+  (function(){
+    if (!lastSpread) return;
+    var html = ''
+      + '<p><strong>Canopy spread</strong></p>'
+      + '<ul>'
+      +   (Number.isFinite(lastSpread.majorM) ? '<li>Major: '+fmt2(lastSpread.majorM)+' m ('+fmt2(mToFt(lastSpread.majorM))+' ft)</li>' : '')
+      +   (Number.isFinite(lastSpread.minorM) ? '<li>Minor: '+fmt2(lastSpread.minorM)+' m ('+fmt2(mToFt(lastSpread.minorM))+' ft)</li>' : '')
+      +   '<li><strong>Final canopy spread: '+fmt2(lastSpread.meanM)+' m ('+fmt2(lastSpread.meanFt)+' ft)</strong></li>'
+      + '</ul>';
+    add(html);
+  })();
+
+  // ---------- 6) Notes ----------
+  (function(){
+    var nTxt = (notesEl && notesEl.value || '').trim();
+    if (!nTxt) return;
+    var lines = nTxt.split(/\n+/).map(function(line){
+      return '<li>'+escapeHtml(line)+'</li>';
+    }).join('');
+    add('<p><strong>Notes</strong></p><ul>'+lines+'</ul>');
+  })();
+
+  // ---------- 7) Observation ----------
+  (function(){
+    add('<p><strong>Observation</strong></p><ul><li>Recorded: '+nowLocal24()+'</li></ul>');
+  })();
+  // ---------- 8) Missing data notice ----------
+  (function(){
+    var miss = computeMissingBits();
+    if (!miss.length) return;
+    var html = '<p><strong>Missing</strong></p><ul>' +
+      miss.map(m => '<li>' + escapeHtml(m) + '</li>').join('') +
+      '</ul>';
+    add(html);
+  })();
+
+  // join & return
+  var out = document.createElement('div');
+  parts.forEach(function(p){ out.appendChild(p); });
+  return out.innerHTML;
+}
+
+function extractPlainText(container){
+  if (!container) return '';
+  // clone so we can transform anchors without touching the live DOM
+  var clone = container.cloneNode(true);
+
+  // Convert <a> tags to "text – URL" so the copied text includes links
+  Array.prototype.slice.call(clone.querySelectorAll('a')).forEach(function(a){
+    var url = a.getAttribute('href') || '';
+    var txt = a.textContent || url;
+    var span = document.createElement('span');
+    span.textContent = txt + (url ? ' – ' + url : '');
+    a.replaceWith(span);
+  });
+
+  // Gather bullets and paragraphs
+  var items = Array.prototype.slice.call(clone.querySelectorAll('li'))
+    .map(function(li){ return '- ' + li.textContent; });
+  var paras = Array.prototype.slice.call(clone.querySelectorAll('p'))
+    .map(function(p){ return p.textContent; });
+
+  return items.concat(paras).join('\n').trim();
+}
+
+// Plain-text twin of buildDescription(), same order/spacing
+function buildDescriptionText(){
+  const p = [];
+  const push = (s) => { if (s && s.trim()) p.push(s.trim()); };
+
+  const name = (byId('treeName')?.value || '').trim();
+  const sp   = (byId('species')?.value  || '').trim();
+  const cond = (byId('condition')?.value|| '').trim();
+  const type = (byId('treeType')?.value || '').trim();
+
+  // 1) General
+  (function(){
+    const lines = [];
+    if (name) lines.push(`Tree: ${name}`);
+    if (sp)   lines.push(`Species: ${sp}`);
+    if (cond) lines.push(`Condition: ${cond}`);
+    if (type) lines.push(`Type: ${type}`);
+    if (lines.length) push(lines.join('\n'));
+  })();
+
+  // 2) Location (if saved)
+  (function(){
+    const lat = parseFloat(byId('lat')?.value);
+    const lng = parseFloat(byId('lng')?.value);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    const acc    = parseFloat(byId('acc')?.value);
+    const altTag = byId('loc-saved-alt')?.dataset?.val;
+    const alt    = Number.isFinite(parseFloat(altTag)) ? parseFloat(altTag) : NaN;
+    const tsTag  = byId('loc-saved-ts')?.dataset?.ts;
+    const when   = Number.isFinite(parseInt(tsTag,10)) ? new Date(parseInt(tsTag,10)).toLocaleString() : nowLocal24();
+    const mapsURL= 
+      `https://maps.google.com/?q=${lat
+      .toFixed(6)},${lng.toFixed(6)}`;
+
+    const lines = [
+      `Location`,
+      `- DD: ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+      `- DMS: ${toDMS(lat,true)}  |  ${toDMS(lng,false)}`,
+      `- Altitude: ${Number.isFinite(alt) ? alt.toFixed(1)+' m' : '—'}`,
+      `- Accuracy: ${Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : '±—'}`,
+      `- Recorded: ${when}`,
+      `- Google Maps: ${mapsURL}`
+    ];
+    push(lines.join('\n'));
+  })();
+
+  // 3) Circumference
+  (function(){
+    let lines = [];
+    if (type === 'Single trunk tree' && lastSingle){
+      lines.push('Circumference');
+      lines.push(`- Circumference: ${fmt2(lastSingle.cM)} m (${fmt2(lastSingle.cFt)} ft) → Diameter: ${fmt2(lastSingle.dM)} m (${fmt2(lastSingle.dFt)} ft)`);
+    }
+    if (type === 'Multi trunked tree' && lastMulti){
+      lines.push('Individual trunks (circumference → diameter)');
+      lastMulti.trunks.forEach(t=>{
+        const core = `T${t.index}: ${fmt2(t.cM)} m (${fmt2(t.cFt)} ft) → ${fmt2(t.dM)} m (${fmt2(t.dFt)} ft)`;
+        lines.push(`- ${core}${t.isLargest ? ' (largest)' : ''}`);
+      });
+      const dAvgM = lastMulti.cAvgM/Math.PI, dAvgFt = mToFt(dAvgM);
+      lines.push('Full Tree Circumference (circumference → diameter)');
+      lines.push(`- Equivalent circumference: ${fmt2(lastMulti.cEqM)} m (${fmt2(lastMulti.cEqFt)} ft) → ${fmt2(lastMulti.dEqM)} m (${fmt2(lastMulti.dEqFt)} ft)`);
+      lines.push(`- Average circumference: ${fmt2(lastMulti.cAvgM)} m (${fmt2(lastMulti.cAvgFt)} ft) → ${fmt2(dAvgM)} m (${fmt2(dAvgFt)} ft)`);
+    }
+    if (lines.length) push(lines.join('\n'));
+  })();
+
+  // 4) Height
+  (function(){
+    if (!lastHeight) return;
+    const lines = [
+      'Height',
+      `- Tree height: ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`,
+      `- height = tan(${fmt1(lastHeight.angleDeg)}°) × ${fmt2(lastHeight.dM)} m + ${fmt2(lastHeight.eM)} m = ${fmt2(lastHeight.hM)} m (${fmt2(lastHeight.hFt)} ft)`
+    ];
+    push(lines.join('\n'));
+  })();
+
+  // 5) Canopy
+  (function(){
+    if (!lastSpread) return;
+    const lines = ['Canopy spread'];
+    if (Number.isFinite(lastSpread.majorM)) lines.push(`- Major: ${fmt2(lastSpread.majorM)} m (${fmt2(mToFt(lastSpread.majorM))} ft)`);
+    if (Number.isFinite(lastSpread.minorM)) lines.push(`- Minor: ${fmt2(lastSpread.minorM)} m (${fmt2(mToFt(lastSpread.minorM))} ft)`);
+    lines.push(`- Final canopy spread: ${fmt2(lastSpread.meanM)} m (${fmt2(lastSpread.meanFt)} ft)`);
+    push(lines.join('\n'));
+  })();
+
+  // 6) Notes
+  (function(){
+    const nTxt = (byId('notes')?.value || '').trim();
+    if (!nTxt) return;
+    const lines = ['Notes'].concat(
+      nTxt.split(/\n+/).map(line => `- ${line}`)
+    );
+    push(lines.join('\n'));
+  })();
+
+  // 7) Observation
+  (function(){
+    push(['Observation', `- Recorded: ${nowLocal24()}`].join('\n'));
+  })();
+
+  // join sections with a blank line between
+  return p.join('\n\n') + '\n';
+}
+  
+function generateDescription(){
+  ensureOnDemand();
+
+  // 1) Build and render the HTML (what you see in-app)
+  var html = buildDescription();
+  if (descBox) descBox.innerHTML = html || '—';
+
+  // 2) Build the plain-text twin for email/copy (identical order & spacing)
+  var text = buildDescriptionText();
+
+  // Enable/disable controls
+  var hasContent = !!html;
+  if (copyDesc) copyDesc.disabled = !hasContent;
+  if (shareBtn) shareBtn.disabled = !hasContent;
+
+  // 3) Email: use the plain-text twin verbatim (mailto only supports plain text)
+  if (emailBtn){
+    if (hasContent){
+      var nm = (byId('treeName')?.value || '').trim();
+      var subject = 'ARA Field Nomination' + (nm ? ' – ' + nm : '');
+      emailBtn.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+      emailBtn.removeAttribute('aria-disabled');
+    } else {
+      emailBtn.setAttribute('aria-disabled','true');
+      emailBtn.href = '#';
+    }
+  }
+
+  // 4) Save after generation
+  saveState();
+}
+
+var genDescBtn=byId('genDesc');
+if(genDescBtn) genDescBtn.onclick=generateDescription;
+if(copyDesc) copyDesc.onclick=function(){
+  var html=descBox && descBox.innerHTML ? descBox.innerHTML.trim() : '';
+  if(!html||html==='—') return;
+  var text=extractPlainText(descBox);
+  copyText(text, copyDesc);
+};
+
+  /* ---------- Global accuracy indicator helpers ---------- */
+function accBucket(m){
+  // returns one of: 'red' (off), 'grey' (low), 'amber' (medium), 'green' (high)
+  if(!Number.isFinite(m)) return 'grey';           // use grey for "no fix yet" while running
+  if(m <= 5)   return 'green';
+  if(m < 20)   return 'amber';
+  return 'grey';
+}
+function paintGlobalAcc(accMeters, opts){
+  // opts: { state: 'off'|'nofix'|'ok' }  (controls red vs bucket color)
+  var pill = document.getElementById('acc-pill-global');
+  var dot  = document.getElementById('loc-tab-dot');
+  if(!pill || !dot) return;
+
+  var state = (opts && opts.state) || 'ok';
+  var text  = '±— m';
+  var cls   = 'acc-red'; // default to red only for 'off'
+
+  if(state === 'off'){
+    text = '±— m';
+    cls  = 'acc-red';
+  } else if(state === 'nofix'){
+    text = '±— m';
+    cls  = 'acc-grey';
+  } else {
+    // ok → bucket by value
+    var bucket = accBucket(accMeters);
+    cls = 'acc-' + bucket;
+    text = Number.isFinite(accMeters) ? ('±' + (accMeters.toFixed(1)) + ' m') : '±— m';
+  }
+
+  // reset classes (keep base class)
+  pill.className = 'acc-pill ' + cls;
+  dot.className  = 'acc-dot ' + cls;
+
+  pill.textContent = text;
+
+  // accessibility
+  var label =
+    state === 'off'   ? 'Location accuracy: tracking off'
+  : state === 'nofix' ? 'Location accuracy: no fix yet'
+  : cls === 'acc-green' ? 'Location accuracy: high'
+  : cls === 'acc-amber' ? 'Location accuracy: medium'
+  : 'Location accuracy: low';
+  dot.setAttribute('aria-label', label);
+  pill.setAttribute('aria-label', label);
+}
+
+/* ---------------- Location tracker + map (scoped) ---------------- */
+(function(){
+  function el(s){ return document.querySelector(s); }
+
+  // Controls
+  var bToggle = el('#loc-toggle');
+  var tHiAcc  = el('#loc-hiacc');
+  var tSaver  = el('#loc-saver');
+
+  // Recent readouts
+  var outDD   = el('#loc-recent-dd');
+  var outAcc  = el('#loc-recent-acc');
+  var outAlt  = el('#loc-recent-alt');
+  var outAge  = el('#loc-recent-age');
+  var outCnt  = el('#loc-samples');
+
+  // Best readouts
+  var bestDD    = el('#loc-best-dd');
+  var bestAcc   = el('#loc-best-acc');
+  var bestAlt   = el('#loc-best-alt');
+  var bestTime  = el('#loc-best-time');
+  var bestBadge = el('#loc-best-badge');
+
+  // Action buttons
+  var bUseRecent = el('#loc-use-recent');
+  var bUseBest   = el('#loc-use-best');
+  var bReset     = el('#loc-reset');
+
+  // Hidden storage for description
+  var latEl = el('#lat'), lngEl = el('#lng'), accEl = el('#acc');
+  var savedAlt = el('#loc-saved-alt');
+  var savedTs  = el('#loc-saved-ts');
+
+  // Map refs
+  var map, tiles, recentMarker, bestMarker, accCircle;
+
+  function ensureMap() {
+    if (map || !window.L) return;
+    map = L.map('loc-map', { zoomControl:true, attributionControl:false }).setView([53.5444, -113.4909], 11);
+    tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
+  }
+
+  // Expose a safe dimmer for the tiles so other code can call it
+window.mapSetDim = function(dim){
+  try{
+    if (tiles && typeof tiles.setOpacity === 'function'){
+      tiles.setOpacity(dim ? 0.4 : 1.0);
+    }
+  }catch(e){}
+};
+
+  function updateRecentOnMap() {
+    if (!map) return;
+    if (!recent) {
+      if (recentMarker) { map.removeLayer(recentMarker); recentMarker=null; }
+      if (accCircle)    { map.removeLayer(accCircle);    accCircle=null; }
+      return;
+    }
+    var latlng=[recent.lat,recent.lng];
+    if (!recentMarker) { recentMarker=L.marker(latlng,{title:'Recent fix'}).addTo(map); }
+    else { recentMarker.setLatLng(latlng); }
+    if (Number.isFinite(recent.acc)) {
+      if (!accCircle) {
+        accCircle=L.circle(latlng,{radius:recent.acc,color:'#5aa0ff',fillColor:'#5aa0ff',fillOpacity:0.15,weight:1}).addTo(map);
+      } else { accCircle.setLatLng(latlng).setRadius(recent.acc); }
+    } else if (accCircle) { map.removeLayer(accCircle); accCircle=null; }
+  }
+  function updateBestOnMap() {
+    if (!map) return;
+    if (!best) { if (bestMarker){ map.removeLayer(bestMarker); bestMarker=null; } return; }
+    var latlng=[best.lat,best.lng];
+    if (!bestMarker) { bestMarker=L.marker(latlng,{title:'Best fix'}).addTo(map); }
+    else { bestMarker.setLatLng(latlng); }
+  }
+  function fitToAny(){
+    if(!map) return;
+    var pts=[]; if(recent) pts.push([recent.lat,recent.lng]); if(best) pts.push([best.lat,best.lng]);
+    if(!pts.length) return;
+    if(pts.length===1) map.setView(pts[0],16); else map.fitBounds(pts,{padding:[24,24]});
+  }
+
+  // State
+  var watchId = null;
+  var saver = false;
+  var hiacc = false;
+  var lastTick = 0;
+  var samples = 0;
+  var recent = null; // {lat,lng,acc,alt,ts}
+  var best   = null; // minimal acc
+  var ageTimer = null;
+
+  // Paint global indicator from "running but no best yet" vs "not running/no saved"
+if (best && Number.isFinite(best.acc)){
+  paintGlobalAcc(best.acc, { state: 'ok' });
+} else {
+  // no best yet
+  if (watchId != null){
+    paintGlobalAcc(NaN, { state: 'nofix' });
+  } else {
+    // if we have a saved best in autosave, the load phase handles it; otherwise off
+    var savedTs = (document.getElementById('loc-saved-ts') && document.getElementById('loc-saved-ts').dataset && document.getElementById('loc-saved-ts').dataset.ts) || '';
+    if (savedTs) {
+      // leave as-is; set during load or best update will override
+    } else {
+      paintGlobalAcc(NaN, { state: 'off' });
+    }
+  }
+}
+
+  // --- export/import runtime for autosave ---
+window.locExportRuntime = function () {
+  return { recent, best, samples };
+};
+window.locImportRuntime = function (data) {
+  if (!data) return;
+  recent  = data.recent  || null;
+  best    = data.best    || null;
+  samples = data.samples || 0;
+  updateRecentUI();
+  updateBestUI(false);
+  ensureMap(); fitToAny();
+};
+
+  // Utilities
+  var fmt6 = function(v){ return Number.isFinite(v) ? v.toFixed(6) : '—'; };
+  var fmt1a = function(v){ return Number.isFinite(v) ? v.toFixed(1) : '—'; };
+  function accClass(m){ return !Number.isFinite(m) ? 'acc-grey' : (m>=20 ? 'acc-grey' : (m>5 ? 'acc-amber' : 'acc-green')); }
+
+  function setRunningUI(running){
+    if (!bToggle) return;
+    if (running){ bToggle.textContent='Stop tracking'; bToggle.classList.add('running'); }
+    else        { bToggle.textContent='Start tracking'; bToggle.classList.remove('running'); }
+  }
+
+  function setSaveChoice(which){ // 'recent' | 'best' | null
+    if (bUseRecent) bUseRecent.classList.toggle('active', which==='recent');
+    if (bUseBest)   bUseBest.classList.toggle('active', which==='best');
+  }
+
+  function updateRecentUI() {
+    if (recent){
+      if(outDD)  outDD.textContent  = 'DD: '+fmt6(recent.lat)+', '+fmt6(recent.lng);
+      if(outAcc){
+        outAcc.textContent = '±' + fmt1a(recent.acc) + ' m';
+        outAcc.className='acc-chip '+accClass(recent.acc); 
+      }
+      if(outAlt) outAlt.textContent = Number.isFinite(recent.alt) ? fmt1a(recent.alt)+' m' : '—';
+
+      if (ageTimer) clearInterval(ageTimer);
+      ageTimer = setInterval(function(){
+        var secs = Math.max(0, (Date.now() - recent.ts)/1000);
+        if(outAge) outAge.textContent = secs.toFixed(1)+' s';
+      }, 200);
+
+      if(bUseRecent) bUseRecent.disabled = false;
+    } else {
+      if(outDD)  outDD.textContent  = 'DD: —';
+      if(outAcc){ outAcc.textContent = '—'; outAcc.className='acc-chip acc-grey'; }
+      if(outAlt) outAlt.textContent = '—';
+      if(outAge) outAge.textContent = '—';
+      if(bUseRecent) bUseRecent.disabled = true;
+    }
+    if(outCnt) outCnt.textContent = String(samples);
+
+    ensureMap();
+    updateRecentOnMap();
+    fitToAny();
+  }
+
+  function updateBestUI(isNew){
+    if (best){
+      if(bestDD)  bestDD.textContent  = 'DD: '+fmt6(best.lat)+', '+fmt6(best.lng);
+      if(bestAcc){ 
+                  bestAcc.textContent = '±' + fmt1a(best.acc) + ' m';
+                  bestAcc.className='acc-chip '+accClass(best.acc); 
+                 }
+      if(bestAlt){ bestAlt.textContent = Number.isFinite(best.alt) ? fmt1a(best.alt)+' m' : '—'; bestAlt.dataset.val = Number.isFinite(best.alt) ? String(best.alt) : ''; }
+      if(bestTime){ bestTime.textContent=new Date(best.ts).toLocaleString(); bestTime.dataset.ts=String(best.ts); }
+      if(bUseBest) bUseBest.disabled=false;
+    } else {
+      if(bestDD)  bestDD.textContent  = 'DD: —';
+      if(bestAcc){ bestAcc.textContent = '—'; bestAcc.className='acc-chip acc-grey'; }
+      if(bestAlt){ bestAlt.textContent = '—'; bestAlt.dataset.val = ''; }
+      if(bestTime){ bestTime.textContent='—'; bestTime.dataset.ts=''; }
+      if(bUseBest) bUseBest.disabled=true;
+    }
+    if(bestBadge) bestBadge.style.display = isNew ? '' : 'none';
+    if (isNew && bestBadge) setTimeout(function(){ bestBadge.style.display='none'; },1200);
+
+    ensureMap();
+    updateBestOnMap();
+    fitToAny();
+
+    // Update global header pill & tab dot based on BEST
+if (best && Number.isFinite(best.acc)){
+  paintGlobalAcc(best.acc, { state: 'ok' });
+}
+
+  }
+
+  function handlePosition(pos) {
+    var c = pos.coords;
+    var now = Date.now();
+    if (saver && now - lastTick < 1500) return; // throttle in saver mode
+    lastTick = now;
+
+    var fix = {
+      lat: c.latitude,
+      lng: c.longitude,
+      acc: c.accuracy,
+      alt: Number.isFinite(c.altitude) ? c.altitude : null,
+      ts: now
+    };
+    samples++;
+    recent = fix;
+    updateRecentUI();
+
+    if (!best || (Number.isFinite(fix.acc) && fix.acc < best.acc)) {
+      best = {lat:fix.lat,lng:fix.lng,acc:fix.acc,alt:fix.alt,ts:fix.ts};
+      updateBestUI(true);
+    }
+  }
+
+  function handleError(err) { console.warn('Geolocation error', err); }
+
+function start() {
+  if (watchId != null) return;
+  // Saver = allow cached fixes a bit & be more patient
+  var opts = {
+    enableHighAccuracy: hiacc,
+    maximumAge: saver ? 15000 : 0,     // up to 15s old when saving battery
+    timeout:    saver ? 30000 : 20000  // a little longer timeout
+  };
+  watchId = (navigator.geolocation && navigator.geolocation.watchPosition)
+    ? navigator.geolocation.watchPosition(handlePosition, handleError, opts)
+    : null;
+  setRunningUI(true);
+  // Reflect that we're now running; show best if we already had one
+if (typeof paintGlobalAcc === 'function') {
+  if (best && Number.isFinite(best.acc)) {
+    paintGlobalAcc(best.acc, { state: 'ok' });
+  } else {
+    paintGlobalAcc(NaN, { state: 'nofix' });
+  }
+}
+
+}
+
+
+  function stop() {
+    if (watchId != null && navigator.geolocation && navigator.geolocation.clearWatch) {
+      navigator.geolocation.clearWatch(watchId);
+    }
+    watchId = null;
+    setRunningUI(false);
+
+    // if we already have a best, show it; else "off"
+if (best && Number.isFinite(best.acc)){
+  paintGlobalAcc(best.acc, { state: 'ok' });
+} else {
+  paintGlobalAcc(NaN, { state: 'off' });
+}
+
+  }
+
+  function resetAll() {
+    stop();
+    samples = 0;
+    recent = null; best = null;
+    if (ageTimer) { clearInterval(ageTimer); ageTimer=null; }
+    updateRecentUI(); updateBestUI(false);
+  }
+
+function applyFixToHidden(fix){
+  if (!fix) return;
+  if(latEl) latEl.value = fix.lat.toFixed(6);
+  if(lngEl) lngEl.value = fix.lng.toFixed(6);
+  if(accEl) accEl.value = Number.isFinite(fix.acc) ? fix.acc.toFixed(1) : '';
+  if(savedAlt && savedAlt.dataset) savedAlt.dataset.val = Number.isFinite(fix.alt) ? String(fix.alt) : '';
+  if(savedTs  && savedTs.dataset)  savedTs.dataset.ts   = String(fix.ts || Date.now());
+  if (typeof saveState === 'function') saveState();
+
+  // NEW: immediately rebuild description & key measurements
+  if (typeof refreshResultsView === 'function') refreshResultsView();
+}
+
+
+  if(bToggle) bToggle.addEventListener('click', function(){ if (watchId == null) start(); else stop(); });
+if(tHiAcc)  tHiAcc.addEventListener('click',  function(){
+  hiacc=!hiacc;
+  tHiAcc.classList.toggle('active',hiacc);
+  tHiAcc.setAttribute('aria-pressed',String(hiacc));
+
+  if (watchId!=null){ 
+    stop(); 
+    start(); 
+  }
+
+  // NEW: immediately reflect the best-known accuracy in the header pill
+  if (typeof paintGlobalAcc === 'function') {
+    if (best && Number.isFinite(best.acc)) {
+      paintGlobalAcc(best.acc, { state: 'ok' });
+    } else if (recent && Number.isFinite(recent.acc)) {
+      paintGlobalAcc(recent.acc, { state: 'ok' });
+    } else {
+      paintGlobalAcc(NaN, { state: 'off' }); // nothing saved yet
+    }
+  }
+});
+
+  if (tSaver) tSaver.addEventListener('click', function () {
+  saver = !saver;
+  tSaver.classList.toggle('active', saver);
+  tSaver.setAttribute('aria-pressed', String(saver));
+
+  if (watchId != null) {
+    stop();
+    start();
+  }
+
+  // keep the pill/dot reflecting the best we know
+  if (typeof paintGlobalAcc === 'function') {
+    if (best && Number.isFinite(best.acc)) {
+      paintGlobalAcc(best.acc, { state: 'ok' });
+    } else if (recent && Number.isFinite(recent.acc)) {
+      paintGlobalAcc(recent.acc, { state: 'ok' });
+    } else {
+      // running but no fix yet (after restart)
+      paintGlobalAcc(NaN, { state: 'nofix' });
+    }
+  }
+});
+
+  if(bUseRecent) bUseRecent.addEventListener('click', function(){ applyFixToHidden(recent); setSaveChoice('recent'); });
+  if(bUseBest)   bUseBest  .addEventListener('click', function(){ applyFixToHidden(best);   setSaveChoice('best'); });
+  if(bReset)     bReset    .addEventListener('click', function(){ resetAll(); setSaveChoice(null); });
+
+  var mtr = byId('map-to-recent'), mtb = byId('map-to-best');
+  if(mtr) mtr.addEventListener('click', function(){ ensureMap(); if (recent) map.setView([recent.lat, recent.lng], 18); });
+  if(mtb) mtb.addEventListener('click', function(){ ensureMap(); if (best)   map.setView([best.lat, best.lng], 18); });
+
+  var locTab = document.querySelector('[data-tab="loc"]');
+  if(locTab) locTab.addEventListener('click', ensureMap);
+
+  setRunningUI(false);
+  updateRecentUI();
+  updateBestUI(false);
+})();
+
+  (function(){
+  function goToLocationTab(){
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+    tabs.forEach(function(t){ t.classList.remove('active'); });
+    var locTab = document.querySelector('.tab[data-tab="loc"]');
+    if(locTab) locTab.classList.add('active');
+
+    Array.prototype.slice.call(document.querySelectorAll('.tabpane'))
+      .forEach(function(p){ p.classList.remove('active'); });
+
+    var pane = document.getElementById('pane-loc');
+    if(pane) pane.classList.add('active');
+
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  var pill = document.getElementById('acc-pill-global');
+  var dot  = document.getElementById('loc-tab-dot');
+  if(pill) pill.addEventListener('click', goToLocationTab);
+  if(dot)  dot.addEventListener('click', goToLocationTab);
+})();
+// Make the header accuracy pill and tab dot clickable (opens location tab)//
+
+/* ---------------- Autosave (core, hardened) ---------------- */
+var SAVE_KEY = 'ara_field_v1';
+
+function getFormState(){
+  try {
+    return {
+      inputUnit: inputUnit, calcMode: calcMode,
+      basics: {
+        name:      byId('treeName')?.value || '',
+        species:   byId('species')?.value || '',
+        condition: byId('condition')?.value || '',
+        type:      byId('treeType')?.value || ''
+      },
+      singleC: byId('singleC')?.value || '',
+      multi:   { values: $all('#mt-list input[type="number"]').map(i => i.value || '') },
+      height:  { angle: byId('h-angle')?.value || '', dist: byId('h-dist')?.value || '', eye: byId('h-eye')?.value || '' },
+      spread:  { major: byId('spreadMajor')?.value || '', minor: byId('spreadMinor')?.value || '' },
+      notes:   byId('notes')?.value || '',
+      location: {
+        lat: byId('lat')?.value || '',
+        lng: byId('lng')?.value || '',
+        acc: byId('acc')?.value || '',
+        alt: (byId('loc-saved-alt')?.dataset?.val) || '',
+        ts:  (byId('loc-saved-ts')?.dataset?.ts)  || ''
+      },
+      // NEW: persist the computed results as plain JSON
+      results: {
+        lastHeight: lastHeight || null,
+        lastSingle: lastSingle || null,
+        lastMulti:  lastMulti  || null,
+        lastSpread: lastSpread || null
+      },
+      // NEW: persist what the location cards/map show
+      locRuntime: (typeof window.locExportRuntime === 'function') ? window.locExportRuntime() : null,
+      desc: (byId('desc') && byId('desc').innerHTML && byId('desc').innerHTML !== '—') ? byId('desc').innerHTML : ''
+    };
+  } catch(e){ console.warn('getFormState failed', e); return null; }
+}
+
+function setFormState(st){
+  try{
+    if(!st) return;
+    if(st.inputUnit && st.inputUnit !== inputUnit) setUnit(st.inputUnit);
+    if(st.calcMode  && st.calcMode  !== calcMode)  setCalcMode(st.calcMode);
+
+    byId('treeName')  && (byId('treeName').value  = st.basics?.name || '');
+    byId('species')   && (byId('species').value   = st.basics?.species || '');
+    byId('condition') && (byId('condition').value = st.basics?.condition || '');
+    byId('treeType')  && (byId('treeType').value  = st.basics?.type || '');
+    updateTypeVisibility();
+
+    byId('singleC') && (byId('singleC').value = st.singleC || '');
+
+    if(byId('mt-list')){
+      var list=byId('mt-list'); list.innerHTML='';
+      var vals=(st.multi && Array.isArray(st.multi.values)) ? st.multi.values : [];
+      if(vals.length){ vals.forEach(v => addMtRow(v)); } else { addMtRow(); addMtRow(); }
+    }
+
+    byId('h-angle') && (byId('h-angle').value = st.height?.angle || '');
+    byId('h-dist')  && (byId('h-dist').value  = st.height?.dist  || '');
+    byId('h-eye')   && (byId('h-eye').value   = st.height?.eye   || '');
+
+    byId('spreadMajor') && (byId('spreadMajor').value = st.spread?.major || '');
+    byId('spreadMinor') && (byId('spreadMinor').value = st.spread?.minor || '');
+
+    if(byId('notes')){ byId('notes').value = st.notes || ''; autoGrow(byId('notes')); }
+
+    if(st.location){
+      byId('lat') && (byId('lat').value = st.location.lat || '');
+      byId('lng') && (byId('lng').value = st.location.lng || '');
+      byId('acc') && (byId('acc').value = st.location.acc || '');
+      var sa=byId('loc-saved-alt'); sa?.dataset && (sa.dataset.val = st.location.alt || '');
+      var stp=byId('loc-saved-ts'); stp?.dataset && (stp.dataset.ts  = st.location.ts  || '');
+    }
+
+    if(byId('desc')){
+      if(st.desc){ byId('desc').innerHTML = st.desc; copyDesc?.removeAttribute('disabled'); shareBtn?.removeAttribute('disabled'); }
+      else { byId('desc').innerHTML = '—'; copyDesc?.setAttribute('disabled',''); shareBtn?.setAttribute('disabled',''); }
+    }
+// NEW: restore computed results (so Final measurements show immediately)
+if (st.results) {
+  lastHeight = st.results.lastHeight ?? null;
+  lastSingle = st.results.lastSingle ?? null;
+  lastMulti  = st.results.lastMulti  ?? null;
+  lastSpread = st.results.lastSpread ?? null;
+}
+
+// NEW: restore the Location cards + map markers
+if (st.locRuntime && typeof window.locImportRuntime === 'function') {
+  window.locImportRuntime(st.locRuntime);
+  // NEW: ensure global pill reflects restored runtime (even if hidden inputs are blank)
+if (typeof paintGlobalAcc === 'function') {
+  var b = st.locRuntime && st.locRuntime.best;
+  var r = st.locRuntime && st.locRuntime.recent;
+  if (b && Number.isFinite(b.acc)) {
+    paintGlobalAcc(b.acc, { state:'ok' });
+  } else if (r && Number.isFinite(r.acc)) {
+    paintGlobalAcc(r.acc, { state:'ok' });
+  } else {
+    // we have no fix in autosave; leave it 'off' until user starts tracking
+    paintGlobalAcc(NaN, { state:'off' });
+  }
+}
+}
+
+    updateResultsPanel(); updateCopyButtons();
+      updateKeyMeasurementsBox();
+  generateDescription();
+    
+  } catch(e){ console.warn('setFormState failed', e); }
+}
+function saveState(){
+  try{
+    var st = getFormState();
+    if (st) localStorage.setItem(SAVE_KEY, JSON.stringify(st));
+  }catch(e){ console.warn('saveState failed', e); }
+}
+function loadState(){
+  try{
+    var raw = localStorage.getItem(SAVE_KEY);
+    if(!raw){
+      if(byId('treeType')?.value==='Multi trunked tree' && byId('mt-list') && byId('mt-list').children.length===0){ addMtRow(); addMtRow(); }
+      return;
+    }
+    setFormState(JSON.parse(raw));
+  }catch(e){ console.warn('loadState failed', e); }
+}
+
+var _asTimer = null;
+function autoSaveSoon(){
+  try{
+    if (_asTimer) clearTimeout(_asTimer);
+    _asTimer = setTimeout(function(){
+      if (!window.ARA_RESETTING) saveState();
+    }, 250);
+  }catch(e){ console.warn('autoSaveSoon failed', e); }
+}
+  
+/* ---------------- Connectivity card (online/offline) ---------------- */
+/* Paint “Connectivity” card + map hint */
+function connNowISO(){
+  var d=new Date(); var p=n=>String(n).padStart(2,'0');
+  return p(d.getHours())+':'+p(d.getMinutes());
+}
+
+function setConnUI(isOnline){
+  var card   = document.getElementById('conn-card');
+  var label  = document.getElementById('conn-label');
+  var when   = document.getElementById('conn-checked');
+  var mapWarn= document.getElementById('map-offline-card');
+
+  if(!card || !label || !when) return;
+
+  // Border color via state class
+  card.classList.remove('conn-online','conn-offline');
+  card.classList.add(isOnline ? 'conn-online' : 'conn-offline');
+
+  // Text + timestamp
+  when.textContent = connNowISO();
+  if(isOnline){
+    label.textContent = 'You’re online. Map tiles stream normally and email/share are enabled.';
+  }else{
+    label.textContent = 'You’re offline. GPS still works; map tiles you’ve already viewed may still appear.';
+  }
+
+  // Map visual: dim tiles + show/hide offline card
+  try{
+    if(typeof window.mapSetDim === 'function') window.mapSetDim(!isOnline);
+  }catch(e){}
+
+  if(mapWarn){
+    mapWarn.style.display = isOnline ? 'none' : '';
+  }
+}
+
+/* --- Robust connectivity probe for Android WebView / airplane mode --- */
+/* Lightweight image probe (CORS-free). If it loads within timeout, we're online. */
+function probeOnline(timeout = 2500){
+  return new Promise((resolve) => {
+    let settled = false;
+    const img = new Image();
+    const done = (ok) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(t);
+      img.onload = img.onerror = null;
+      resolve(ok);
+    };
+    const t = setTimeout(() => done(false), timeout);
+    img.onload  = () => done(true);
+    img.onerror = () => done(false);
+    img.src = 'https://tile.openstreetmap.org/0/0/0.png?cb=' + Date.now(); // cache-buster
+  });
+}
+
+/* Active check: consider ONLINE only if navigator.onLine AND probe say true */
+async function checkConnectivity(_reason){
+  const basic = (navigator.onLine === true);
+  let probeOK = false;
+  try { probeOK = await probeOnline(); } catch { probeOK = false; }
+  const isOnline = basic && probeOK;
+  setConnUI(isOnline);
+  return isOnline;
+}
+
+/* Foreground polling control (paused when hidden) */
+let _connTimer = null;
+function startConnPolling(){
+  if (_connTimer) return;
+  _connTimer = setInterval(() => checkConnectivity('poll'), 15000);
+}
+function stopConnPolling(){
+  if (_connTimer){ clearInterval(_connTimer); _connTimer = null; }
+}
+
+/* Single public init: call this ONCE from your existing DOMContentLoaded */
+function initConnectivity(){
+  // Button click
+  var btn = document.getElementById('conn-recheck');
+  if(btn) btn.addEventListener('click', function(){ checkConnectivity('manual'); });
+
+  // OS/network events
+  window.addEventListener('online',  function(){ checkConnectivity('online-event');  });
+  window.addEventListener('offline', function(){ checkConnectivity('offline-event'); });
+
+  // Pause/resume polling on tab visibility
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) stopConnPolling();
+    else { startConnPolling(); checkConnectivity('visible'); }
+  });
+
+  // First paint + start polling
+  checkConnectivity('startup');
+  startConnPolling();
+}
+
+
+  /* ---------------- Reset form (safe) ---------------- */
+  var resetFormResults = byId('resetFormResults');
+  if (resetFormResults){
+    resetFormResults.onclick = function(){
+      window.ARA_RESETTING = true;
+      try{
+        if (_asTimer) clearTimeout(_asTimer);
+        localStorage.setItem(SAVE_KEY, JSON.stringify({ inputUnit: inputUnit, calcMode: calcMode }));
+      }catch(e){ /* ignore */ }
+      // Hard refresh to clear any transient runtime state
+      location.replace(location.href.split('#')[0]);
+    };
+  }
+  byId('treeName')?.addEventListener('input', function(){
+  if (typeof updateKeyMeasurementsBox === 'function') updateKeyMeasurementsBox();
+});
+  
+  // Connectivity: wire up events + initial check
+initConnectivity();
+  wireAutosaveInputs();
+
+</script>
+<script>
+(function requestLocationOnceBridgeIsReady(){
+  const cap = window.Capacitor;
+  const geo = cap?.Plugins?.Geolocation;
+
+  if (!cap || !geo) {
+    // Bridge/plugins not injected yet; try again shortly (typical on first paint)
+    return setTimeout(requestLocationOnceBridgeIsReady, 150);
+  }
+  if (!cap.isNativePlatform || !cap.isNativePlatform()) {
+    // Running in a browser preview, not the app—Android dialog won’t appear here
+    return;
+  }
+
+  (async () => {
+    try {
+      const s = await geo.checkPermissions();
+      if (s.location !== 'granted') {
+        await geo.requestPermissions(); // should trigger Android’s dialog
+      }
+      // Optional: immediately poke the API to ensure runtime path executed:
+      // await geo.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+    } catch (e) {
+      console.warn('Location permission flow failed:', e);
+    }
+  })();
+})();
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+    try { loadState?.(); } catch(e) { console.warn(e); }
+  });
+</script>
+</body>
+</html>
