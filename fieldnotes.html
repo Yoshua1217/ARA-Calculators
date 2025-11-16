@@ -146,7 +146,6 @@
       color:var(--danger-soft);
       background:transparent;
     }
-
     .btn-danger-outline.flash{
       animation:flash-red 250ms ease-out;
     }
@@ -209,7 +208,6 @@
       cursor:pointer;
     }
 
-    /* Image overlay */
     .overlay{
       position:fixed;
       inset:0;
@@ -218,9 +216,6 @@
       align-items:center;
       justify-content:center;
       z-index:50;
-    }
-    .overlay.hidden{
-      display:none;
     }
     .overlay-inner{
       max-width:92vw;
@@ -334,8 +329,10 @@
       margin-left:2px;
       cursor:pointer;
     }
+
+    /* Reusable hidden helper */
     .hidden{
-      display:none;
+      display:none !important;
     }
 
     /* Reset confirm modal */
@@ -474,445 +471,421 @@
   </div>
 
   <script>
-    /* ---------- Small helpers ---------- */
-    function byId(id){ return document.getElementById(id); }
-    function nowLocalPretty(){
-      const d=new Date();
-      const pad=n=>String(n).padStart(2,'0');
-      return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
-    }
-    function fmtTime(ms){
-      const total = Math.floor(ms/1000);
-      const m = Math.floor(total/60);
-      const s = total%60;
-      return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-    }
-    function copyToClipboard(txt){
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        return navigator.clipboard.writeText(txt);
+    document.addEventListener('DOMContentLoaded', function(){
+      /* ----- helpers ----- */
+      function byId(id){ return document.getElementById(id); }
+      function nowLocalPretty(){
+        const d=new Date(); const pad=n=>String(n).padStart(2,'0');
+        return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
       }
-      return new Promise(function(resolve){
-        const t=document.createElement('textarea');
-        t.value=txt;
-        t.style.position='fixed';
-        t.style.opacity='0';
-        document.body.appendChild(t);
-        t.select();
-        document.execCommand('copy');
-        t.remove();
-        resolve();
-      });
-    }
+      function fmtTime(ms){
+        const total=Math.floor(ms/1000);
+        const m=Math.floor(total/60);
+        const s=total%60;
+        return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+      }
+      function copyToClipboard(txt){
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          return navigator.clipboard.writeText(txt);
+        }
+        return new Promise(function(resolve){
+          const t=document.createElement('textarea');
+          t.value=txt;
+          t.style.position='fixed';
+          t.style.opacity='0';
+          document.body.appendChild(t);
+          t.select();
+          document.execCommand('copy');
+          t.remove();
+          resolve();
+        });
+      }
 
-    /* ---------- Autosave core ---------- */
-    const SAVE_KEY = 'ara_field_notes_v1';
-    let _saveTimer = null;
+      /* ----- DOM refs ----- */
+      const noteEl = byId('noteText');
 
-    function getState(){
-      try{
-        return {
-          note: byId('noteText').value || '',
-          audio: {
-            hasClip: audioDurationMs > 0,
-            durationMs: audioDurationMs
+      const photoDevice = byId('photoDevice');
+      const photoCamera = byId('photoCamera');
+      const photoGrid   = byId('photoGrid');
+
+      const overlay = byId('imageOverlay');
+      const overlayImg = byId('overlayImg');
+      const overlayClose = byId('overlayClose');
+      const overlayDownload = byId('overlayDownload');
+
+      const audioStartBtn = byId('audioStart');
+      const audioBarWrap  = byId('audioBarWrap');
+      const audioBar      = byId('audioBar');
+      const audioCircle   = byId('audioCircle');
+      const audioTime     = byId('audioTime');
+      const audioDelete   = byId('audioDelete');
+
+      const copyNoteBtn = byId('copyNoteBtn');
+      const emailBtn = byId('emailBtn');
+
+      const resetBtn = byId('resetBtn');
+      const resetModal = byId('resetModal');
+      const resetCancel = byId('resetCancel');
+      const resetConfirm = byId('resetConfirm');
+
+      /* ----- state ----- */
+      const SAVE_KEY = 'ara_field_notes_v1';
+      let _saveTimer = null;
+
+      let photos = []; // {id, url, fromCamera}
+      let currentOverlayPhoto = null;
+
+      let audioState = 'idle'; // 'idle'|'recording'|'playback'|'playing'
+      let audioDurationMs = 0;
+      let recordStart = 0;
+      let playStart = 0;
+      let recordTimer = null;
+      let playTimer = null;
+
+      /* ----- autosave ----- */
+      function getState(){
+        try{
+          return {
+            note: noteEl.value || '',
+            audio: {
+              hasClip: audioDurationMs > 0,
+              durationMs: audioDurationMs
+            }
+          };
+        }catch(e){
+          console.warn('getState failed', e);
+          return null;
+        }
+      }
+      function saveState(){
+        try{
+          const st = getState();
+          if(st) localStorage.setItem(SAVE_KEY, JSON.stringify(st));
+        }catch(e){
+          console.warn('saveState failed', e);
+        }
+      }
+      function saveStateSoon(){
+        try{
+          if(_saveTimer) clearTimeout(_saveTimer);
+          _saveTimer = setTimeout(saveState, 250);
+        }catch(e){}
+      }
+      function loadState(){
+        try{
+          const raw = localStorage.getItem(SAVE_KEY);
+          if(!raw) return;
+          const st = JSON.parse(raw);
+          if(st.note){
+            noteEl.value = st.note;
+            autoGrowNote();
           }
-          // photos intentionally not persisted (would require blobs/base64)
-        };
-      }catch(e){
-        console.warn('getState failed', e);
-        return null;
+          if(st.audio && st.audio.hasClip && st.audio.durationMs){
+            audioDurationMs = st.audio.durationMs;
+            setAudioState('playback');
+            updateAudioTimer(audioDurationMs);
+          }
+          updateShareButtons();
+        }catch(e){
+          console.warn('loadState failed', e);
+        }
       }
-    }
-
-    function saveStateSoon(){
-      try{
-        if(_saveTimer) clearTimeout(_saveTimer);
-        _saveTimer = setTimeout(saveState, 250);
-      }catch(e){ console.warn('saveStateSoon failed', e); }
-    }
-
-    function saveState(){
-      try{
-        const st = getState();
-        if(st) localStorage.setItem(SAVE_KEY, JSON.stringify(st));
-      }catch(e){
-        console.warn('saveState failed', e);
+      function clearState(){
+        try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
       }
-    }
 
-    function loadState(){
-      try{
-        const raw = localStorage.getItem(SAVE_KEY);
-        if(!raw) return;
-        const st = JSON.parse(raw);
-        if(st.note) byId('noteText').value = st.note;
+      /* ----- note auto-grow ----- */
+      function autoGrowNote(){
+        if(!noteEl) return;
+        noteEl.style.height='auto';
+        noteEl.style.height=(noteEl.scrollHeight+2)+'px';
+      }
+      noteEl.addEventListener('input', function(){
         autoGrowNote();
-        if(st.audio && st.audio.hasClip && st.audio.durationMs){
-          audioDurationMs = st.audio.durationMs;
-          setAudioState('playback');
-          updateAudioTimer(audioDurationMs);
+        saveStateSoon();
+        updateShareButtons();
+      });
+      autoGrowNote();
+
+      /* ----- photos (no autosave for blobs) ----- */
+      function addFiles(fileList, fromCamera){
+        if(!fileList || !fileList.length) return;
+        Array.prototype.forEach.call(fileList, function(file){
+          if(!file.type || !file.type.startsWith('image/')) return;
+          const url = URL.createObjectURL(file);
+          const id  = 'p'+Date.now()+Math.random().toString(16).slice(2);
+          photos.push({id, url, fromCamera: !!fromCamera});
+        });
+        renderPhotos();
+        updateShareButtons();
+      }
+
+      function renderPhotos(){
+        photoGrid.innerHTML='';
+        photos.forEach(function(ph){
+          const div=document.createElement('div');
+          div.className='photo-thumb';
+          div.dataset.id=ph.id;
+
+          const img=document.createElement('img');
+          img.src=ph.url;
+          img.alt='Field note photo';
+
+          const btn=document.createElement('button');
+          btn.type='button';
+          btn.className='photo-remove';
+          btn.textContent='×';
+          btn.addEventListener('click', function(ev){
+            ev.stopPropagation();
+            removePhoto(ph.id);
+          });
+
+          div.addEventListener('click', function(){
+            openOverlay(ph);
+          });
+
+          div.appendChild(img);
+          div.appendChild(btn);
+          photoGrid.appendChild(div);
+        });
+      }
+
+      function removePhoto(id){
+        photos.forEach(p => URL.revokeObjectURL(p.url));
+        photos = photos.filter(p => p.id !== id);
+        renderPhotos();
+        updateShareButtons();
+      }
+
+      photoDevice.addEventListener('change', function(e){
+        addFiles(e.target.files, false);
+        photoDevice.value='';
+      });
+      photoCamera.addEventListener('change', function(e){
+        addFiles(e.target.files, true);
+        photoCamera.value='';
+      });
+
+      /* ----- image overlay ----- */
+      function openOverlay(photo){
+        currentOverlayPhoto = photo;
+        overlayImg.src = photo.url;
+        overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden','false');
+
+        if(photo.fromCamera){
+          overlayDownload.style.display='';
+          overlayDownload.href = photo.url;
+        }else{
+          overlayDownload.style.display='none';
+        }
+      }
+      function closeOverlay(){
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden','true');
+        overlayImg.src='';
+        currentOverlayPhoto=null;
+      }
+      overlayClose.addEventListener('click', closeOverlay);
+      overlay.addEventListener('click', function(e){
+        if(e.target === overlay) closeOverlay();
+      });
+
+      /* ----- audio dummy UI ----- */
+      function clearAudioTimers(){
+        if(recordTimer){ clearInterval(recordTimer); recordTimer=null; }
+        if(playTimer){ clearInterval(playTimer); playTimer=null; }
+      }
+      function updateAudioTimer(ms){
+        audioTime.textContent = fmtTime(ms);
+      }
+      function setAudioState(state){
+        audioState=state;
+        if(state==='idle'){
+          audioBarWrap.classList.add('hidden');
+          audioBar.classList.remove('recording');
+          audioCircle.textContent='►';
+          audioStartBtn.textContent='Start recording';
+          audioDelete.style.display='none';
+        }else if(state==='recording'){
+          audioBarWrap.classList.remove('hidden');
+          audioBar.classList.add('recording');
+          audioCircle.textContent='●';
+          audioStartBtn.textContent='Stop recording';
+          audioDelete.style.display='none';
+        }else if(state==='playback'){
+          audioBarWrap.classList.remove('hidden');
+          audioBar.classList.remove('recording');
+          audioCircle.textContent='►';
+          audioStartBtn.textContent='Start new recording';
+          audioDelete.style.display='';
+        }else if(state==='playing'){
+          audioBarWrap.classList.remove('hidden');
+          audioBar.classList.remove('recording');
+          audioCircle.textContent='❚❚';
+          audioStartBtn.textContent='Start new recording';
+          audioDelete.style.display='';
         }
         updateShareButtons();
-      }catch(e){
-        console.warn('loadState failed', e);
       }
-    }
-
-    function clearState(){
-      try{
-        localStorage.removeItem(SAVE_KEY);
-      }catch(e){}
-    }
-
-    /* ---------- Note auto-grow ---------- */
-    const noteEl = byId('noteText');
-    function autoGrowNote(){
-      if(!noteEl) return;
-      noteEl.style.height = 'auto';
-      noteEl.style.height = (noteEl.scrollHeight+2)+'px';
-    }
-    noteEl.addEventListener('input', function(){
-      autoGrowNote();
-      saveStateSoon();
-      updateShareButtons();
-    });
-    autoGrowNote();
-
-    /* ---------- Photos (no autosave of blobs) ---------- */
-    const photoDevice = byId('photoDevice');
-    const photoCamera = byId('photoCamera');
-    const photoGrid   = byId('photoGrid');
-
-    let photos = []; // {id, url, fromCamera}
-
-    function addFiles(fileList, fromCamera){
-      if(!fileList || !fileList.length) return;
-      Array.prototype.forEach.call(fileList, function(file){
-        if(!file.type || !file.type.startsWith('image/')) return;
-        const url = URL.createObjectURL(file);
-        const id  = 'p'+Date.now()+Math.random().toString(16).slice(2);
-        photos.push({id, url, fromCamera: !!fromCamera});
-        renderPhotos();
-      });
-      updateShareButtons();
-    }
-
-    function renderPhotos(){
-      photoGrid.innerHTML = '';
-      photos.forEach(function(ph){
-        const div = document.createElement('div');
-        div.className = 'photo-thumb';
-        div.dataset.id = ph.id;
-
-        const img = document.createElement('img');
-        img.src = ph.url;
-        img.alt = 'Field note photo';
-
-        const x = document.createElement('button');
-        x.type = 'button';
-        x.className = 'photo-remove';
-        x.textContent = '×';
-
-        x.addEventListener('click', function(ev){
-          ev.stopPropagation();
-          removePhoto(ph.id);
-        });
-
-        div.addEventListener('click', function(){
-          openOverlay(ph);
-        });
-
-        div.appendChild(img);
-        div.appendChild(x);
-        photoGrid.appendChild(div);
-      });
-    }
-
-    function removePhoto(id){
-      photos = photos.filter(p => p.id !== id);
-      renderPhotos();
-      updateShareButtons();
-    }
-
-    photoDevice.addEventListener('change', function(e){
-      addFiles(e.target.files, false);
-      photoDevice.value = '';
-    });
-    photoCamera.addEventListener('change', function(e){
-      addFiles(e.target.files, true);
-      photoCamera.value = '';
-    });
-
-    /* ---------- Image overlay ---------- */
-    const overlay = byId('imageOverlay');
-    const overlayImg = byId('overlayImg');
-    const overlayClose = byId('overlayClose');
-    const overlayDownload = byId('overlayDownload');
-    let currentOverlayPhoto = null;
-
-    function openOverlay(photo){
-      currentOverlayPhoto = photo;
-      overlayImg.src = photo.url;
-      overlay.classList.remove('hidden');
-      overlay.setAttribute('aria-hidden','false');
-
-      if(photo.fromCamera){
-        overlayDownload.style.display = '';
-        overlayDownload.href = photo.url;
-      }else{
-        overlayDownload.style.display = 'none';
+      function startRecording(){
+        clearAudioTimers();
+        audioDurationMs=0;
+        recordStart=Date.now();
+        updateAudioTimer(0);
+        setAudioState('recording');
+        recordTimer=setInterval(function(){
+          audioDurationMs=Date.now()-recordStart;
+          updateAudioTimer(audioDurationMs);
+        },200);
+        saveStateSoon();
       }
-    }
-
-    function closeOverlay(){
-      overlay.classList.add('hidden');
-      overlay.setAttribute('aria-hidden','true');
-      overlayImg.src = '';
-      currentOverlayPhoto = null;
-    }
-
-    overlayClose.addEventListener('click', closeOverlay);
-    overlay.addEventListener('click', function(e){
-      if(e.target === overlay) closeOverlay();
-    });
-
-    /* ---------- Audio dummy UI ---------- */
-    const audioStartBtn = byId('audioStart');
-    const audioBarWrap  = byId('audioBarWrap');
-    const audioBar      = byId('audioBar');
-    const audioCircle   = byId('audioCircle');
-    const audioTime     = byId('audioTime');
-    const audioDelete   = byId('audioDelete');
-
-    let audioState = 'idle';      // 'idle' | 'recording' | 'playback' | 'playing'
-    let audioDurationMs = 0;
-    let recordStart = 0;
-    let playStart = 0;
-    let recordTimer = null;
-    let playTimer = null;
-
-    function clearAudioTimers(){
-      if(recordTimer){ clearInterval(recordTimer); recordTimer=null; }
-      if(playTimer){ clearInterval(playTimer); playTimer=null; }
-    }
-
-    function updateAudioTimer(ms){
-      audioTime.textContent = fmtTime(ms);
-    }
-
-    function setAudioState(state){
-      audioState = state;
-      if(state === 'idle'){
-        audioBarWrap.classList.add('hidden');
-        audioBar.classList.remove('recording');
-        audioCircle.textContent = '►';
-        audioStartBtn.textContent = 'Start recording';
-      }else if(state === 'recording'){
-        audioBarWrap.classList.remove('hidden');
-        audioBar.classList.add('recording');
-        audioCircle.textContent = '●';
-        audioStartBtn.textContent = 'Stop recording';
-        audioDelete.style.display = 'none';
-      }else if(state === 'playback'){
-        audioBarWrap.classList.remove('hidden');
-        audioBar.classList.remove('recording');
-        audioCircle.textContent = '►';
-        audioStartBtn.textContent = 'Start new recording';
-        audioDelete.style.display = '';
-      }else if(state === 'playing'){
-        audioBarWrap.classList.remove('hidden');
-        audioBar.classList.remove('recording');
-        audioCircle.textContent = '❚❚';
-        audioStartBtn.textContent = 'Start new recording';
-        audioDelete.style.display = '';
-      }
-      updateShareButtons();
-    }
-
-    function startRecording(){
-      clearAudioTimers();
-      audioDurationMs = 0;
-      recordStart = Date.now();
-      updateAudioTimer(0);
-      setAudioState('recording');
-      recordTimer = setInterval(function(){
-        audioDurationMs = Date.now() - recordStart;
+      function stopRecording(){
+        if(audioState!=='recording') return;
+        clearAudioTimers();
+        if(audioDurationMs<500) audioDurationMs=500;
         updateAudioTimer(audioDurationMs);
-      }, 200);
-      saveStateSoon();
-    }
+        setAudioState('playback');
+        saveStateSoon();
+      }
+      function startPlayback(){
+        if(audioState!=='playback' || audioDurationMs<=0) return;
+        clearAudioTimers();
+        playStart=Date.now();
+        updateAudioTimer(0);
+        setAudioState('playing');
+        playTimer=setInterval(function(){
+          let elapsed=Date.now()-playStart;
+          if(elapsed>=audioDurationMs){
+            elapsed=audioDurationMs;
+            clearAudioTimers();
+            setAudioState('playback');
+          }
+          updateAudioTimer(elapsed);
+        },200);
+        saveStateSoon();
+      }
+      function stopPlayback(){
+        if(audioState!=='playing') return;
+        clearAudioTimers();
+        setAudioState('playback');
+        saveStateSoon();
+      }
+      function deleteAudio(){
+        clearAudioTimers();
+        audioDurationMs=0;
+        updateAudioTimer(0);
+        setAudioState('idle');
+        saveStateSoon();
+      }
 
-    function stopRecording(){
-      if(audioState !== 'recording') return;
-      clearAudioTimers();
-      if(audioDurationMs < 500) audioDurationMs = 500;
-      updateAudioTimer(audioDurationMs);
-      setAudioState('playback');
-      saveStateSoon();
-    }
-
-    function startPlayback(){
-      if(audioState !== 'playback' || audioDurationMs <= 0) return;
-      clearAudioTimers();
-      playStart = Date.now();
-      updateAudioTimer(0);
-      setAudioState('playing');
-      playTimer = setInterval(function(){
-        let elapsed = Date.now() - playStart;
-        if(elapsed >= audioDurationMs){
-          elapsed = audioDurationMs;
-          clearAudioTimers();
-          setAudioState('playback');
+      audioStartBtn.addEventListener('click', function(){
+        if(audioState==='recording'){
+          stopRecording();
+        }else{
+          deleteAudio();
+          startRecording();
         }
-        updateAudioTimer(elapsed);
-      }, 200);
-      saveStateSoon();
-    }
-
-    function stopPlayback(){
-      if(audioState !== 'playing') return;
-      clearAudioTimers();
-      setAudioState('playback');
-      // keep whatever time was showing
-      saveStateSoon();
-    }
-
-    function deleteAudio(){
-      clearAudioTimers();
-      audioDurationMs = 0;
-      updateAudioTimer(0);
-      setAudioState('idle');
-      saveStateSoon();
-    }
-
-    audioStartBtn.addEventListener('click', function(){
-      if(audioState === 'recording'){
-        stopRecording();
-      }else{
-        // starting fresh recording from any other state
-        deleteAudio();
-        startRecording();
-      }
-    });
-
-    audioCircle.addEventListener('click', function(){
-      if(audioState === 'playback'){
-        startPlayback();
-      }else if(audioState === 'playing'){
-        stopPlayback();
-      }
-    });
-
-    audioDelete.addEventListener('click', function(){
-      deleteAudio();
-    });
-
-    setAudioState('idle');
-
-    /* ---------- Share / email ---------- */
-    const copyNoteBtn = byId('copyNoteBtn');
-    const emailBtn = byId('emailBtn');
-
-    function buildPlainText(){
-      const parts = [];
-      const note = noteEl.value.trim();
-      if(note){
-        parts.push('Field note ('+nowLocalPretty()+')');
-        parts.push('');
-        parts.push(note);
-        parts.push('');
-      }
-      if(photos.length){
-        parts.push('Photos: '+photos.length+' image(s) – not attached, stored on device.');
-      }
-      if(audioDurationMs > 0){
-        parts.push('Audio note: '+fmtTime(audioDurationMs)+' – not attached, stored on device.');
-      }
-      if(!parts.length){
-        parts.push('Field note (empty)');
-      }
-      return parts.join('\n');
-    }
-
-    function updateShareButtons(){
-      const hasContent =
-        (noteEl.value && noteEl.value.trim().length>0) ||
-        photos.length>0 ||
-        audioDurationMs>0;
-
-      copyNoteBtn.disabled = !hasContent;
-      if(hasContent){
-        const body = encodeURIComponent(buildPlainText());
-        const subject = encodeURIComponent('ARA Field Note');
-        emailBtn.href = 'mailto:?subject='+subject+'&body='+body;
-        emailBtn.setAttribute('aria-disabled','false');
-      }else{
-        emailBtn.href = '#';
-        emailBtn.setAttribute('aria-disabled','true');
-      }
-    }
-
-    copyNoteBtn.addEventListener('click', function(){
-      const txt = buildPlainText();
-      copyToClipboard(txt).then(function(){
-        const old = copyNoteBtn.textContent;
-        copyNoteBtn.textContent = 'Copied ✓';
-        setTimeout(() => copyNoteBtn.textContent = old, 1000);
       });
-    });
+      audioCircle.addEventListener('click', function(){
+        if(audioState==='playback') startPlayback();
+        else if(audioState==='playing') stopPlayback();
+      });
+      audioDelete.addEventListener('click', deleteAudio);
+      setAudioState('idle');
 
-    /* ---------- Reset form + modal ---------- */
-    const resetBtn = byId('resetBtn');
-    const resetModal = byId('resetModal');
-    const resetCancel = byId('resetCancel');
-    const resetConfirm = byId('resetConfirm');
+      /* ----- share / email ----- */
+      function buildPlainText(){
+        const parts=[];
+        const note=noteEl.value.trim();
+        if(note){
+          parts.push('Field note ('+nowLocalPretty()+')','',note,'');
+        }
+        if(photos.length){
+          parts.push('Photos: '+photos.length+' image(s) – not attached, stored on device.');
+        }
+        if(audioDurationMs>0){
+          parts.push('Audio note: '+fmtTime(audioDurationMs)+' – not attached, stored on device.');
+        }
+        if(!parts.length){
+          parts.push('Field note (empty)');
+        }
+        return parts.join('\n');
+      }
+      function updateShareButtons(){
+        const hasContent =
+          (noteEl.value && noteEl.value.trim().length>0) ||
+          photos.length>0 ||
+          audioDurationMs>0;
 
-    function showResetModal(){
-      resetModal.classList.remove('hidden');
-      resetModal.setAttribute('aria-hidden','false');
-    }
-    function hideResetModal(){
-      resetModal.classList.add('hidden');
-      resetModal.setAttribute('aria-hidden','true');
-    }
+        copyNoteBtn.disabled = !hasContent;
+        if(hasContent){
+          const body = encodeURIComponent(buildPlainText());
+          const subject = encodeURIComponent('ARA Field Note');
+          emailBtn.href = 'mailto:?subject='+subject+'&body='+body;
+          emailBtn.setAttribute('aria-disabled','false');
+        }else{
+          emailBtn.href = '#';
+          emailBtn.setAttribute('aria-disabled','true');
+        }
+      }
+      copyNoteBtn.addEventListener('click', function(){
+        const txt = buildPlainText();
+        copyToClipboard(txt).then(function(){
+          const old = copyNoteBtn.textContent;
+          copyNoteBtn.textContent='Copied ✓';
+          setTimeout(()=>copyNoteBtn.textContent=old,1000);
+        });
+      });
 
-    resetBtn.addEventListener('click', function(){
-      resetBtn.classList.remove('flash');
-      // reflow to restart animation
-      void resetBtn.offsetWidth;
-      resetBtn.classList.add('flash');
-      showResetModal();
-    });
+      /* ----- reset modal ----- */
+      function showResetModal(){
+        resetModal.classList.remove('hidden');
+        resetModal.setAttribute('aria-hidden','false');
+      }
+      function hideResetModal(){
+        resetModal.classList.add('hidden');
+        resetModal.setAttribute('aria-hidden','true');
+      }
 
-    resetCancel.addEventListener('click', hideResetModal);
-    resetModal.addEventListener('click', function(e){
-      if(e.target === resetModal) hideResetModal();
-    });
+      if(resetBtn){
+        resetBtn.addEventListener('click', function(){
+          resetBtn.classList.remove('flash');
+          void resetBtn.offsetWidth; // restart animation
+          resetBtn.classList.add('flash');
+          showResetModal();
+        });
+      }
+      if(resetCancel){
+        resetCancel.addEventListener('click', hideResetModal);
+      }
+      if(resetModal){
+        resetModal.addEventListener('click', function(e){
+          if(e.target === resetModal) hideResetModal();
+        });
+      }
+      if(resetConfirm){
+        resetConfirm.addEventListener('click', function(){
+          hideResetModal();
+          // clear note
+          noteEl.value='';
+          autoGrowNote();
+          // clear photos
+          photos.forEach(p=>URL.revokeObjectURL(p.url));
+          photos=[];
+          renderPhotos();
+          // clear audio
+          deleteAudio();
+          // clear autosave
+          clearState();
+          updateShareButtons();
+        });
+      }
 
-    resetConfirm.addEventListener('click', function(){
-      hideResetModal();
-      // Clear text
-      noteEl.value = '';
-      autoGrowNote();
-      // Clear photos
-      photos.forEach(p => URL.revokeObjectURL(p.url));
-      photos = [];
-      renderPhotos();
-      // Clear audio
-      deleteAudio();
-      // Clear autosave
-      clearState();
-      updateShareButtons();
-    });
-
-    /* ---------- Initial load ---------- */
-    document.addEventListener('DOMContentLoaded', function(){
+      /* ----- initial load ----- */
       loadState();
       updateShareButtons();
     });
-    // In case DOMContentLoaded has already fired (Capacitor sometimes injects differently)
-    loadState();
-    updateShareButtons();
   </script>
 </body>
 </html>
