@@ -69,6 +69,13 @@
       margin:4px 0 0;
     }
 
+    .field-label{
+      font-size:0.85rem;
+      font-weight:500;
+      margin-bottom:4px;
+      display:block;
+    }
+
     textarea{
       width:100%;
       min-height:120px;
@@ -85,13 +92,6 @@
       outline:none;
       border-color:var(--accent-soft);
       box-shadow:0 0 0 1px rgba(59,130,246,0.65);
-    }
-
-    .field-label{
-      font-size:0.85rem;
-      font-weight:500;
-      margin-bottom:4px;
-      display:block;
     }
 
     .btn-row{
@@ -160,9 +160,7 @@
       padding:5px 10px;
     }
 
-    .file-input-hidden{
-      display:none;
-    }
+    .file-input-hidden{ display:none; }
 
     .photo-actions{
       display:flex;
@@ -260,82 +258,7 @@
       color:var(--text-muted);
     }
 
-    /* Audio UI */
-    .audio-bar-wrap{
-      margin-top:8px;
-    }
-    .audio-bar{
-      padding:8px 12px;
-      border-radius:999px;
-      background:var(--bg-card-soft);
-      border:1px solid rgba(148,163,184,0.35);
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .audio-bar.recording{
-      border-color:var(--danger-soft);
-    }
-    .audio-circle-btn{
-      width:32px;
-      height:32px;
-      border-radius:999px;
-      border:none;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      font-size:16px;
-      cursor:pointer;
-      background:var(--accent);
-      color:#f9fafb;
-      flex-shrink:0;
-    }
-    .audio-bar.recording .audio-circle-btn{
-      background:var(--danger);
-    }
-    .audio-wave-placeholder{
-      flex:1 1 auto;
-      height:18px;
-      border-radius:999px;
-      background:
-        linear-gradient(
-          to right,
-          rgba(148,163,184,0.18) 0%,
-          rgba(148,163,184,0.55) 8%,
-          rgba(148,163,184,0.18) 16%,
-          rgba(148,163,184,0.55) 24%,
-          rgba(148,163,184,0.18) 32%,
-          rgba(148,163,184,0.55) 40%,
-          rgba(148,163,184,0.18) 48%,
-          rgba(148,163,184,0.55) 56%,
-          rgba(148,163,184,0.18) 64%,
-          rgba(148,163,184,0.55) 72%,
-          rgba(148,163,184,0.18) 80%,
-          rgba(148,163,184,0.55) 88%,
-          rgba(148,163,184,0.18) 96%
-        );
-      opacity:0.85;
-    }
-    .audio-time{
-      font-variant-numeric:tabular-nums;
-      font-size:0.85rem;
-      color:rgba(226,232,240,0.9);
-    }
-    .audio-delete-btn{
-      border:none;
-      background:transparent;
-      color:var(--danger-soft);
-      font-size:18px;
-      margin-left:2px;
-      cursor:pointer;
-    }
-
-    /* Reusable hidden helper */
-    .hidden{
-      display:none !important;
-    }
-
-    /* Reset confirm modal */
+    /* Reset modal */
     .modal-backdrop{
       position:fixed;
       inset:0;
@@ -369,6 +292,8 @@
       justify-content:flex-end;
       gap:8px;
     }
+
+    .hidden{ display:none !important; }
   </style>
 </head>
 <body>
@@ -378,7 +303,7 @@
       <div class="app-subtitle">Field notes (beta)</div>
     </header>
 
-    <!-- NOTES -->
+    <!-- NOTE -->
     <section class="card">
       <h2 class="card-title">Note</h2>
       <label for="noteText" class="field-label">Field note</label>
@@ -391,11 +316,11 @@
       <h2 class="card-title">Photos</h2>
       <div class="photo-actions">
         <label class="btn-ghost btn-small" for="photoDevice">
-          Choose from device
+          <span>📁</span><span>Choose from gallery</span>
           <input id="photoDevice" class="file-input-hidden" type="file" accept="image/*" multiple>
         </label>
         <label class="btn-ghost btn-small" for="photoCamera">
-          Take photo
+          <span>📷</span><span>Take photo</span>
           <input id="photoCamera" class="file-input-hidden" type="file" accept="image/*" capture="environment">
         </label>
       </div>
@@ -404,32 +329,7 @@
       <p class="hint">Images don’t transfer automatically in email – you’ll need to attach them separately.</p>
     </section>
 
-    <!-- AUDIO -->
-    <section class="card">
-      <h2 class="card-title">Audio note</h2>
-      <p class="hint">Optional quick voice note for this entry. This version is a visual prototype (no real recording yet).</p>
-
-      <div class="btn-row">
-        <button type="button" id="audioStart" class="btn-primary">Start recording</button>
-      </div>
-
-      <div class="audio-bar-wrap hidden" id="audioBarWrap">
-        <div class="audio-bar" id="audioBar">
-          <button type="button" id="audioCircle" class="audio-circle-btn" aria-label="Play audio">
-            ►
-          </button>
-          <div class="audio-wave-placeholder"></div>
-          <span id="audioTime" class="audio-time">00:00</span>
-          <button type="button" id="audioDelete" class="audio-delete-btn" aria-label="Delete audio note">
-            ×
-          </button>
-        </div>
-      </div>
-
-      <p class="hint">Audio length is saved locally, but no sound is recorded yet.</p>
-    </section>
-
-    <!-- BOTTOM ACTIONS -->
+    <!-- SHARE / MANAGE -->
     <section class="card bottom-section">
       <h2 class="card-title">Share / manage</h2>
       <div class="bottom-row">
@@ -462,7 +362,7 @@
   <div id="resetModal" class="modal-backdrop hidden" aria-hidden="true">
     <div class="modal">
       <h3 class="modal-title">Reset this note?</h3>
-      <p class="modal-body">This clears the text, photos, audio state, and the autosaved copy on this device.</p>
+      <p class="modal-body">This clears the text, photos, and the autosaved copy on this device.</p>
       <div class="modal-actions">
         <button type="button" id="resetCancel" class="btn-ghost btn-small">Cancel</button>
         <button type="button" id="resetConfirm" class="btn-danger-outline btn-small">Reset</button>
@@ -472,18 +372,12 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function(){
-      /* ----- helpers ----- */
       function byId(id){ return document.getElementById(id); }
       function nowLocalPretty(){
         const d=new Date(); const pad=n=>String(n).padStart(2,'0');
         return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
       }
-      function fmtTime(ms){
-        const total=Math.floor(ms/1000);
-        const m=Math.floor(total/60);
-        const s=total%60;
-        return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-      }
+
       function copyToClipboard(txt){
         if(navigator.clipboard && navigator.clipboard.writeText){
           return navigator.clipboard.writeText(txt);
@@ -501,56 +395,37 @@
         });
       }
 
-      /* ----- DOM refs ----- */
-      const noteEl = byId('noteText');
+      const noteEl        = byId('noteText');
+      const photoDevice   = byId('photoDevice');
+      const photoCamera   = byId('photoCamera');
+      const photoGrid     = byId('photoGrid');
 
-      const photoDevice = byId('photoDevice');
-      const photoCamera = byId('photoCamera');
-      const photoGrid   = byId('photoGrid');
-
-      const overlay = byId('imageOverlay');
-      const overlayImg = byId('overlayImg');
-      const overlayClose = byId('overlayClose');
+      const overlay       = byId('imageOverlay');
+      const overlayImg    = byId('overlayImg');
+      const overlayClose  = byId('overlayClose');
       const overlayDownload = byId('overlayDownload');
 
-      const audioStartBtn = byId('audioStart');
-      const audioBarWrap  = byId('audioBarWrap');
-      const audioBar      = byId('audioBar');
-      const audioCircle   = byId('audioCircle');
-      const audioTime     = byId('audioTime');
-      const audioDelete   = byId('audioDelete');
+      const copyNoteBtn   = byId('copyNoteBtn');
+      const emailBtn      = byId('emailBtn');
 
-      const copyNoteBtn = byId('copyNoteBtn');
-      const emailBtn = byId('emailBtn');
+      const resetBtn      = byId('resetBtn');
+      const resetModal    = byId('resetModal');
+      const resetCancel   = byId('resetCancel');
+      const resetConfirm  = byId('resetConfirm');
 
-      const resetBtn = byId('resetBtn');
-      const resetModal = byId('resetModal');
-      const resetCancel = byId('resetCancel');
-      const resetConfirm = byId('resetConfirm');
-
-      /* ----- state ----- */
-      const SAVE_KEY = 'ara_field_notes_v1';
+      const SAVE_KEY = 'ara_field_notes_v2';
       let _saveTimer = null;
 
-      let photos = []; // {id, url, fromCamera}
+      // photos = [{id, src, fromCamera}]
+      let photos = [];
       let currentOverlayPhoto = null;
 
-      let audioState = 'idle'; // 'idle'|'recording'|'playback'|'playing'
-      let audioDurationMs = 0;
-      let recordStart = 0;
-      let playStart = 0;
-      let recordTimer = null;
-      let playTimer = null;
-
-      /* ----- autosave ----- */
+      /* ---------- autosave ---------- */
       function getState(){
         try{
           return {
             note: noteEl.value || '',
-            audio: {
-              hasClip: audioDurationMs > 0,
-              durationMs: audioDurationMs
-            }
+            photos: photos.map(p => ({ src:p.src, fromCamera: !!p.fromCamera }))
           };
         }catch(e){
           console.warn('getState failed', e);
@@ -559,7 +434,7 @@
       }
       function saveState(){
         try{
-          const st = getState();
+          const st=getState();
           if(st) localStorage.setItem(SAVE_KEY, JSON.stringify(st));
         }catch(e){
           console.warn('saveState failed', e);
@@ -580,10 +455,13 @@
             noteEl.value = st.note;
             autoGrowNote();
           }
-          if(st.audio && st.audio.hasClip && st.audio.durationMs){
-            audioDurationMs = st.audio.durationMs;
-            setAudioState('playback');
-            updateAudioTimer(audioDurationMs);
+          if(Array.isArray(st.photos)){
+            photos = st.photos.map(p => ({
+              id: 'p'+Date.now()+Math.random().toString(16).slice(2),
+              src: p.src,
+              fromCamera: !!p.fromCamera
+            }));
+            renderPhotos();
           }
           updateShareButtons();
         }catch(e){
@@ -594,7 +472,7 @@
         try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
       }
 
-      /* ----- note auto-grow ----- */
+      /* ---------- note auto-grow ---------- */
       function autoGrowNote(){
         if(!noteEl) return;
         noteEl.style.height='auto';
@@ -607,17 +485,35 @@
       });
       autoGrowNote();
 
-      /* ----- photos (no autosave for blobs) ----- */
-      function addFiles(fileList, fromCamera){
+      /* ---------- photos ---------- */
+      function addPhotoFromDataUrl(dataUrl, fromCamera){
+        const id='p'+Date.now()+Math.random().toString(16).slice(2);
+        photos.push({id, src:dataUrl, fromCamera:!!fromCamera});
+      }
+
+      function handleFiles(fileList, fromCamera){
         if(!fileList || !fileList.length) return;
-        Array.prototype.forEach.call(fileList, function(file){
-          if(!file.type || !file.type.startsWith('image/')) return;
-          const url = URL.createObjectURL(file);
-          const id  = 'p'+Date.now()+Math.random().toString(16).slice(2);
-          photos.push({id, url, fromCamera: !!fromCamera});
+        const files = Array.prototype.slice.call(fileList);
+        let remaining = files.length;
+
+        files.forEach(function(file){
+          if(!file.type || !file.type.startsWith('image/')){
+            remaining--;
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = function(e){
+            addPhotoFromDataUrl(e.target.result, fromCamera);
+            renderPhotos();
+            updateShareButtons();
+            saveStateSoon();
+            remaining--;
+          };
+          reader.onerror = function(){
+            remaining--;
+          };
+          reader.readAsDataURL(file);
         });
-        renderPhotos();
-        updateShareButtons();
       }
 
       function renderPhotos(){
@@ -628,7 +524,7 @@
           div.dataset.id=ph.id;
 
           const img=document.createElement('img');
-          img.src=ph.url;
+          img.src=ph.src;
           img.alt='Field note photo';
 
           const btn=document.createElement('button');
@@ -651,31 +547,31 @@
       }
 
       function removePhoto(id){
-        photos.forEach(p => URL.revokeObjectURL(p.url));
         photos = photos.filter(p => p.id !== id);
         renderPhotos();
         updateShareButtons();
+        saveStateSoon();
       }
 
       photoDevice.addEventListener('change', function(e){
-        addFiles(e.target.files, false);
+        handleFiles(e.target.files, false);
         photoDevice.value='';
       });
       photoCamera.addEventListener('change', function(e){
-        addFiles(e.target.files, true);
+        handleFiles(e.target.files, true);
         photoCamera.value='';
       });
 
-      /* ----- image overlay ----- */
+      /* ---------- image overlay ---------- */
       function openOverlay(photo){
         currentOverlayPhoto = photo;
-        overlayImg.src = photo.url;
+        overlayImg.src = photo.src;
         overlay.classList.remove('hidden');
         overlay.setAttribute('aria-hidden','false');
 
         if(photo.fromCamera){
           overlayDownload.style.display='';
-          overlayDownload.href = photo.url;
+          overlayDownload.href = photo.src;
         }else{
           overlayDownload.style.display='none';
         }
@@ -691,110 +587,7 @@
         if(e.target === overlay) closeOverlay();
       });
 
-      /* ----- audio dummy UI ----- */
-      function clearAudioTimers(){
-        if(recordTimer){ clearInterval(recordTimer); recordTimer=null; }
-        if(playTimer){ clearInterval(playTimer); playTimer=null; }
-      }
-      function updateAudioTimer(ms){
-        audioTime.textContent = fmtTime(ms);
-      }
-      function setAudioState(state){
-        audioState=state;
-        if(state==='idle'){
-          audioBarWrap.classList.add('hidden');
-          audioBar.classList.remove('recording');
-          audioCircle.textContent='►';
-          audioStartBtn.textContent='Start recording';
-          audioDelete.style.display='none';
-        }else if(state==='recording'){
-          audioBarWrap.classList.remove('hidden');
-          audioBar.classList.add('recording');
-          audioCircle.textContent='●';
-          audioStartBtn.textContent='Stop recording';
-          audioDelete.style.display='none';
-        }else if(state==='playback'){
-          audioBarWrap.classList.remove('hidden');
-          audioBar.classList.remove('recording');
-          audioCircle.textContent='►';
-          audioStartBtn.textContent='Start new recording';
-          audioDelete.style.display='';
-        }else if(state==='playing'){
-          audioBarWrap.classList.remove('hidden');
-          audioBar.classList.remove('recording');
-          audioCircle.textContent='❚❚';
-          audioStartBtn.textContent='Start new recording';
-          audioDelete.style.display='';
-        }
-        updateShareButtons();
-      }
-      function startRecording(){
-        clearAudioTimers();
-        audioDurationMs=0;
-        recordStart=Date.now();
-        updateAudioTimer(0);
-        setAudioState('recording');
-        recordTimer=setInterval(function(){
-          audioDurationMs=Date.now()-recordStart;
-          updateAudioTimer(audioDurationMs);
-        },200);
-        saveStateSoon();
-      }
-      function stopRecording(){
-        if(audioState!=='recording') return;
-        clearAudioTimers();
-        if(audioDurationMs<500) audioDurationMs=500;
-        updateAudioTimer(audioDurationMs);
-        setAudioState('playback');
-        saveStateSoon();
-      }
-      function startPlayback(){
-        if(audioState!=='playback' || audioDurationMs<=0) return;
-        clearAudioTimers();
-        playStart=Date.now();
-        updateAudioTimer(0);
-        setAudioState('playing');
-        playTimer=setInterval(function(){
-          let elapsed=Date.now()-playStart;
-          if(elapsed>=audioDurationMs){
-            elapsed=audioDurationMs;
-            clearAudioTimers();
-            setAudioState('playback');
-          }
-          updateAudioTimer(elapsed);
-        },200);
-        saveStateSoon();
-      }
-      function stopPlayback(){
-        if(audioState!=='playing') return;
-        clearAudioTimers();
-        setAudioState('playback');
-        saveStateSoon();
-      }
-      function deleteAudio(){
-        clearAudioTimers();
-        audioDurationMs=0;
-        updateAudioTimer(0);
-        setAudioState('idle');
-        saveStateSoon();
-      }
-
-      audioStartBtn.addEventListener('click', function(){
-        if(audioState==='recording'){
-          stopRecording();
-        }else{
-          deleteAudio();
-          startRecording();
-        }
-      });
-      audioCircle.addEventListener('click', function(){
-        if(audioState==='playback') startPlayback();
-        else if(audioState==='playing') stopPlayback();
-      });
-      audioDelete.addEventListener('click', deleteAudio);
-      setAudioState('idle');
-
-      /* ----- share / email ----- */
+      /* ---------- share / email ---------- */
       function buildPlainText(){
         const parts=[];
         const note=noteEl.value.trim();
@@ -804,19 +597,16 @@
         if(photos.length){
           parts.push('Photos: '+photos.length+' image(s) – not attached, stored on device.');
         }
-        if(audioDurationMs>0){
-          parts.push('Audio note: '+fmtTime(audioDurationMs)+' – not attached, stored on device.');
-        }
         if(!parts.length){
           parts.push('Field note (empty)');
         }
         return parts.join('\n');
       }
+
       function updateShareButtons(){
         const hasContent =
           (noteEl.value && noteEl.value.trim().length>0) ||
-          photos.length>0 ||
-          audioDurationMs>0;
+          photos.length>0;
 
         copyNoteBtn.disabled = !hasContent;
         if(hasContent){
@@ -829,6 +619,7 @@
           emailBtn.setAttribute('aria-disabled','true');
         }
       }
+
       copyNoteBtn.addEventListener('click', function(){
         const txt = buildPlainText();
         copyToClipboard(txt).then(function(){
@@ -838,7 +629,7 @@
         });
       });
 
-      /* ----- reset modal ----- */
+      /* ---------- reset modal ---------- */
       function showResetModal(){
         resetModal.classList.remove('hidden');
         resetModal.setAttribute('aria-hidden','false');
@@ -851,7 +642,7 @@
       if(resetBtn){
         resetBtn.addEventListener('click', function(){
           resetBtn.classList.remove('flash');
-          void resetBtn.offsetWidth; // restart animation
+          void resetBtn.offsetWidth;
           resetBtn.classList.add('flash');
           showResetModal();
         });
@@ -871,18 +662,15 @@
           noteEl.value='';
           autoGrowNote();
           // clear photos
-          photos.forEach(p=>URL.revokeObjectURL(p.url));
           photos=[];
           renderPhotos();
-          // clear audio
-          deleteAudio();
           // clear autosave
           clearState();
           updateShareButtons();
         });
       }
 
-      /* ----- initial load ----- */
+      /* ---------- initial load ---------- */
       loadState();
       updateShareButtons();
     });
