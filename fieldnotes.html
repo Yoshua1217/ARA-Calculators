@@ -9,23 +9,21 @@
     :root {
       --bg: #020816;
       --bg-elevated: #050f24;
-      --bg-elevated-soft: #07152f;
+      --bg-elevated-soft: #071529;
       --border-subtle: #101c34;
       --border-strong: #1f355a;
       --accent: #3b82f6;
       --accent-soft: #1d4ed8;
-      --accent-pill: #60a5fa;
-      --accent-pill-soft: #1e40af;
       --accent-danger: #b91c1c;
       --text: #e5f0ff;
       --text-soft: #9fb4d6;
       --text-faint: #6b7a96;
       --card-radius: 16px;
       --shadow-soft: 0 18px 40px rgba(0,0,0,0.55);
-      --input-bg: #07152f;
-      --input-border: #1b2940;
+      --input-bg: #020b1f;
+      --input-border: #111827;
       --input-border-focus: #3b82f6;
-      --chip-bg: #0b1730;
+      --chip-bg: #020b1f;
     }
 
     * {
@@ -36,7 +34,7 @@
       margin: 0;
       padding: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #020816;           /* flat dark navy: no gradient */
+      background: #020816;   /* flat dark navy, no gradient */
       color: var(--text);
     }
 
@@ -52,7 +50,7 @@
       z-index: 10;
       background: rgba(2, 8, 22, 0.98);
       backdrop-filter: blur(18px);
-      border-bottom: 1px solid rgba(31, 53, 90, 0.6);
+      border-bottom: 1px solid rgba(31, 53, 90, 0.7);
       padding: 10px 16px 8px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
@@ -137,8 +135,7 @@
     }
 
     .card {
-      background: radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 55%),
-                  var(--bg-elevated);
+      background: var(--bg-elevated-soft); /* flat, no gradient */
       border-radius: var(--card-radius);
       border: 1px solid var(--border-subtle);
       box-shadow: var(--shadow-soft);
@@ -169,23 +166,22 @@
       width: 100%;
       min-height: 140px;
       resize: none;
-      border-radius: 12px;
+      border-radius: 18px;
       border: 1px solid var(--input-border);
       background: var(--input-bg);
       color: var(--text);
-      padding: 10px 12px;
+      padding: 12px 14px;
       font-family: inherit;
       font-size: 0.9rem;
       line-height: 1.4;
       outline: none;
-      box-shadow: inset 0 0 0 1px rgba(15,23,42,0.7);
       transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     }
 
     textarea.notes-input:focus {
       border-color: var(--input-border-focus);
       box-shadow: 0 0 0 1px rgba(59,130,246,0.7);
-      background: #020b1d;
+      background: #020819;
     }
 
     textarea.notes-input::placeholder {
@@ -207,7 +203,7 @@
 
     .photo-chip {
       background: var(--chip-bg);
-      border-radius: 12px;
+      border-radius: 14px;
       border: 1px solid var(--border-subtle);
       padding: 6px;
       display: flex;
@@ -215,18 +211,52 @@
       gap: 4px;
     }
 
-    .photo-thumb {
-      width: 100%;
-      border-radius: 9px;
-      height: 80px;
-      object-fit: cover;
-      background: #020617;
+    .photo-chip-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
     }
 
     .photo-name {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--text-soft);
-      word-break: break-word;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .photo-remove {
+      border: none;
+      padding: 0 4px;
+      background: transparent;
+      color: var(--text-faint);
+      font-size: 0.8rem;
+      cursor: pointer;
+      border-radius: 999px;
+      line-height: 1;
+    }
+
+    .photo-remove:hover {
+      background: rgba(248, 113, 113, 0.15);
+      color: #fecaca;
+    }
+
+    .photo-thumb-btn {
+      border: none;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .photo-thumb {
+      width: 100%;
+      border-radius: 10px;
+      height: 80px;
+      object-fit: cover;
+      background: #020617;
+      border: 1px solid #020617;
     }
 
     .chips-row {
@@ -275,6 +305,41 @@
       font-size: 0.75rem;
       color: var(--text-faint);
     }
+
+    /* Image preview modal */
+    .photo-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+      z-index: 50;
+    }
+
+    .photo-modal.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .photo-modal-content {
+      max-width: 96vw;
+      max-height: 80vh;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: #020617;
+    }
+
+    .photo-modal-img {
+      display: block;
+      max-width: 100%;
+      max-height: 80vh;
+    }
   </style>
 </head>
 <body>
@@ -286,7 +351,7 @@
         <div class="app-subtitle">Field notes (beta)</div>
       </div>
       <div class="btn-row">
-        <!-- Optional: link back to main tool index if you want -->
+        <!-- optional back link -->
         <!-- <a href="index.html" class="btn-ghost">Back to tools</a> -->
       </div>
     </div>
@@ -307,7 +372,7 @@
         placeholder="e.g., Old poplar line along fenceline… access via south gate; strong SW winds, deep snow drifts, deer tracks…"></textarea>
 
       <div class="field-footer">
-        Text is kept local in this form. Use “Copy notes” or “Open email” to export.
+        Notes stay local on this page until you copy or email them.
       </div>
     </section>
 
@@ -315,7 +380,7 @@
     <section class="card">
       <h2>Photos</h2>
       <p class="hint">
-        Attach quick reference photos (landmarks, stands, hazards, sky conditions, etc.). They’ll be included inline in the email body as data URLs.
+        Snap quick reference photos (landmarks, stands, hazards, sky conditions…). They are for in-app reference only.
       </p>
 
       <div class="chips-row">
@@ -354,27 +419,24 @@
           Copy notes
         </button>
         <a id="fn-email" class="btn-ghost primary" href="#" aria-disabled="true">
-          Open email with notes + photos
+          Open email with notes
         </a>
       </div>
       <div class="footer-text">
-        Email uses plain text with embedded image data URLs. Most modern email apps (including Gmail on Android) will show them inline.
+        Photos are kept in Field Notes only and <strong>do not transfer with the email</strong>. Attach images manually later if needed.
       </div>
     </section>
   </main>
 </div>
 
-<script>
-  // Convert a File to a Base64 data URL
-  function fileToBase64(file) {
-    return new Promise(function(resolve, reject) {
-      var reader = new FileReader();
-      reader.onload = function() { resolve(reader.result); };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
+<!-- Image preview modal -->
+<div id="fn-photo-modal" class="photo-modal" aria-hidden="true">
+  <div class="photo-modal-content">
+    <img id="fn-photo-modal-img" class="photo-modal-img" alt="Field note photo preview">
+  </div>
+</div>
 
+<script>
   document.addEventListener('DOMContentLoaded', function () {
     var notes = document.getElementById('fn-notes');
     var copyBtn = document.getElementById('fn-copy');
@@ -383,8 +445,11 @@
     var camInput = document.getElementById('fn-photo-camera');
     var photosGrid = document.getElementById('fn-photos');
 
+    var modal = document.getElementById('fn-photo-modal');
+    var modalImg = document.getElementById('fn-photo-modal-img');
+
     // In-memory photo list
-    // Each: { name, url, dataUri, file }
+    // Each: { name, url }
     var photos = [];
 
     function autoGrow(el) {
@@ -393,25 +458,69 @@
       el.style.height = (el.scrollHeight + 2) + 'px';
     }
 
+    function openModal(url) {
+      if (!modal || !modalImg) return;
+      modalImg.src = url;
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal() {
+      if (!modal || !modalImg) return;
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      modalImg.src = '';
+    }
+
+    if (modal) {
+      modal.addEventListener('click', closeModal);
+    }
+
     function renderPhotos() {
       photosGrid.innerHTML = '';
       if (!photos.length) return;
 
-      photos.forEach(function(p) {
+      photos.forEach(function(p, index) {
         var card = document.createElement('div');
         card.className = 'photo-chip';
+
+        var header = document.createElement('div');
+        header.className = 'photo-chip-header';
+
+        var name = document.createElement('div');
+        name.className = 'photo-name';
+        name.textContent = p.name || 'Photo';
+
+        var removeBtn = document.createElement('button');
+        removeBtn.className = 'photo-remove';
+        removeBtn.type = 'button';
+        removeBtn.innerText = '×';
+        removeBtn.setAttribute('aria-label', 'Remove photo');
+        removeBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          photos.splice(index, 1);
+          renderPhotos();
+        });
+
+        header.appendChild(name);
+        header.appendChild(removeBtn);
+
+        var thumbBtn = document.createElement('button');
+        thumbBtn.className = 'photo-thumb-btn';
+        thumbBtn.type = 'button';
 
         var img = document.createElement('img');
         img.className = 'photo-thumb';
         img.src = p.url;
         img.alt = p.name || 'Photo';
 
-        var name = document.createElement('div');
-        name.className = 'photo-name';
-        name.textContent = p.name || 'Photo';
+        thumbBtn.appendChild(img);
+        thumbBtn.addEventListener('click', function() {
+          openModal(p.url);
+        });
 
-        card.appendChild(img);
-        card.appendChild(name);
+        card.appendChild(header);
+        card.appendChild(thumbBtn);
         photosGrid.appendChild(card);
       });
     }
@@ -424,20 +533,12 @@
         var objUrl = URL.createObjectURL(file);
         var photo = {
           name: file.name,
-          url: objUrl,
-          dataUri: null,
-          file: file
+          url: objUrl
         };
         photos.push(photo);
-
-        // Precompute Base64 so email body is ready later
-        fileToBase64(file).then(function(b64) {
-          photo.dataUri = b64;
-        }).catch(function(){});
       });
 
       renderPhotos();
-      refreshNoteButtons();
     }
 
     function copyText(txt) {
@@ -449,7 +550,6 @@
           setTimeout(function(){ copyBtn.textContent = old; }, 1200);
         }).catch(function(){});
       } else {
-        // Fallback
         var t = document.createElement('textarea');
         t.value = txt;
         document.body.appendChild(t);
@@ -459,7 +559,7 @@
       }
     }
 
-    async function refreshNoteButtons() {
+    function refreshNoteButtons() {
       var text = notes ? notes.value.trim() : '';
       var hasText = !!text;
 
@@ -469,26 +569,14 @@
 
       if (!emailLink) return;
 
-      if (!hasText && photos.length === 0) {
+      if (!hasText) {
         emailLink.href = '#';
         emailLink.setAttribute('aria-disabled', 'true');
         return;
       }
 
-      var body = '';
-      if (hasText) {
-        body += text + '\n\n';
-      }
-
-      if (photos.length > 0) {
-        body += 'Attached photos (data URLs):\n\n';
-        for (var i = 0; i < photos.length; i++) {
-          var p = photos[i];
-          if (!p.dataUri) continue; // still loading, skip
-          body += '[' + (p.name || ('Photo ' + (i+1))) + ']\n';
-          body += p.dataUri + '\n\n';
-        }
-      }
+      var body = text + '\n\n' +
+        '(Photos were captured in ARA Field Notes and are not attached to this email.)';
 
       var subject = 'ARA Field Note';
       emailLink.href =
@@ -511,7 +599,6 @@
     if (fileInput) {
       fileInput.addEventListener('change', function(e) {
         addFiles(e.target.files);
-        // reset input so selecting same file again still fires change
         e.target.value = '';
       });
     }
@@ -531,7 +618,6 @@
       });
     }
 
-    // initial state
     refreshNoteButtons();
   });
 </script>
