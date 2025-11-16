@@ -178,6 +178,15 @@
     border-color: transparent;
   }
 
+.btn-ghost,
+.btn-ghost:link,
+.btn-ghost:visited {
+  font-size: 0.85rem;   /* match whatever your small buttons use */
+  padding: 6px 10px;
+  display: inline-block; /* forces <a> to size like a button */
+  text-decoration: none; /* removes underline browsers sometimes force */
+}
+
   /* Match "Open email (optional)" button to others */
 #emailBtn {
   display: inline-block;
@@ -713,7 +722,6 @@
       <h3>Share & copy</h3>
 <div class="btn-row">
   <button type="button" id="copyDesc" class="btn-ghost" disabled>Copy description</button>
-  <button type="button" id="shareLink" class="btn-ghost" disabled>Copy share link</button>
   <a id="emailBtn" class="btn-ghost" href="#" aria-disabled="true">Open email</a>
 </div>
     </div>
@@ -1308,7 +1316,7 @@ if(copySpreadBtn)copySpreadBtn.onclick=function(){ if(lastSpread) copyText(fmt2(
 
 /* ---------------- Description / Share ---------------- */
 var treeNameInput=byId('treeName'), species=byId('species'), condition=byId('condition');
-var descBox=byId('desc'), genDesc=byId('genDesc'), copyDesc=byId('copyDesc'), shareBtn=byId('shareLink'), emailBtn=byId('emailBtn');
+var descBox=byId('desc'), genDesc=byId('genDesc'), copyDesc=byId('copyDesc'), emailBtn=byId('emailBtn');
 
 function ensureOnDemand(){
   if((treeType && treeType.value==='Multi trunked tree')){
@@ -1601,7 +1609,6 @@ function generateDescription(){
   // Enable/disable controls
   var hasContent = !!html;
   if (copyDesc) copyDesc.disabled = !hasContent;
-  if (shareBtn) shareBtn.disabled = !hasContent;
 
   // 3) Email: use the plain-text twin verbatim (mailto only supports plain text)
   if (emailBtn){
@@ -2124,9 +2131,16 @@ function setFormState(st){
       var stp=byId('loc-saved-ts'); stp?.dataset && (stp.dataset.ts  = st.location.ts  || '');
     }
 
-    if(byId('desc')){
-      if(st.desc){ byId('desc').innerHTML = st.desc; copyDesc?.removeAttribute('disabled'); shareBtn?.removeAttribute('disabled'); }
-      else { byId('desc').innerHTML = '—'; copyDesc?.setAttribute('disabled',''); shareBtn?.setAttribute('disabled',''); }
+   if (byId('desc')) {
+  if (st.desc) {
+    byId('desc').innerHTML = st.desc;
+    copyDesc?.removeAttribute('disabled');
+  } else {
+    byId('desc').innerHTML = '—';
+    copyDesc?.setAttribute('disabled', '');
+  }
+}
+
     }
 // NEW: restore computed results (so Final measurements show immediately)
 if (st.results) {
