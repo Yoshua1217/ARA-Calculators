@@ -717,8 +717,6 @@
   <button type="button" id="copyDesc" class="btn-ghost" disabled>Copy description</button>
   <button type="button" id="shareLink" class="btn-ghost" disabled>Copy share link</button>
   <a id="emailBtn" class="btn btn-ghost" href="#" aria-disabled="true">Open email</a>
-  <button type="button" id="saveLog" class="btn-ok" disabled>Save to log</button>
-<a href="log.html" id="viewLog" class="btn-ghost">View log</a>
 </div>
     </div>
 
@@ -2306,162 +2304,6 @@ function initConnectivity(){
   byId('treeName')?.addEventListener('input', function(){
   if (typeof updateKeyMeasurementsBox === 'function') updateKeyMeasurementsBox();
 });
-
-/* ------------ Tree Log (local) ------------ */
-const LOG_KEY = 'ara_field_v1_log';
-
-function readLog(){
-  try{
-    const raw = localStorage.getItem(LOG_KEY);
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  }catch(e){ return []; }
-}
-function writeLog(arr){
-  try{
-    localStorage.setItem(LOG_KEY, JSON.stringify(arr || []));
-  }catch(e){}
-}
-function uid(){
-  const t = Date.now();
-  const r = Math.floor(Math.random()*1e6).toString().padStart(6,'0');
-  return `${t}-${r}`;
-}
-function accuracyBucketFromValue(m){
-  // reuse your buckets for a UI dot later; map to a label too
-  const b = accBucket(m); // 'green'|'amber'|'grey' (or 'red' when off)
-  const label = (function(x){
-    if (x==='green') return 'high';
-    if (x==='amber') return 'medium';
-    if (x==='grey')  return 'low';
-    if (x==='red')   return 'off';
-    return 'low';
-  })(b);
-  return {bucket:b, label};
-}
-
-function getBasics(){
-  return {
-    name:      (document.getElementById('treeName')?.value || '').trim(),
-    species:   (document.getElementById('species')?.value || '').trim(),
-    condition: (document.getElementById('condition')?.value || '').trim(),
-    type:      (document.getElementById('treeType')?.value || '').trim()
-  };
-}
-function getSavedLocation(){
-  const lat = parseFloat(document.getElementById('lat')?.value);
-  const lng = parseFloat(document.getElementById('lng')?.value);
-  const acc = parseFloat(document.getElementById('acc')?.value);
-  const altTag = document.getElementById('loc-saved-alt')?.dataset?.val;
-  const alt = Number.isFinite(parseFloat(altTag)) ? parseFloat(altTag) : NaN;
-  const tsTag = document.getElementById('loc-saved-ts')?.dataset?.ts;
-  const ts = Number.isFinite(parseInt(tsTag,10)) ? parseInt(tsTag,10) : null;
-  return {
-    lat: Number.isFinite(lat) ? lat : null,
-    lng: Number.isFinite(lng) ? lng : null,
-    acc: Number.isFinite(acc) ? acc : null,
-    alt: Number.isFinite(alt) ? alt : null,
-    recordedAt: ts
-  };
-}
-
-function makeLogEntry(){
-  // Ensure the on-screen description reflects current inputs
-  const descEl = document.getElementById('desc');
-  const hasDesc = !!(descEl && descEl.innerHTML && descEl.innerHTML.trim() !== '—');
-  if (!hasDesc) {
-    // Build once so Save works even if user forgot to press anything
-    if (typeof generateDescription === 'function') generateDescription();
-  }
-
-  const htmlDesc = (document.getElementById('desc')?.innerHTML || '').trim();
-  const textDesc = (typeof buildDescriptionText === 'function') ? buildDescriptionText() : '';
-
-  const basics = getBasics();
-  const loc = getSavedLocation();
-
-  // Pull your computed results (already persisted in autosave code)
-  const results = {
-    height: window.lastHeight || null,
-    single: window.lastSingle || null,
-    multi:  window.lastMulti  || null,
-    spread: window.lastSpread || null
-  };
-
-  // Quick “key measurements” snapshot for the gallery card
-  const km = {
-    circumferenceM: (results.multi?.cEqM ?? results.single?.cM) ?? null,
-    heightM:        results.height?.hM ?? null,
-    canopyM:        results.spread?.meanM ?? null
-  };
-
-  // Accuracy bucket for the little dot in the gallery
-  const accVal = Number.isFinite(loc.acc) ? loc.acc : NaN;
-  const accInfo = accuracyBucketFromValue(accVal);
-
-  return {
-    id: uid(),
-    createdAt: Date.now(),
-    title: basics.name || basics.species || 'Untitled tree',
-    basics,
-    location: loc,
-    accuracy: { meters: Number.isFinite(accVal) ? accVal : null, bucket: accInfo.bucket, label: accInfo.label },
-    keyMeasurements: km,
-    description: { html: htmlDesc, text: textDesc },
-    // Keep raw state to make a “Re-open for edit” possible later:
-    state: (typeof getFormState === 'function') ? getFormState() : null
-  };
-}
-
-async function saveToLog(){
-  // Make sure the on-screen description reflects current inputs
-  if (typeof generateDescription === 'function') generateDescription();
-
-  // Build the full, rich entry (basics, location, results, description, state)
-  const entry = (typeof makeLogEntry === 'function') ? makeLogEntry() : null;
-  if (!entry) {
-    alert('Sorry — could not assemble a log entry.');
-    return;
-  }
-
-  const list = readLog();       // uses LOG_KEY = 'ara_field_v1_log'
-  list.push(entry);
-  writeLog(list);
-
-  alert(`Saved! Log now has ${list.length} entr${list.length===1?'y':'ies'}.`);
-  // Go to the log page
-  location.href = 'log.html';
-}
-
-function updateLogButtonsEnabled(){
-  const descEl = document.getElementById('desc');
-  const hasDesc = !!(descEl && descEl.innerHTML && descEl.innerHTML.trim() !== '—');
-  const saveBtn = document.getElementById('saveLog');
-  if (saveBtn) saveBtn.disabled = !hasDesc;
-}
-
-(function initLogButtons(){
-  const saveBtn = document.getElementById('saveLog');
-  const viewBtn = document.getElementById('viewLog');
-
-  if (saveBtn) saveBtn.addEventListener('click', saveToLog);
-  if (viewBtn) viewBtn.addEventListener('click', function(){
-    const list = readLog();
-    alert(`Log contains ${list.length} entr${list.length===1?'y':'ies'}.\n\n(“View log” page coming next.)`);
-  });
-
-  // Keep Save enabled state aligned with description generation
-  updateLogButtonsEnabled();
-
-  // Also re-check whenever description is (re)generated
-  const _origGen = window.generateDescription;
-  if (typeof _origGen === 'function'){
-    window.generateDescription = function(){
-      _origGen();
-      updateLogButtonsEnabled();
-    };
-  }
-})();
   
   // Connectivity: wire up events + initial check
 initConnectivity();
@@ -2497,37 +2339,6 @@ initConnectivity();
 })();
 </script>
 <script>
-// When coming back from log.html's "Open in editor"
-document.addEventListener('DOMContentLoaded', () => {
-  const id = localStorage.getItem('ARA_EDIT_ID');
-  if (!id) return;
-
-  try {
-    // ✅ Use the variable LOG_KEY that equals 'ara_field_v1_log'
-    const raw = localStorage.getItem(LOG_KEY) || '[]';
-    const list = JSON.parse(raw);
-    const entry = list.find(e => e.id === id);
-    if (entry) {
-      // restore full state into the editor (uses your existing setFormState)
-      if (typeof setFormState === 'function' && entry.state) {
-        setFormState(entry.state);
-      }
-      // restore description box so share/copy buttons enable
-      const desc = document.getElementById('desc');
-      if (desc && entry.description?.html) {
-        desc.innerHTML = entry.description.html;
-        document.getElementById('copyDesc')?.removeAttribute('disabled');
-        document.getElementById('shareLink')?.removeAttribute('disabled');
-        document.getElementById('saveLog')?.removeAttribute('disabled');
-      }
-    }
-  } catch (e) {
-    console.warn('Failed to restore editor state from log:', e);
-  } finally {
-    localStorage.removeItem('ARA_EDIT_ID');
-  }
-});
-
     document.addEventListener('DOMContentLoaded', () => {
     try { loadState?.(); } catch(e) { console.warn(e); }
   });
