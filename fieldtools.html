@@ -2097,83 +2097,107 @@ function getFormState(){
 function setFormState(st){
   try{
     if(!st) return;
+
+    // Restore unit + mode
     if(st.inputUnit && st.inputUnit !== inputUnit) setUnit(st.inputUnit);
     if(st.calcMode  && st.calcMode  !== calcMode)  setCalcMode(st.calcMode);
 
+    // Basics
     byId('treeName')  && (byId('treeName').value  = st.basics?.name || '');
     byId('species')   && (byId('species').value   = st.basics?.species || '');
     byId('condition') && (byId('condition').value = st.basics?.condition || '');
     byId('treeType')  && (byId('treeType').value  = st.basics?.type || '');
     updateTypeVisibility();
 
+    // Single circumference
     byId('singleC') && (byId('singleC').value = st.singleC || '');
 
+    // Multi-trunk list
     if(byId('mt-list')){
-      var list=byId('mt-list'); list.innerHTML='';
-      var vals=(st.multi && Array.isArray(st.multi.values)) ? st.multi.values : [];
-      if(vals.length){ vals.forEach(v => addMtRow(v)); } else { addMtRow(); addMtRow(); }
+      var list = byId('mt-list');
+      list.innerHTML = '';
+      var vals = (st.multi && Array.isArray(st.multi.values)) ? st.multi.values : [];
+      if (vals.length){
+        vals.forEach(v => addMtRow(v));
+      } else {
+        addMtRow();
+        addMtRow();
+      }
     }
 
+    // Height inputs
     byId('h-angle') && (byId('h-angle').value = st.height?.angle || '');
     byId('h-dist')  && (byId('h-dist').value  = st.height?.dist  || '');
     byId('h-eye')   && (byId('h-eye').value   = st.height?.eye   || '');
 
+    // Canopy inputs
     byId('spreadMajor') && (byId('spreadMajor').value = st.spread?.major || '');
     byId('spreadMinor') && (byId('spreadMinor').value = st.spread?.minor || '');
 
-    if(byId('notes')){ byId('notes').value = st.notes || ''; autoGrow(byId('notes')); }
+    // Notes
+    if(byId('notes')){
+      byId('notes').value = st.notes || '';
+      autoGrow(byId('notes'));
+    }
 
+    // Location hidden fields
     if(st.location){
       byId('lat') && (byId('lat').value = st.location.lat || '');
       byId('lng') && (byId('lng').value = st.location.lng || '');
       byId('acc') && (byId('acc').value = st.location.acc || '');
-      var sa=byId('loc-saved-alt'); sa?.dataset && (sa.dataset.val = st.location.alt || '');
-      var stp=byId('loc-saved-ts'); stp?.dataset && (stp.dataset.ts  = st.location.ts  || '');
+      var sa  = byId('loc-saved-alt');
+      var stp = byId('loc-saved-ts');
+      sa?.dataset  && (sa.dataset.val = st.location.alt || '');
+      stp?.dataset && (stp.dataset.ts  = st.location.ts  || '');
     }
 
-   if (byId('desc')) {
-  if (st.desc) {
-    byId('desc').innerHTML = st.desc;
-    copyDesc?.removeAttribute('disabled');
-  } else {
-    byId('desc').innerHTML = '—';
-    copyDesc?.setAttribute('disabled', '');
+    // Description + Copy Description button
+    if (byId('desc')) {
+      if (st.desc) {
+        byId('desc').innerHTML = st.desc;
+        copyDesc?.removeAttribute('disabled');
+      } else {
+        byId('desc').innerHTML = '—';
+        copyDesc?.setAttribute('disabled', '');
+      }
+    }
+
+    // Restore computed result objects for Results + Key measurements
+    if (st.results) {
+      lastHeight = st.results.lastHeight ?? null;
+      lastSingle = st.results.lastSingle ?? null;
+      lastMulti  = st.results.lastMulti  ?? null;
+      lastSpread = st.results.lastSpread ?? null;
+    }
+
+    // Restore location runtime (cards + map) + global accuracy pill
+    if (st.locRuntime && typeof window.locImportRuntime === 'function') {
+      window.locImportRuntime(st.locRuntime);
+
+      if (typeof paintGlobalAcc === 'function') {
+        var b = st.locRuntime && st.locRuntime.best;
+        var r = st.locRuntime && st.locRuntime.recent;
+        if (b && Number.isFinite(b.acc)) {
+          paintGlobalAcc(b.acc, { state:'ok' });
+        } else if (r && Number.isFinite(r.acc)) {
+          paintGlobalAcc(r.acc, { state:'ok' });
+        } else {
+          paintGlobalAcc(NaN, { state:'off' });
+        }
+      }
+    }
+
+    // Refresh all the summary UI
+    updateResultsPanel();
+    updateCopyButtons();
+    updateKeyMeasurementsBox();
+    generateDescription();
+
+  } catch(e){
+    console.warn('setFormState failed', e);
   }
 }
 
-    }
-// NEW: restore computed results (so Final measurements show immediately)
-if (st.results) {
-  lastHeight = st.results.lastHeight ?? null;
-  lastSingle = st.results.lastSingle ?? null;
-  lastMulti  = st.results.lastMulti  ?? null;
-  lastSpread = st.results.lastSpread ?? null;
-}
-
-// NEW: restore the Location cards + map markers
-if (st.locRuntime && typeof window.locImportRuntime === 'function') {
-  window.locImportRuntime(st.locRuntime);
-  // NEW: ensure global pill reflects restored runtime (even if hidden inputs are blank)
-if (typeof paintGlobalAcc === 'function') {
-  var b = st.locRuntime && st.locRuntime.best;
-  var r = st.locRuntime && st.locRuntime.recent;
-  if (b && Number.isFinite(b.acc)) {
-    paintGlobalAcc(b.acc, { state:'ok' });
-  } else if (r && Number.isFinite(r.acc)) {
-    paintGlobalAcc(r.acc, { state:'ok' });
-  } else {
-    // we have no fix in autosave; leave it 'off' until user starts tracking
-    paintGlobalAcc(NaN, { state:'off' });
-  }
-}
-}
-
-    updateResultsPanel(); updateCopyButtons();
-      updateKeyMeasurementsBox();
-  generateDescription();
-    
-  } catch(e){ console.warn('setFormState failed', e); }
-}
 function saveState(){
   try{
     var st = getFormState();
