@@ -1,908 +1,918 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>ARA Field Tools — Field Notes</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
+  <title>ARA Field Tools – Field notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
-    :root {
-      --bg: #020816;
-      --bg-elevated: #050f24;
-      --bg-elevated-soft: #071529;
-      --border-subtle: #101c34;
-      --border-strong: #1f355a;
-      --accent: #3b82f6;
-      --accent-soft: #1d4ed8;
-      --accent-danger: #b91c1c;
-      --text: #e5f0ff;
-      --text-soft: #9fb4d6;
-      --text-faint: #6b7a96;
-      --card-radius: 16px;
-      --shadow-soft: 0 18px 40px rgba(0,0,0,0.55);
-      --input-bg: #020b1f;
-      --input-border: #111827;
-      --input-border-focus: #3b82f6;
-      --chip-bg: #020b1f;
+    :root{
+      --bg-main:#020b16;
+      --bg-card:#071727;
+      --bg-card-soft:#0b2235;
+      --border-soft:#12263a;
+      --text-main:#e5edf7;
+      --text-muted:#9caac3;
+      --accent:#3b82f6;
+      --accent-soft:#60a5fa;
+      --danger:#b91c1c;
+      --danger-soft:#f97373;
+      --chip-bg:#0e2436;
+      --shadow-card:0 14px 35px rgba(0,0,0,0.45);
+      --radius-card:18px;
     }
 
-    * {
-      box-sizing: border-box;
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg-main);
+      color:var(--text-main);
+      -webkit-font-smoothing:antialiased;
     }
 
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #020816;
-      color: var(--text);
-    }
-
-    .app-shell {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .app-header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: rgba(2, 8, 22, 0.98);
-      backdrop-filter: blur(18px);
-      border-bottom: 1px solid rgba(31, 53, 90, 0.7);
-      padding: 10px 16px 8px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-    }
-
-    .app-header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .app-title-block {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .app-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-    }
-
-    .app-subtitle {
-      font-size: 0.8rem;
-      color: var(--text-soft);
-    }
-
-    .btn-ghost {
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--text);
-      font-size: 0.85rem;
-      padding: 6px 12px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      text-decoration: none;
-      transition: background 0.15s ease, border-color 0.15s ease, transform 0.06s ease, box-shadow 0.15s ease;
-    }
-
-    .btn-ghost:disabled,
-    .btn-ghost[aria-disabled="true"] {
-      opacity: 0.45;
-      cursor: default;
-    }
-
-    .btn-ghost:not(:disabled):not([aria-disabled="true"]):active {
-      transform: translateY(1px);
-    }
-
-    .btn-ghost:hover:not(:disabled):not([aria-disabled="true"]) {
-      background: #0f172a;
-      border-color: rgba(148, 163, 184, 0.7);
-    }
-
-    .btn-ghost.primary {
-      border-color: var(--accent-soft);
-      background: var(--accent-soft);
-      color: #f9fbff;
-    }
-
-    .btn-ghost.primary:hover {
-      background: var(--accent);
-      border-color: var(--accent);
-    }
-
-    .btn-ghost.danger {
-      border-color: rgba(248,113,113,0.7);
-      color: #fecaca;
-      background: #111827;
-    }
-
-    @keyframes dangerPulse {
-      0% {
-        box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
-        background: #111827;
-      }
-      60% {
-        box-shadow: 0 0 0 8px rgba(248, 113, 113, 0);
-        background: #7f1d1d;
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
-        background: #111827;
-      }
-    }
-
-    .btn-ghost.danger:hover:not(:disabled):not([aria-disabled="true"]),
-    .btn-ghost.danger:active:not(:disabled):not([aria-disabled="true"]) {
-      background: #7f1d1d;
-      border-color: #ef4444;
-      color: #fee2e2;
-      animation: dangerPulse 0.35s ease-out;
-    }
-
-    .btn-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    main {
-      flex: 1;
-      padding: 16px 16px 24px;
+    .app-shell{
       max-width: 720px;
       margin: 0 auto;
-      width: 100%;
+      padding: 12px 12px 32px;
     }
 
-    .card {
-      background: var(--bg-elevated-soft);
-      border-radius: var(--card-radius);
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-soft);
-      padding: 16px 16px 20px;
-      margin-bottom: 16px;
+    .app-header{
+      padding: 8px 4px 12px;
+    }
+    .app-title{
+      font-weight: 650;
+      font-size: 1.15rem;
+    }
+    .app-subtitle{
+      font-size:0.85rem;
+      color:var(--text-muted);
+      margin-top:2px;
     }
 
-    .card h2 {
-      margin: 0 0 4px;
-      font-size: 1rem;
-      font-weight: 600;
+    .card{
+      background:var(--bg-card);
+      border-radius:var(--radius-card);
+      box-shadow:var(--shadow-card);
+      border:1px solid var(--border-soft);
+      padding:16px 14px 14px;
+      margin-top:14px;
+    }
+    .card-title{
+      font-size:0.95rem;
+      font-weight:600;
+      margin:0 0 8px;
+    }
+    .hint{
+      font-size:0.78rem;
+      color:var(--text-muted);
+      margin:4px 0 0;
     }
 
-    .card p.hint {
-      margin: 0 0 12px;
-      font-size: 0.8rem;
-      color: var(--text-soft);
+    textarea{
+      width:100%;
+      min-height:120px;
+      resize:none;
+      border-radius:14px;
+      border:1px solid var(--border-soft);
+      background:#0b2235;
+      color:var(--text-main);
+      padding:10px 11px;
+      font-size:0.9rem;
+      line-height:1.45;
+    }
+    textarea:focus{
+      outline:none;
+      border-color:var(--accent-soft);
+      box-shadow:0 0 0 1px rgba(59,130,246,0.65);
     }
 
-    label.block-label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 500;
-      margin-bottom: 6px;
+    .field-label{
+      font-size:0.85rem;
+      font-weight:500;
+      margin-bottom:4px;
+      display:block;
     }
 
-    textarea.notes-input {
-      width: 100%;
-      min-height: 140px;
-      resize: none;
-      border-radius: 18px;
-      border: 1px solid var(--input-border);
-      background: var(--input-bg);
-      color: var(--text);
-      padding: 12px 14px;
-      font-family: inherit;
-      font-size: 0.9rem;
-      line-height: 1.4;
-      outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    .btn-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
     }
 
-    textarea.notes-input:focus {
-      border-color: var(--input-border-focus);
-      box-shadow: 0 0 0 1px rgba(59,130,246,0.7);
-      background: #020819;
+    .btn-primary,
+    .btn-ghost,
+    .btn-danger-outline{
+      border-radius:999px;
+      border:1px solid transparent;
+      font-size:0.85rem;
+      padding:7px 14px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      white-space:nowrap;
+      background:transparent;
+      color:var(--text-main);
     }
 
-    textarea.notes-input::placeholder {
-      color: var(--text-faint);
+    .btn-primary{
+      background:var(--accent);
+      border-color:var(--accent);
+      color:#f9fbff;
+    }
+    .btn-primary:disabled{
+      opacity:0.4;
+      cursor:default;
     }
 
-    .field-footer {
-      margin-top: 6px;
-      font-size: 0.8rem;
-      color: var(--text-faint);
+    .btn-ghost{
+      background:var(--chip-bg);
+      border-color:var(--border-soft);
+      color:var(--text-main);
+    }
+    .btn-ghost:disabled{
+      opacity:0.4;
+      cursor:default;
+    }
+    .btn-ghost-link{
+      text-decoration:none;
     }
 
-    .photos-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-      gap: 10px;
-      margin-top: 10px;
+    .btn-danger-outline{
+      border-color:var(--danger);
+      color:var(--danger-soft);
+      background:transparent;
     }
 
-    .photo-chip {
-      background: var(--chip-bg);
-      border-radius: 14px;
-      border: 1px solid var(--border-subtle);
-      padding: 6px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    .btn-danger-outline.flash{
+      animation:flash-red 250ms ease-out;
+    }
+    @keyframes flash-red{
+      0%{box-shadow:0 0 0 0 rgba(248,113,113,0.0);}
+      50%{box-shadow:0 0 0 3px rgba(248,113,113,0.5);}
+      100%{box-shadow:0 0 0 0 rgba(248,113,113,0.0);}
     }
 
-    .photo-chip-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 4px;
+    .btn-small{
+      font-size:0.78rem;
+      padding:5px 10px;
     }
 
-    .photo-name {
-      font-size: 0.72rem;
-      color: var(--text-soft);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
+    .file-input-hidden{
+      display:none;
     }
 
-    .photo-remove {
-      border: none;
-      padding: 0 4px;
-      background: transparent;
-      color: var(--text-faint);
-      font-size: 0.8rem;
-      cursor: pointer;
-      border-radius: 999px;
-      line-height: 1;
+    .photo-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:6px;
     }
 
-    .photo-remove:hover {
-      background: rgba(248, 113, 113, 0.15);
-      color: #fecaca;
+    .photo-grid{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(96px,1fr));
+      gap:8px;
+    }
+    .photo-thumb{
+      position:relative;
+      border-radius:12px;
+      overflow:hidden;
+      background:#020b16;
+      border:1px solid var(--border-soft);
+      cursor:pointer;
+    }
+    .photo-thumb img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .photo-remove{
+      position:absolute;
+      top:4px;
+      right:4px;
+      background:rgba(15,23,42,0.82);
+      border-radius:999px;
+      width:20px;
+      height:20px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:13px;
+      color:#e5edf7;
+      border:1px solid rgba(148,163,184,0.7);
+      cursor:pointer;
     }
 
-    .photo-thumb-btn {
-      border: none;
-      padding: 0;
-      background: transparent;
-      cursor: pointer;
+    /* Image overlay */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(8,15,26,0.9);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+    }
+    .overlay.hidden{
+      display:none;
+    }
+    .overlay-inner{
+      max-width:92vw;
+      max-height:88vh;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .overlay-inner img{
+      max-width:92vw;
+      max-height:70vh;
+      border-radius:16px;
+      border:1px solid var(--border-soft);
+      box-shadow:0 18px 40px rgba(0,0,0,0.7);
+      background:#020b16;
+      object-fit:contain;
+    }
+    .overlay-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
     }
 
-    .photo-thumb {
-      width: 100%;
-      border-radius: 10px;
-      height: 80px;
-      object-fit: cover;
-      background: #020617;
-      border: 1px solid #020617;
+    .divider{
+      height:1px;
+      background:rgba(15,23,42,0.9);
+      margin:10px 0;
     }
 
-    .chips-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 8px;
+    .bottom-section{
+      margin-top:16px;
+    }
+    .bottom-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:8px;
     }
 
-    .file-input {
-      display: none;
+    .tiny-note{
+      font-size:0.72rem;
+      color:var(--text-muted);
     }
 
-    .pill-label {
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.35);
-      background: #020617;
-      padding: 6px 11px;
-      font-size: 0.8rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      color: var(--text-soft);
-      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    /* Audio UI */
+    .audio-bar-wrap{
+      margin-top:8px;
+    }
+    .audio-bar{
+      padding:8px 12px;
+      border-radius:999px;
+      background:var(--bg-card-soft);
+      border:1px solid rgba(148,163,184,0.35);
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .audio-bar.recording{
+      border-color:var(--danger-soft);
+    }
+    .audio-circle-btn{
+      width:32px;
+      height:32px;
+      border-radius:999px;
+      border:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:16px;
+      cursor:pointer;
+      background:var(--accent);
+      color:#f9fafb;
+      flex-shrink:0;
+    }
+    .audio-bar.recording .audio-circle-btn{
+      background:var(--danger);
+    }
+    .audio-wave-placeholder{
+      flex:1 1 auto;
+      height:18px;
+      border-radius:999px;
+      background:
+        linear-gradient(
+          to right,
+          rgba(148,163,184,0.18) 0%,
+          rgba(148,163,184,0.55) 8%,
+          rgba(148,163,184,0.18) 16%,
+          rgba(148,163,184,0.55) 24%,
+          rgba(148,163,184,0.18) 32%,
+          rgba(148,163,184,0.55) 40%,
+          rgba(148,163,184,0.18) 48%,
+          rgba(148,163,184,0.55) 56%,
+          rgba(148,163,184,0.18) 64%,
+          rgba(148,163,184,0.55) 72%,
+          rgba(148,163,184,0.18) 80%,
+          rgba(148,163,184,0.55) 88%,
+          rgba(148,163,184,0.18) 96%
+        );
+      opacity:0.85;
+    }
+    .audio-time{
+      font-variant-numeric:tabular-nums;
+      font-size:0.85rem;
+      color:rgba(226,232,240,0.9);
+    }
+    .audio-delete-btn{
+      border:none;
+      background:transparent;
+      color:var(--danger-soft);
+      font-size:18px;
+      margin-left:2px;
+      cursor:pointer;
+    }
+    .hidden{
+      display:none;
     }
 
-    .pill-label:hover {
-      background: #0b1120;
-      border-color: rgba(148,163,184,0.8);
-      color: var(--text);
+    /* Reset confirm modal */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.60);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:60;
     }
-
-    .pill-label span.icon {
-      font-size: 0.9rem;
+    .modal{
+      background:var(--bg-card);
+      border-radius:18px;
+      padding:16px 16px 12px;
+      border:1px solid var(--border-soft);
+      width:90%;
+      max-width:340px;
+      box-shadow:0 18px 40px rgba(0,0,0,0.7);
     }
-
-    .footer-card {
-      background: transparent;
-      border: none;
-      box-shadow: none;
-      padding-top: 4px;
+    .modal-title{
+      font-size:0.98rem;
+      font-weight:600;
+      margin:0 0 4px;
     }
-
-    .footer-text {
-      font-size: 0.75rem;
-      color: var(--text-faint);
+    .modal-body{
+      font-size:0.82rem;
+      color:var(--text-muted);
+      margin-bottom:12px;
     }
-
-    /* Image preview modal */
-    .photo-modal,
-    .reset-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.18s ease;
-      z-index: 50;
-    }
-
-    .photo-modal.show,
-    .reset-modal.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .photo-modal-content {
-      max-width: 96vw;
-      max-height: 80vh;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.8);
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid rgba(148,163,184,0.7);
-      background: #020617;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .photo-modal-img {
-      display: block;
-      max-width: 100%;
-      max-height: 70vh;
-    }
-
-    .photo-modal-footer {
-      padding: 8px 10px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      background: #020617;
-      border-top: 1px solid rgba(15,23,42,0.9);
-    }
-
-    .reset-modal-card {
-      background: #020617;
-      border-radius: 16px;
-      border: 1px solid rgba(248,113,113,0.7);
-      padding: 16px 16px 12px;
-      max-width: 320px;
-      width: calc(100% - 40px);
-      box-shadow: 0 25px 50px rgba(0,0,0,0.85);
-    }
-
-    .reset-modal-card h3 {
-      margin: 0 0 6px;
-      font-size: 1rem;
-    }
-
-    .reset-modal-card p {
-      margin: 0 0 14px;
-      font-size: 0.85rem;
-      color: var(--text-soft);
-    }
-
-    .reset-modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
+    .modal-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
     }
   </style>
 </head>
 <body>
-<div class="app-shell">
-  <header class="app-header">
-    <div class="app-header-row">
-      <div class="app-title-block">
-        <div class="app-title">ARA Field Tools</div>
-        <div class="app-subtitle">Field notes (beta)</div>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="app-title">ARA Field Tools</div>
+      <div class="app-subtitle">Field notes (beta)</div>
+    </header>
+
+    <!-- NOTES -->
+    <section class="card">
+      <h2 class="card-title">Note</h2>
+      <label for="noteText" class="field-label">Field note</label>
+      <textarea id="noteText" placeholder="Quick notes, observations, hazards, landmarks…"></textarea>
+      <p class="hint">This note stays on this device and can be copied or emailed out.</p>
+    </section>
+
+    <!-- PHOTOS -->
+    <section class="card">
+      <h2 class="card-title">Photos</h2>
+      <div class="photo-actions">
+        <label class="btn-ghost btn-small" for="photoDevice">
+          Choose from device
+          <input id="photoDevice" class="file-input-hidden" type="file" accept="image/*" multiple>
+        </label>
+        <label class="btn-ghost btn-small" for="photoCamera">
+          Take photo
+          <input id="photoCamera" class="file-input-hidden" type="file" accept="image/*" capture="environment">
+        </label>
       </div>
+
+      <div id="photoGrid" class="photo-grid"></div>
+      <p class="hint">Images don’t transfer automatically in email – you’ll need to attach them separately.</p>
+    </section>
+
+    <!-- AUDIO -->
+    <section class="card">
+      <h2 class="card-title">Audio note</h2>
+      <p class="hint">Optional quick voice note for this entry. This version is a visual prototype (no real recording yet).</p>
+
       <div class="btn-row">
-        <!-- optional back link -->
-        <!-- <a href="index.html" class="btn-ghost">Back to tools</a> -->
+        <button type="button" id="audioStart" class="btn-primary">Start recording</button>
       </div>
-    </div>
-  </header>
 
-  <main>
-    <!-- Notes card -->
-    <section class="card">
-      <h2>Field notes</h2>
-      <p class="hint">
-        Quick scratchpad for observations, routes, hazards, ideas — anything that doesn’t need a full tree log.
-      </p>
-
-      <label for="fn-notes" class="block-label">Notes</label>
-      <textarea
-        id="fn-notes"
-        class="notes-input"
-        placeholder="e.g., Old poplar line along fenceline… access via south gate; strong SW winds, deep snow drifts, deer tracks…"></textarea>
-
-      <div class="field-footer">
-        Notes and photos are autosaved on this device until you reset the form.
+      <div class="audio-bar-wrap hidden" id="audioBarWrap">
+        <div class="audio-bar" id="audioBar">
+          <button type="button" id="audioCircle" class="audio-circle-btn" aria-label="Play audio">
+            ►
+          </button>
+          <div class="audio-wave-placeholder"></div>
+          <span id="audioTime" class="audio-time">00:00</span>
+          <button type="button" id="audioDelete" class="audio-delete-btn" aria-label="Delete audio note">
+            ×
+          </button>
+        </div>
       </div>
+
+      <p class="hint">Audio length is saved locally, but no sound is recorded yet.</p>
     </section>
 
-    <!-- Photos card -->
-    <section class="card">
-      <h2>Photos</h2>
-      <p class="hint">
-        Snap quick reference photos (landmarks, stands, hazards, sky conditions…). They are for in-app reference only.
-      </p>
-
-      <div class="chips-row">
-        <label class="pill-label" for="fn-photo-file">
-          <span class="icon">📁</span>
-          <span>From gallery</span>
-        </label>
-        <input
-          id="fn-photo-file"
-          class="file-input"
-          type="file"
-          accept="image/*"
-          multiple
-        />
-
-        <label class="pill-label" for="fn-photo-camera">
-          <span class="icon">📷</span>
-          <span>Take photo</span>
-        </label>
-        <input
-          id="fn-photo-camera"
-          class="file-input"
-          type="file"
-          accept="image/*"
-          capture="environment"
-        />
+    <!-- BOTTOM ACTIONS -->
+    <section class="card bottom-section">
+      <h2 class="card-title">Share / manage</h2>
+      <div class="bottom-row">
+        <button type="button" id="copyNoteBtn" class="btn-ghost">Copy note text</button>
+        <a id="emailBtn" class="btn-ghost btn-ghost-link" href="#" aria-disabled="true">Open email</a>
+        <button type="button" id="saveNotebookBtn" class="btn-ghost" disabled>Save to notebook</button>
       </div>
 
-      <div id="fn-photos" class="photos-grid" aria-live="polite"></div>
+      <div class="divider"></div>
+
+      <div class="bottom-row">
+        <button type="button" id="resetBtn" class="btn-danger-outline">Reset form</button>
+      </div>
+      <p class="tiny-note">Autosave is local to this device. Reset clears this page and its autosave.</p>
     </section>
+  </div>
 
-    <!-- Actions -->
-    <section class="card footer-card">
-      <div class="btn-row" style="margin-bottom:8px;">
-        <button type="button" id="fn-copy" class="btn-ghost" disabled>
-          Copy notes
-        </button>
-        <a id="fn-email" class="btn-ghost" href="#" aria-disabled="true">
-          Open email
-        </a>
-        <button type="button" id="fn-save-nb" class="btn-ghost">
-          Save to notebook
-        </button>
-        <button type="button" id="fn-reset" class="btn-ghost danger">
-          Reset form
-        </button>
+  <!-- Image overlay -->
+  <div id="imageOverlay" class="overlay hidden" aria-hidden="true">
+    <div class="overlay-inner">
+      <img id="overlayImg" alt="Expanded field note photo">
+      <div class="overlay-actions">
+        <button type="button" id="overlayClose" class="btn-ghost btn-small">Close</button>
+        <a id="overlayDownload" class="btn-ghost btn-small btn-ghost-link" href="#" download="field-note-photo.jpg">Download image</a>
       </div>
-      <div class="footer-text">
-        Photos are kept in Field Notes only and <strong>do not transfer with the email</strong>. Attach images manually later if needed.
-      </div>
-    </section>
-  </main>
-</div>
-
-<!-- Image preview modal -->
-<div id="fn-photo-modal" class="photo-modal" aria-hidden="true">
-  <div class="photo-modal-content">
-    <img id="fn-photo-modal-img" class="photo-modal-img" alt="Field note photo preview">
-    <div class="photo-modal-footer">
-      <button type="button" id="fn-photo-download" class="btn-ghost" style="font-size:0.8rem; padding:4px 10px; display:none;">
-        Download image
-      </button>
-      <button type="button" id="fn-photo-close" class="btn-ghost" style="font-size:0.8rem; padding:4px 10px;">
-        Close
-      </button>
     </div>
   </div>
-</div>
 
-<!-- Reset confirmation modal -->
-<div id="fn-reset-modal" class="reset-modal" aria-hidden="true">
-  <div class="reset-modal-card">
-    <h3>Reset field notes?</h3>
-    <p>
-      This will clear all notes and photos from this device for Field Notes. This cannot be undone.
-    </p>
-    <div class="reset-modal-actions">
-      <button type="button" id="fn-reset-cancel" class="btn-ghost">
-        Cancel
-      </button>
-      <button type="button" id="fn-reset-confirm" class="btn-ghost danger">
-        Reset
-      </button>
+  <!-- Reset confirm modal -->
+  <div id="resetModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal">
+      <h3 class="modal-title">Reset this note?</h3>
+      <p class="modal-body">This clears the text, photos, audio state, and the autosaved copy on this device.</p>
+      <div class="modal-actions">
+        <button type="button" id="resetCancel" class="btn-ghost btn-small">Cancel</button>
+        <button type="button" id="resetConfirm" class="btn-danger-outline btn-small">Reset</button>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    var notes = document.getElementById('fn-notes');
-    var copyBtn = document.getElementById('fn-copy');
-    var emailLink = document.getElementById('fn-email');
-    var fileInput = document.getElementById('fn-photo-file');
-    var camInput = document.getElementById('fn-photo-camera');
-    var photosGrid = document.getElementById('fn-photos');
-    var resetBtn = document.getElementById('fn-reset');
-    var saveNotebookBtn = document.getElementById('fn-save-nb'); // placeholder
-
-    // Photo modal
-    var modal = document.getElementById('fn-photo-modal');
-    var modalImg = document.getElementById('fn-photo-modal-img');
-    var modalDownloadBtn = document.getElementById('fn-photo-download');
-    var modalCloseBtn = document.getElementById('fn-photo-close');
-
-    // Reset modal
-    var resetModal = document.getElementById('fn-reset-modal');
-    var resetCancelBtn = document.getElementById('fn-reset-cancel');
-    var resetConfirmBtn = document.getElementById('fn-reset-confirm');
-
-    var SAVE_KEY = 'ara_fieldnotes_v1';
-
-    // photos: [{ name, dataUrl, source: 'gallery'|'camera' }]
-    var photos = [];
-    var currentPhotoIndex = -1;
-
-    var saveTimer = null;
-
-    function autoGrow(el) {
-      if (!el) return;
-      el.style.height = 'auto';
-      el.style.height = (el.scrollHeight + 2) + 'px';
+  <script>
+    /* ---------- Small helpers ---------- */
+    function byId(id){ return document.getElementById(id); }
+    function nowLocalPretty(){
+      const d=new Date();
+      const pad=n=>String(n).padStart(2,'0');
+      return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
     }
-
-    function autoSaveSoon() {
-      if (saveTimer) clearTimeout(saveTimer);
-      saveTimer = setTimeout(saveState, 250);
+    function fmtTime(ms){
+      const total = Math.floor(ms/1000);
+      const m = Math.floor(total/60);
+      const s = total%60;
+      return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
     }
-
-    function getState() {
-      return {
-        notes: notes ? notes.value || '' : '',
-        photos: photos.map(function(p) {
-          return { name: p.name, dataUrl: p.dataUrl, source: p.source || 'gallery' };
-        })
-      };
-    }
-
-    function saveState() {
-      try {
-        var st = getState();
-        localStorage.setItem(SAVE_KEY, JSON.stringify(st));
-      } catch (e) {
-        console.warn('Field notes save failed', e);
+    function copyToClipboard(txt){
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        return navigator.clipboard.writeText(txt);
       }
-    }
-
-    function applyState(st) {
-      if (!st) return;
-      if (notes) {
-        notes.value = st.notes || '';
-        autoGrow(notes);
-      }
-      photos = [];
-      if (Array.isArray(st.photos)) {
-        st.photos.forEach(function(p) {
-          if (p && p.dataUrl) {
-            photos.push({
-              name: p.name || 'Photo',
-              dataUrl: p.dataUrl,
-              source: p.source === 'camera' ? 'camera' : 'gallery'
-            });
-          }
-        });
-      }
-      renderPhotos();
-      refreshNoteButtons();
-    }
-
-    function loadState() {
-      try {
-        var raw = localStorage.getItem(SAVE_KEY);
-        if (!raw) return;
-        applyState(JSON.parse(raw));
-      } catch (e) {
-        console.warn('Field notes load failed', e);
-      }
-    }
-
-    function openPhotoModal(index) {
-      if (!modal || !modalImg) return;
-      if (index < 0 || index >= photos.length) return;
-      currentPhotoIndex = index;
-      var p = photos[index];
-      modalImg.src = p.dataUrl;
-      modal.classList.add('show');
-      modal.setAttribute('aria-hidden', 'false');
-
-      // Show download button only for camera photos
-      if (p.source === 'camera') {
-        modalDownloadBtn.style.display = 'inline-flex';
-      } else {
-        modalDownloadBtn.style.display = 'none';
-      }
-    }
-
-    function closePhotoModal() {
-      if (!modal || !modalImg) return;
-      modal.classList.remove('show');
-      modal.setAttribute('aria-hidden', 'true');
-      modalImg.src = '';
-      currentPhotoIndex = -1;
-    }
-
-    function downloadCurrentPhoto() {
-      if (currentPhotoIndex < 0 || currentPhotoIndex >= photos.length) return;
-      var p = photos[currentPhotoIndex];
-      if (!p || !p.dataUrl) return;
-
-      var a = document.createElement('a');
-      a.href = p.dataUrl;
-      var baseName = p.name && p.name !== 'Photo' ? p.name : 'field-note-photo.jpg';
-      a.download = baseName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-
-    if (modal) {
-      // clicking dark backdrop closes
-      modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-          closePhotoModal();
-        }
-      });
-    }
-    if (modalCloseBtn) {
-      modalCloseBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        closePhotoModal();
-      });
-    }
-    if (modalDownloadBtn) {
-      modalDownloadBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        downloadCurrentPhoto();
-      });
-    }
-
-    function renderPhotos() {
-      photosGrid.innerHTML = '';
-      if (!photos.length) return;
-
-      photos.forEach(function(p, index) {
-        var card = document.createElement('div');
-        card.className = 'photo-chip';
-
-        var header = document.createElement('div');
-        header.className = 'photo-chip-header';
-
-        var name = document.createElement('div');
-        name.className = 'photo-name';
-        name.textContent = p.name || 'Photo';
-
-        var removeBtn = document.createElement('button');
-        removeBtn.className = 'photo-remove';
-        removeBtn.type = 'button';
-        removeBtn.innerText = '×';
-        removeBtn.setAttribute('aria-label', 'Remove photo');
-        removeBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          photos.splice(index, 1);
-          renderPhotos();
-          autoSaveSoon();
-        });
-
-        header.appendChild(name);
-        header.appendChild(removeBtn);
-
-        var thumbBtn = document.createElement('button');
-        thumbBtn.className = 'photo-thumb-btn';
-        thumbBtn.type = 'button';
-
-        var img = document.createElement('img');
-        img.className = 'photo-thumb';
-        img.src = p.dataUrl;
-        img.alt = p.name || 'Photo';
-
-        thumbBtn.appendChild(img);
-        thumbBtn.addEventListener('click', function() {
-          openPhotoModal(index);
-        });
-
-        card.appendChild(header);
-        card.appendChild(thumbBtn);
-        photosGrid.appendChild(card);
-      });
-    }
-
-    function addFiles(fileList, source) {
-      if (!fileList || !fileList.length) return;
-      var src = source || 'gallery';
-
-      Array.prototype.forEach.call(fileList, function(file) {
-        if (!file.type || !file.type.startsWith('image/')) return;
-
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-          photos.push({
-            name: file.name || 'Photo',
-            dataUrl: ev.target.result,
-            source: src
-          });
-          renderPhotos();
-          autoSaveSoon();
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function copyText(txt) {
-      if (!txt) return;
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(function() {
-          var old = copyBtn.textContent;
-          copyBtn.textContent = 'Copied ✓';
-          setTimeout(function(){ copyBtn.textContent = old; }, 1200);
-        }).catch(function(){});
-      } else {
-        var t = document.createElement('textarea');
-        t.value = txt;
+      return new Promise(function(resolve){
+        const t=document.createElement('textarea');
+        t.value=txt;
+        t.style.position='fixed';
+        t.style.opacity='0';
         document.body.appendChild(t);
         t.select();
-        try { document.execCommand('copy'); } catch(e) {}
-        document.body.removeChild(t);
+        document.execCommand('copy');
+        t.remove();
+        resolve();
+      });
+    }
+
+    /* ---------- Autosave core ---------- */
+    const SAVE_KEY = 'ara_field_notes_v1';
+    let _saveTimer = null;
+
+    function getState(){
+      try{
+        return {
+          note: byId('noteText').value || '',
+          audio: {
+            hasClip: audioDurationMs > 0,
+            durationMs: audioDurationMs
+          }
+          // photos intentionally not persisted (would require blobs/base64)
+        };
+      }catch(e){
+        console.warn('getState failed', e);
+        return null;
       }
     }
 
-    function refreshNoteButtons() {
-      var text = notes ? notes.value.trim() : '';
-      var hasText = !!text;
-
-      if (copyBtn) {
-        copyBtn.disabled = !hasText;
-      }
-
-      if (!emailLink) return;
-
-      if (!hasText) {
-        emailLink.href = '#';
-        emailLink.setAttribute('aria-disabled', 'true');
-        return;
-      }
-
-      var body = text + '\n\n' +
-        '(Photos were captured in ARA Field Notes and are not attached to this email.)';
-
-      var subject = 'ARA Field Note';
-      emailLink.href =
-        'mailto:?subject=' +
-        encodeURIComponent(subject) +
-        '&body=' +
-        encodeURIComponent(body);
-      emailLink.setAttribute('aria-disabled', 'false');
+    function saveStateSoon(){
+      try{
+        if(_saveTimer) clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(saveState, 250);
+      }catch(e){ console.warn('saveStateSoon failed', e); }
     }
 
-    function showResetModal() {
-      if (!resetModal) return;
-      resetModal.classList.add('show');
-      resetModal.setAttribute('aria-hidden', 'false');
-    }
-
-    function hideResetModal() {
-      if (!resetModal) return;
-      resetModal.classList.remove('show');
-      resetModal.setAttribute('aria-hidden', 'true');
-    }
-
-    function doReset() {
-      if (notes) {
-        notes.value = '';
-        autoGrow(notes);
+    function saveState(){
+      try{
+        const st = getState();
+        if(st) localStorage.setItem(SAVE_KEY, JSON.stringify(st));
+      }catch(e){
+        console.warn('saveState failed', e);
       }
+    }
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(SAVE_KEY);
+        if(!raw) return;
+        const st = JSON.parse(raw);
+        if(st.note) byId('noteText').value = st.note;
+        autoGrowNote();
+        if(st.audio && st.audio.hasClip && st.audio.durationMs){
+          audioDurationMs = st.audio.durationMs;
+          setAudioState('playback');
+          updateAudioTimer(audioDurationMs);
+        }
+        updateShareButtons();
+      }catch(e){
+        console.warn('loadState failed', e);
+      }
+    }
+
+    function clearState(){
+      try{
+        localStorage.removeItem(SAVE_KEY);
+      }catch(e){}
+    }
+
+    /* ---------- Note auto-grow ---------- */
+    const noteEl = byId('noteText');
+    function autoGrowNote(){
+      if(!noteEl) return;
+      noteEl.style.height = 'auto';
+      noteEl.style.height = (noteEl.scrollHeight+2)+'px';
+    }
+    noteEl.addEventListener('input', function(){
+      autoGrowNote();
+      saveStateSoon();
+      updateShareButtons();
+    });
+    autoGrowNote();
+
+    /* ---------- Photos (no autosave of blobs) ---------- */
+    const photoDevice = byId('photoDevice');
+    const photoCamera = byId('photoCamera');
+    const photoGrid   = byId('photoGrid');
+
+    let photos = []; // {id, url, fromCamera}
+
+    function addFiles(fileList, fromCamera){
+      if(!fileList || !fileList.length) return;
+      Array.prototype.forEach.call(fileList, function(file){
+        if(!file.type || !file.type.startsWith('image/')) return;
+        const url = URL.createObjectURL(file);
+        const id  = 'p'+Date.now()+Math.random().toString(16).slice(2);
+        photos.push({id, url, fromCamera: !!fromCamera});
+        renderPhotos();
+      });
+      updateShareButtons();
+    }
+
+    function renderPhotos(){
+      photoGrid.innerHTML = '';
+      photos.forEach(function(ph){
+        const div = document.createElement('div');
+        div.className = 'photo-thumb';
+        div.dataset.id = ph.id;
+
+        const img = document.createElement('img');
+        img.src = ph.url;
+        img.alt = 'Field note photo';
+
+        const x = document.createElement('button');
+        x.type = 'button';
+        x.className = 'photo-remove';
+        x.textContent = '×';
+
+        x.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          removePhoto(ph.id);
+        });
+
+        div.addEventListener('click', function(){
+          openOverlay(ph);
+        });
+
+        div.appendChild(img);
+        div.appendChild(x);
+        photoGrid.appendChild(div);
+      });
+    }
+
+    function removePhoto(id){
+      photos = photos.filter(p => p.id !== id);
+      renderPhotos();
+      updateShareButtons();
+    }
+
+    photoDevice.addEventListener('change', function(e){
+      addFiles(e.target.files, false);
+      photoDevice.value = '';
+    });
+    photoCamera.addEventListener('change', function(e){
+      addFiles(e.target.files, true);
+      photoCamera.value = '';
+    });
+
+    /* ---------- Image overlay ---------- */
+    const overlay = byId('imageOverlay');
+    const overlayImg = byId('overlayImg');
+    const overlayClose = byId('overlayClose');
+    const overlayDownload = byId('overlayDownload');
+    let currentOverlayPhoto = null;
+
+    function openOverlay(photo){
+      currentOverlayPhoto = photo;
+      overlayImg.src = photo.url;
+      overlay.classList.remove('hidden');
+      overlay.setAttribute('aria-hidden','false');
+
+      if(photo.fromCamera){
+        overlayDownload.style.display = '';
+        overlayDownload.href = photo.url;
+      }else{
+        overlayDownload.style.display = 'none';
+      }
+    }
+
+    function closeOverlay(){
+      overlay.classList.add('hidden');
+      overlay.setAttribute('aria-hidden','true');
+      overlayImg.src = '';
+      currentOverlayPhoto = null;
+    }
+
+    overlayClose.addEventListener('click', closeOverlay);
+    overlay.addEventListener('click', function(e){
+      if(e.target === overlay) closeOverlay();
+    });
+
+    /* ---------- Audio dummy UI ---------- */
+    const audioStartBtn = byId('audioStart');
+    const audioBarWrap  = byId('audioBarWrap');
+    const audioBar      = byId('audioBar');
+    const audioCircle   = byId('audioCircle');
+    const audioTime     = byId('audioTime');
+    const audioDelete   = byId('audioDelete');
+
+    let audioState = 'idle';      // 'idle' | 'recording' | 'playback' | 'playing'
+    let audioDurationMs = 0;
+    let recordStart = 0;
+    let playStart = 0;
+    let recordTimer = null;
+    let playTimer = null;
+
+    function clearAudioTimers(){
+      if(recordTimer){ clearInterval(recordTimer); recordTimer=null; }
+      if(playTimer){ clearInterval(playTimer); playTimer=null; }
+    }
+
+    function updateAudioTimer(ms){
+      audioTime.textContent = fmtTime(ms);
+    }
+
+    function setAudioState(state){
+      audioState = state;
+      if(state === 'idle'){
+        audioBarWrap.classList.add('hidden');
+        audioBar.classList.remove('recording');
+        audioCircle.textContent = '►';
+        audioStartBtn.textContent = 'Start recording';
+      }else if(state === 'recording'){
+        audioBarWrap.classList.remove('hidden');
+        audioBar.classList.add('recording');
+        audioCircle.textContent = '●';
+        audioStartBtn.textContent = 'Stop recording';
+        audioDelete.style.display = 'none';
+      }else if(state === 'playback'){
+        audioBarWrap.classList.remove('hidden');
+        audioBar.classList.remove('recording');
+        audioCircle.textContent = '►';
+        audioStartBtn.textContent = 'Start new recording';
+        audioDelete.style.display = '';
+      }else if(state === 'playing'){
+        audioBarWrap.classList.remove('hidden');
+        audioBar.classList.remove('recording');
+        audioCircle.textContent = '❚❚';
+        audioStartBtn.textContent = 'Start new recording';
+        audioDelete.style.display = '';
+      }
+      updateShareButtons();
+    }
+
+    function startRecording(){
+      clearAudioTimers();
+      audioDurationMs = 0;
+      recordStart = Date.now();
+      updateAudioTimer(0);
+      setAudioState('recording');
+      recordTimer = setInterval(function(){
+        audioDurationMs = Date.now() - recordStart;
+        updateAudioTimer(audioDurationMs);
+      }, 200);
+      saveStateSoon();
+    }
+
+    function stopRecording(){
+      if(audioState !== 'recording') return;
+      clearAudioTimers();
+      if(audioDurationMs < 500) audioDurationMs = 500;
+      updateAudioTimer(audioDurationMs);
+      setAudioState('playback');
+      saveStateSoon();
+    }
+
+    function startPlayback(){
+      if(audioState !== 'playback' || audioDurationMs <= 0) return;
+      clearAudioTimers();
+      playStart = Date.now();
+      updateAudioTimer(0);
+      setAudioState('playing');
+      playTimer = setInterval(function(){
+        let elapsed = Date.now() - playStart;
+        if(elapsed >= audioDurationMs){
+          elapsed = audioDurationMs;
+          clearAudioTimers();
+          setAudioState('playback');
+        }
+        updateAudioTimer(elapsed);
+      }, 200);
+      saveStateSoon();
+    }
+
+    function stopPlayback(){
+      if(audioState !== 'playing') return;
+      clearAudioTimers();
+      setAudioState('playback');
+      // keep whatever time was showing
+      saveStateSoon();
+    }
+
+    function deleteAudio(){
+      clearAudioTimers();
+      audioDurationMs = 0;
+      updateAudioTimer(0);
+      setAudioState('idle');
+      saveStateSoon();
+    }
+
+    audioStartBtn.addEventListener('click', function(){
+      if(audioState === 'recording'){
+        stopRecording();
+      }else{
+        // starting fresh recording from any other state
+        deleteAudio();
+        startRecording();
+      }
+    });
+
+    audioCircle.addEventListener('click', function(){
+      if(audioState === 'playback'){
+        startPlayback();
+      }else if(audioState === 'playing'){
+        stopPlayback();
+      }
+    });
+
+    audioDelete.addEventListener('click', function(){
+      deleteAudio();
+    });
+
+    setAudioState('idle');
+
+    /* ---------- Share / email ---------- */
+    const copyNoteBtn = byId('copyNoteBtn');
+    const emailBtn = byId('emailBtn');
+
+    function buildPlainText(){
+      const parts = [];
+      const note = noteEl.value.trim();
+      if(note){
+        parts.push('Field note ('+nowLocalPretty()+')');
+        parts.push('');
+        parts.push(note);
+        parts.push('');
+      }
+      if(photos.length){
+        parts.push('Photos: '+photos.length+' image(s) – not attached, stored on device.');
+      }
+      if(audioDurationMs > 0){
+        parts.push('Audio note: '+fmtTime(audioDurationMs)+' – not attached, stored on device.');
+      }
+      if(!parts.length){
+        parts.push('Field note (empty)');
+      }
+      return parts.join('\n');
+    }
+
+    function updateShareButtons(){
+      const hasContent =
+        (noteEl.value && noteEl.value.trim().length>0) ||
+        photos.length>0 ||
+        audioDurationMs>0;
+
+      copyNoteBtn.disabled = !hasContent;
+      if(hasContent){
+        const body = encodeURIComponent(buildPlainText());
+        const subject = encodeURIComponent('ARA Field Note');
+        emailBtn.href = 'mailto:?subject='+subject+'&body='+body;
+        emailBtn.setAttribute('aria-disabled','false');
+      }else{
+        emailBtn.href = '#';
+        emailBtn.setAttribute('aria-disabled','true');
+      }
+    }
+
+    copyNoteBtn.addEventListener('click', function(){
+      const txt = buildPlainText();
+      copyToClipboard(txt).then(function(){
+        const old = copyNoteBtn.textContent;
+        copyNoteBtn.textContent = 'Copied ✓';
+        setTimeout(() => copyNoteBtn.textContent = old, 1000);
+      });
+    });
+
+    /* ---------- Reset form + modal ---------- */
+    const resetBtn = byId('resetBtn');
+    const resetModal = byId('resetModal');
+    const resetCancel = byId('resetCancel');
+    const resetConfirm = byId('resetConfirm');
+
+    function showResetModal(){
+      resetModal.classList.remove('hidden');
+      resetModal.setAttribute('aria-hidden','false');
+    }
+    function hideResetModal(){
+      resetModal.classList.add('hidden');
+      resetModal.setAttribute('aria-hidden','true');
+    }
+
+    resetBtn.addEventListener('click', function(){
+      resetBtn.classList.remove('flash');
+      // reflow to restart animation
+      void resetBtn.offsetWidth;
+      resetBtn.classList.add('flash');
+      showResetModal();
+    });
+
+    resetCancel.addEventListener('click', hideResetModal);
+    resetModal.addEventListener('click', function(e){
+      if(e.target === resetModal) hideResetModal();
+    });
+
+    resetConfirm.addEventListener('click', function(){
+      hideResetModal();
+      // Clear text
+      noteEl.value = '';
+      autoGrowNote();
+      // Clear photos
+      photos.forEach(p => URL.revokeObjectURL(p.url));
       photos = [];
       renderPhotos();
-      refreshNoteButtons();
-      try {
-        localStorage.removeItem(SAVE_KEY);
-      } catch (e) {
-        console.warn('Field notes clear failed', e);
-      }
-    }
+      // Clear audio
+      deleteAudio();
+      // Clear autosave
+      clearState();
+      updateShareButtons();
+    });
 
-    // ---- Wire everything ----
-
-    // Load saved state first
+    /* ---------- Initial load ---------- */
+    document.addEventListener('DOMContentLoaded', function(){
+      loadState();
+      updateShareButtons();
+    });
+    // In case DOMContentLoaded has already fired (Capacitor sometimes injects differently)
     loadState();
-
-    if (notes) {
-      autoGrow(notes);
-      refreshNoteButtons();
-      notes.addEventListener('input', function() {
-        autoGrow(notes);
-        refreshNoteButtons();
-        autoSaveSoon();
-      });
-    }
-
-    if (fileInput) {
-      fileInput.addEventListener('change', function(e) {
-        addFiles(e.target.files, 'gallery');
-        e.target.value = '';
-      });
-    }
-
-    if (camInput) {
-      camInput.addEventListener('change', function(e) {
-        addFiles(e.target.files, 'camera');
-        e.target.value = '';
-      });
-    }
-
-    if (copyBtn) {
-      copyBtn.addEventListener('click', function() {
-        var text = notes ? notes.value.trim() : '';
-        if (!text) return;
-        copyText(text);
-      });
-    }
-
-    if (resetBtn) {
-      resetBtn.addEventListener('click', function() {
-        showResetModal();
-      });
-    }
-
-    if (resetModal) {
-      resetModal.addEventListener('click', function(e) {
-        if (e.target === resetModal) {
-          hideResetModal();
-        }
-      });
-    }
-
-    if (resetCancelBtn) {
-      resetCancelBtn.addEventListener('click', function() {
-        hideResetModal();
-      });
-    }
-
-    if (resetConfirmBtn) {
-      resetConfirmBtn.addEventListener('click', function() {
-        doReset();
-        hideResetModal();
-      });
-    }
-
-    if (saveNotebookBtn) {
-      // Placeholder: no behavior yet
-      saveNotebookBtn.addEventListener('click', function() {
-        // future hook for notebook integration
-      });
-    }
-  });
-</script>
+    updateShareButtons();
+  </script>
 </body>
 </html>
