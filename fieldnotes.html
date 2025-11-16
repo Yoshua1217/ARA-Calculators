@@ -76,18 +76,22 @@
       display:block;
     }
 
+    .text-input,
     textarea{
       width:100%;
-      min-height:120px;
-      resize:none;
       border-radius:14px;
       border:1px solid var(--border-soft);
       background:#0b2235;
       color:var(--text-main);
-      padding:10px 11px;
+      padding:9px 11px;
       font-size:0.9rem;
-      line-height:1.45;
+      line-height:1.4;
     }
+    textarea{
+      min-height:120px;
+      resize:none;
+    }
+    .text-input:focus,
     textarea:focus{
       outline:none;
       border-color:var(--accent-soft);
@@ -306,6 +310,13 @@
     <!-- NOTE -->
     <section class="card">
       <h2 class="card-title">Note</h2>
+
+      <label for="noteTitle" class="field-label">Note name</label>
+      <input id="noteTitle" class="text-input" type="text"
+             placeholder="e.g., Rossdale east bank scout, July 12">
+
+      <div style="height:8px;"></div>
+
       <label for="noteText" class="field-label">Field note</label>
       <textarea id="noteText" placeholder="Quick notes, observations, hazards, landmarks…"></textarea>
       <p class="hint">This note stays on this device and can be copied or emailed out.</p>
@@ -395,6 +406,7 @@
         });
       }
 
+      const noteTitleEl   = byId('noteTitle');
       const noteEl        = byId('noteText');
       const photoDevice   = byId('photoDevice');
       const photoCamera   = byId('photoCamera');
@@ -424,7 +436,8 @@
       function getState(){
         try{
           return {
-            note: noteEl.value || '',
+            title: noteTitleEl.value || '',
+            note:  noteEl.value || '',
             photos: photos.map(p => ({ src:p.src, fromCamera: !!p.fromCamera }))
           };
         }catch(e){
@@ -451,6 +464,9 @@
           const raw = localStorage.getItem(SAVE_KEY);
           if(!raw) return;
           const st = JSON.parse(raw);
+          if(st.title){
+            noteTitleEl.value = st.title;
+          }
           if(st.note){
             noteEl.value = st.note;
             autoGrowNote();
@@ -483,6 +499,10 @@
         saveStateSoon();
         updateShareButtons();
       });
+      noteTitleEl.addEventListener('input', function(){
+        saveStateSoon();
+        updateShareButtons();
+      });
       autoGrowNote();
 
       /* ---------- photos ---------- */
@@ -494,23 +514,14 @@
       function handleFiles(fileList, fromCamera){
         if(!fileList || !fileList.length) return;
         const files = Array.prototype.slice.call(fileList);
-        let remaining = files.length;
-
         files.forEach(function(file){
-          if(!file.type || !file.type.startsWith('image/')){
-            remaining--;
-            return;
-          }
+          if(!file.type || !file.type.startsWith('image/')) return;
           const reader = new FileReader();
           reader.onload = function(e){
             addPhotoFromDataUrl(e.target.result, fromCamera);
             renderPhotos();
             updateShareButtons();
             saveStateSoon();
-            remaining--;
-          };
-          reader.onerror = function(){
-            remaining--;
           };
           reader.readAsDataURL(file);
         });
@@ -590,7 +601,12 @@
       /* ---------- share / email ---------- */
       function buildPlainText(){
         const parts=[];
-        const note=noteEl.value.trim();
+        const title = noteTitleEl.value.trim();
+        const note  = noteEl.value.trim();
+
+        if(title){
+          parts.push('Note name: '+title,'');
+        }
         if(note){
           parts.push('Field note ('+nowLocalPretty()+')','',note,'');
         }
@@ -605,13 +621,16 @@
 
       function updateShareButtons(){
         const hasContent =
+          (noteTitleEl.value && noteTitleEl.value.trim().length>0) ||
           (noteEl.value && noteEl.value.trim().length>0) ||
           photos.length>0;
 
         copyNoteBtn.disabled = !hasContent;
         if(hasContent){
           const body = encodeURIComponent(buildPlainText());
-          const subject = encodeURIComponent('ARA Field Note');
+          const baseSubject = 'ARA Field Note';
+          const title = noteTitleEl.value.trim();
+          const subject = encodeURIComponent(title ? baseSubject+' – '+title : baseSubject);
           emailBtn.href = 'mailto:?subject='+subject+'&body='+body;
           emailBtn.setAttribute('aria-disabled','false');
         }else{
@@ -658,7 +677,8 @@
       if(resetConfirm){
         resetConfirm.addEventListener('click', function(){
           hideResetModal();
-          // clear note
+          // clear title + note
+          noteTitleEl.value='';
           noteEl.value='';
           autoGrowNote();
           // clear photos
