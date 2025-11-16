@@ -91,7 +91,7 @@
       gap: 6px;
       cursor: pointer;
       text-decoration: none;
-      transition: background 0.15s ease, border-color 0.15s ease, transform 0.06s ease;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.06s ease, box-shadow 0.15s ease;
     }
 
     .btn-ghost:disabled,
@@ -126,10 +126,27 @@
       background: #111827;
     }
 
-    .btn-ghost.danger:hover {
+    @keyframes dangerPulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
+        background: #111827;
+      }
+      60% {
+        box-shadow: 0 0 0 8px rgba(248, 113, 113, 0);
+        background: #7f1d1d;
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
+        background: #111827;
+      }
+    }
+
+    .btn-ghost.danger:hover:not(:disabled):not([aria-disabled="true"]),
+    .btn-ghost.danger:active:not(:disabled):not([aria-disabled="true"]) {
       background: #7f1d1d;
       border-color: #ef4444;
       color: #fee2e2;
+      animation: dangerPulse 0.35s ease-out;
     }
 
     .btn-row {
@@ -319,7 +336,8 @@
     }
 
     /* Image preview modal */
-    .photo-modal {
+    .photo-modal,
+    .reset-modal {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.8);
@@ -332,7 +350,8 @@
       z-index: 50;
     }
 
-    .photo-modal.show {
+    .photo-modal.show,
+    .reset-modal.show {
       opacity: 1;
       pointer-events: auto;
     }
@@ -345,12 +364,50 @@
       overflow: hidden;
       border: 1px solid rgba(148,163,184,0.7);
       background: #020617;
+      display: flex;
+      flex-direction: column;
     }
 
     .photo-modal-img {
       display: block;
       max-width: 100%;
-      max-height: 80vh;
+      max-height: 70vh;
+    }
+
+    .photo-modal-footer {
+      padding: 8px 10px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: #020617;
+      border-top: 1px solid rgba(15,23,42,0.9);
+    }
+
+    .reset-modal-card {
+      background: #020617;
+      border-radius: 16px;
+      border: 1px solid rgba(248,113,113,0.7);
+      padding: 16px 16px 12px;
+      max-width: 320px;
+      width: calc(100% - 40px);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.85);
+    }
+
+    .reset-modal-card h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+
+    .reset-modal-card p {
+      margin: 0 0 14px;
+      font-size: 0.85rem;
+      color: var(--text-soft);
+    }
+
+    .reset-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
     }
   </style>
 </head>
@@ -430,8 +487,8 @@
         <button type="button" id="fn-copy" class="btn-ghost" disabled>
           Copy notes
         </button>
-        <a id="fn-email" class="btn-ghost primary" href="#" aria-disabled="true">
-          Open email with notes
+        <a id="fn-email" class="btn-ghost" href="#" aria-disabled="true">
+          Open email
         </a>
         <button type="button" id="fn-save-nb" class="btn-ghost">
           Save to notebook
@@ -451,6 +508,32 @@
 <div id="fn-photo-modal" class="photo-modal" aria-hidden="true">
   <div class="photo-modal-content">
     <img id="fn-photo-modal-img" class="photo-modal-img" alt="Field note photo preview">
+    <div class="photo-modal-footer">
+      <button type="button" id="fn-photo-download" class="btn-ghost" style="font-size:0.8rem; padding:4px 10px; display:none;">
+        Download image
+      </button>
+      <button type="button" id="fn-photo-close" class="btn-ghost" style="font-size:0.8rem; padding:4px 10px;">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset confirmation modal -->
+<div id="fn-reset-modal" class="reset-modal" aria-hidden="true">
+  <div class="reset-modal-card">
+    <h3>Reset field notes?</h3>
+    <p>
+      This will clear all notes and photos from this device for Field Notes. This cannot be undone.
+    </p>
+    <div class="reset-modal-actions">
+      <button type="button" id="fn-reset-cancel" class="btn-ghost">
+        Cancel
+      </button>
+      <button type="button" id="fn-reset-confirm" class="btn-ghost danger">
+        Reset
+      </button>
+    </div>
   </div>
 </div>
 
@@ -463,16 +546,24 @@
     var camInput = document.getElementById('fn-photo-camera');
     var photosGrid = document.getElementById('fn-photos');
     var resetBtn = document.getElementById('fn-reset');
-    // Save-to-notebook button intentionally does nothing (placeholder)
-    var saveNotebookBtn = document.getElementById('fn-save-nb');
+    var saveNotebookBtn = document.getElementById('fn-save-nb'); // placeholder
 
+    // Photo modal
     var modal = document.getElementById('fn-photo-modal');
     var modalImg = document.getElementById('fn-photo-modal-img');
+    var modalDownloadBtn = document.getElementById('fn-photo-download');
+    var modalCloseBtn = document.getElementById('fn-photo-close');
+
+    // Reset modal
+    var resetModal = document.getElementById('fn-reset-modal');
+    var resetCancelBtn = document.getElementById('fn-reset-cancel');
+    var resetConfirmBtn = document.getElementById('fn-reset-confirm');
 
     var SAVE_KEY = 'ara_fieldnotes_v1';
 
-    // photos: [{ name, dataUrl }]
+    // photos: [{ name, dataUrl, source: 'gallery'|'camera' }]
     var photos = [];
+    var currentPhotoIndex = -1;
 
     var saveTimer = null;
 
@@ -491,7 +582,7 @@
       return {
         notes: notes ? notes.value || '' : '',
         photos: photos.map(function(p) {
-          return { name: p.name, dataUrl: p.dataUrl };
+          return { name: p.name, dataUrl: p.dataUrl, source: p.source || 'gallery' };
         })
       };
     }
@@ -517,7 +608,8 @@
           if (p && p.dataUrl) {
             photos.push({
               name: p.name || 'Photo',
-              dataUrl: p.dataUrl
+              dataUrl: p.dataUrl,
+              source: p.source === 'camera' ? 'camera' : 'gallery'
             });
           }
         });
@@ -536,22 +628,64 @@
       }
     }
 
-    function openModal(url) {
+    function openPhotoModal(index) {
       if (!modal || !modalImg) return;
-      modalImg.src = url;
+      if (index < 0 || index >= photos.length) return;
+      currentPhotoIndex = index;
+      var p = photos[index];
+      modalImg.src = p.dataUrl;
       modal.classList.add('show');
       modal.setAttribute('aria-hidden', 'false');
+
+      // Show download button only for camera photos
+      if (p.source === 'camera') {
+        modalDownloadBtn.style.display = 'inline-flex';
+      } else {
+        modalDownloadBtn.style.display = 'none';
+      }
     }
 
-    function closeModal() {
+    function closePhotoModal() {
       if (!modal || !modalImg) return;
       modal.classList.remove('show');
       modal.setAttribute('aria-hidden', 'true');
       modalImg.src = '';
+      currentPhotoIndex = -1;
+    }
+
+    function downloadCurrentPhoto() {
+      if (currentPhotoIndex < 0 || currentPhotoIndex >= photos.length) return;
+      var p = photos[currentPhotoIndex];
+      if (!p || !p.dataUrl) return;
+
+      var a = document.createElement('a');
+      a.href = p.dataUrl;
+      var baseName = p.name && p.name !== 'Photo' ? p.name : 'field-note-photo.jpg';
+      a.download = baseName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
 
     if (modal) {
-      modal.addEventListener('click', closeModal);
+      // clicking dark backdrop closes
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          closePhotoModal();
+        }
+      });
+    }
+    if (modalCloseBtn) {
+      modalCloseBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        closePhotoModal();
+      });
+    }
+    if (modalDownloadBtn) {
+      modalDownloadBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        downloadCurrentPhoto();
+      });
     }
 
     function renderPhotos() {
@@ -595,7 +729,7 @@
 
         thumbBtn.appendChild(img);
         thumbBtn.addEventListener('click', function() {
-          openModal(p.dataUrl);
+          openPhotoModal(index);
         });
 
         card.appendChild(header);
@@ -604,16 +738,19 @@
       });
     }
 
-    function addFiles(fileList) {
+    function addFiles(fileList, source) {
       if (!fileList || !fileList.length) return;
+      var src = source || 'gallery';
+
       Array.prototype.forEach.call(fileList, function(file) {
         if (!file.type || !file.type.startsWith('image/')) return;
 
         var reader = new FileReader();
         reader.onload = function(ev) {
           photos.push({
-            name: file.name,
-            dataUrl: ev.target.result
+            name: file.name || 'Photo',
+            dataUrl: ev.target.result,
+            source: src
           });
           renderPhotos();
           autoSaveSoon();
@@ -668,9 +805,36 @@
       emailLink.setAttribute('aria-disabled', 'false');
     }
 
+    function showResetModal() {
+      if (!resetModal) return;
+      resetModal.classList.add('show');
+      resetModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function hideResetModal() {
+      if (!resetModal) return;
+      resetModal.classList.remove('show');
+      resetModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function doReset() {
+      if (notes) {
+        notes.value = '';
+        autoGrow(notes);
+      }
+      photos = [];
+      renderPhotos();
+      refreshNoteButtons();
+      try {
+        localStorage.removeItem(SAVE_KEY);
+      } catch (e) {
+        console.warn('Field notes clear failed', e);
+      }
+    }
+
     // ---- Wire everything ----
 
-    // Load any saved state first so UI reflects it
+    // Load saved state first
     loadState();
 
     if (notes) {
@@ -685,14 +849,14 @@
 
     if (fileInput) {
       fileInput.addEventListener('change', function(e) {
-        addFiles(e.target.files);
+        addFiles(e.target.files, 'gallery');
         e.target.value = '';
       });
     }
 
     if (camInput) {
       camInput.addEventListener('change', function(e) {
-        addFiles(e.target.files);
+        addFiles(e.target.files, 'camera');
         e.target.value = '';
       });
     }
@@ -707,25 +871,35 @@
 
     if (resetBtn) {
       resetBtn.addEventListener('click', function() {
-        if (notes) {
-          notes.value = '';
-          autoGrow(notes);
+        showResetModal();
+      });
+    }
+
+    if (resetModal) {
+      resetModal.addEventListener('click', function(e) {
+        if (e.target === resetModal) {
+          hideResetModal();
         }
-        photos = [];
-        renderPhotos();
-        refreshNoteButtons();
-        try {
-          localStorage.removeItem(SAVE_KEY);
-        } catch (e) {
-          console.warn('Field notes clear failed', e);
-        }
+      });
+    }
+
+    if (resetCancelBtn) {
+      resetCancelBtn.addEventListener('click', function() {
+        hideResetModal();
+      });
+    }
+
+    if (resetConfirmBtn) {
+      resetConfirmBtn.addEventListener('click', function() {
+        doReset();
+        hideResetModal();
       });
     }
 
     if (saveNotebookBtn) {
       // Placeholder: no behavior yet
       saveNotebookBtn.addEventListener('click', function() {
-        // intentionally empty for now
+        // future hook for notebook integration
       });
     }
   });
