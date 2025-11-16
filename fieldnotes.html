@@ -1,23 +1,31 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8" />
   <title>ARA Field Tools — Field Notes</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
     :root {
-      /* Match the main app’s dark navy look */
       --bg: #020816;
-      --surface-1: #04101c;
-      --surface-2: #071726;
-      --border-subtle: #1f3143;
-      --border-strong: #314a63;
-      --accent: #2aa9ff;
-      --accent-soft: rgba(42, 169, 255, 0.12);
-      --text: #e4f2ff;
-      --text-muted: #9bb1c6;
-      --danger: #f65b5b;
+      --bg-elevated: #050f24;
+      --bg-elevated-soft: #07152f;
+      --border-subtle: #101c34;
+      --border-strong: #1f355a;
+      --accent: #3b82f6;
+      --accent-soft: #1d4ed8;
+      --accent-pill: #60a5fa;
+      --accent-pill-soft: #1e40af;
+      --accent-danger: #b91c1c;
+      --text: #e5f0ff;
+      --text-soft: #9fb4d6;
+      --text-faint: #6b7a96;
+      --card-radius: 16px;
+      --shadow-soft: 0 18px 40px rgba(0,0,0,0.55);
+      --input-bg: #07152f;
+      --input-border: #1b2940;
+      --input-border-focus: #3b82f6;
+      --chip-bg: #0b1730;
     }
 
     * {
@@ -28,458 +36,504 @@
       margin: 0;
       padding: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top, #0a2340 0, transparent 55%),
-        radial-gradient(circle at bottom, #020812 0, #020816 55%);
+      background: #020816;           /* flat dark navy: no gradient */
       color: var(--text);
     }
 
-    .page {
-      max-width: 880px;
-      margin: 0 auto;
-      padding: 0.9rem 0.9rem 1.5rem;
-    }
-
-    header.app-header {
+    .app-shell {
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      gap: 0.15rem;
-      margin-bottom: 0.75rem;
+    }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(2, 8, 22, 0.98);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(31, 53, 90, 0.6);
+      padding: 10px 16px 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    .app-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .app-title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     .app-title {
-      font-size: 0.9rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
     }
 
     .app-subtitle {
-      font-size: 1.25rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--text-soft);
     }
 
-    .pill {
-      font-size: 0.75rem;
-      padding: 2px 8px;
+    .btn-ghost {
       border-radius: 999px;
-      border: 1px solid var(--border-subtle);
-      background: rgba(5, 25, 42, 0.9);
-      color: var(--text-muted);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      font-size: 0.85rem;
+      padding: 6px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.06s ease;
     }
 
-    .pill-accent {
-      border-color: var(--accent);
+    .btn-ghost:disabled,
+    .btn-ghost[aria-disabled="true"] {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .btn-ghost:not(:disabled):not([aria-disabled="true"]):active {
+      transform: translateY(1px);
+    }
+
+    .btn-ghost:hover:not(:disabled):not([aria-disabled="true"]) {
+      background: #0f172a;
+      border-color: rgba(148, 163, 184, 0.7);
+    }
+
+    .btn-ghost.primary {
+      border-color: var(--accent-soft);
       background: var(--accent-soft);
-      color: var(--accent);
-      font-weight: 500;
+      color: #f9fbff;
     }
 
-    .section-header {
-      margin: 0.4rem 0 0.6rem;
-    }
-
-    .section-header h2 {
-      font-size: 0.95rem;
-      margin: 0;
-      font-weight: 600;
-    }
-
-    .section-header p {
-      margin: 0.15rem 0 0;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    /* Card layout, tuned to look like the main tool */
-    .card {
-      border-radius: 18px;
-      background: var(--surface-1);
-      border: 1px solid var(--border-subtle);
-      box-shadow:
-        0 14px 28px rgba(0, 0, 0, 0.55),
-        0 0 0 1px rgba(3, 14, 26, 0.9) inset;
-      margin-bottom: 0.8rem;
-      overflow: hidden;
-    }
-
-    .card-header {
-      padding: 0.6rem 0.9rem 0.4rem;
-      border-bottom: 1px solid rgba(30, 52, 75, 0.8);
-      background: linear-gradient(180deg, rgba(5, 20, 34, 0.85), rgba(4, 16, 27, 0.95));
-    }
-
-    .card-header h3 {
-      margin: 0;
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-
-    .card-body {
-      padding: 0.75rem 0.9rem 0.9rem;
-      background: var(--surface-1);
-    }
-
-    .hint {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    textarea {
-      font: inherit;
-      color: inherit;
-    }
-
-    #fn-notes {
-      width: 100%;
-      min-height: 120px;
-      resize: none;
-      padding: 0.7rem 0.8rem;
-      border-radius: 12px;
-      border: 1px solid var(--border-subtle);
-      background: var(--surface-2);
-      outline: none;
-      font-size: 0.9rem;
-    }
-
-    #fn-notes::placeholder {
-      color: rgba(155, 177, 198, 0.7);
-    }
-
-    #fn-notes:focus {
+    .btn-ghost.primary:hover {
+      background: var(--accent);
       border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent-soft);
     }
 
     .btn-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 0.75rem;
+      gap: 8px;
     }
 
-    /* Ghost buttons styled like other app */
-    .btn-ghost,
-    .btn-ghost:link,
-    .btn-ghost:visited {
+    main {
+      flex: 1;
+      padding: 16px 16px 24px;
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 55%),
+                  var(--bg-elevated);
+      border-radius: var(--card-radius);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-soft);
+      padding: 16px 16px 20px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .card p.hint {
+      margin: 0 0 12px;
+      font-size: 0.8rem;
+      color: var(--text-soft);
+    }
+
+    label.block-label {
+      display: block;
       font-size: 0.85rem;
-      padding: 6px 11px;
-      border-radius: 999px;
-      border: 1px solid rgba(110, 178, 235, 0.75);
-      background: rgba(3, 15, 27, 0.96);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    textarea.notes-input {
+      width: 100%;
+      min-height: 140px;
+      resize: none;
+      border-radius: 12px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
       color: var(--text);
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.3rem;
-      cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.05s ease;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      outline: none;
+      box-shadow: inset 0 0 0 1px rgba(15,23,42,0.7);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     }
 
-    .btn-ghost:hover:not([disabled]):not([aria-disabled="true"]) {
-      background: var(--accent-soft);
-      border-color: var(--accent);
-      transform: translateY(-1px);
+    textarea.notes-input:focus {
+      border-color: var(--input-border-focus);
+      box-shadow: 0 0 0 1px rgba(59,130,246,0.7);
+      background: #020b1d;
     }
 
-    .btn-ghost[disabled],
-    .btn-ghost[aria-disabled="true"] {
-      opacity: 0.55;
-      cursor: default;
+    textarea.notes-input::placeholder {
+      color: var(--text-faint);
     }
 
-    .btn-ghost.active {
-      background: var(--accent-soft);
-      color: #001528;
-      border-color: transparent;
+    .field-footer {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: var(--text-faint);
     }
 
-    /* File inputs hidden inside label buttons */
-    label.btn-ghost > input[type="file"] {
+    .photos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .photo-chip {
+      background: var(--chip-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .photo-thumb {
+      width: 100%;
+      border-radius: 9px;
+      height: 80px;
+      object-fit: cover;
+      background: #020617;
+    }
+
+    .photo-name {
+      font-size: 0.75rem;
+      color: var(--text-soft);
+      word-break: break-word;
+    }
+
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .file-input {
       display: none;
     }
 
-    /* Photo grid */
-    .fn-photo-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-      gap: 0.55rem;
-      margin-top: 0.6rem;
-    }
-
-    .fn-photo-thumb {
-      position: relative;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid var(--border-subtle);
-      background: #000;
-    }
-
-    .fn-photo-thumb img {
-      display: block;
-      width: 100%;
-      height: 82px;
-      object-fit: cover;
-    }
-
-    .fn-photo-remove {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      border: none;
+    .pill-label {
       border-radius: 999px;
-      padding: 0 6px;
-      font-size: 0.7rem;
-      line-height: 1.4;
-      background: rgba(0, 0, 0, 0.7);
-      color: #fff;
+      border: 1px solid rgba(148,163,184,0.35);
+      background: #020617;
+      padding: 6px 11px;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       cursor: pointer;
+      color: var(--text-soft);
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
 
-    footer {
-      margin-top: 0.8rem;
+    .pill-label:hover {
+      background: #0b1120;
+      border-color: rgba(148,163,184,0.8);
+      color: var(--text);
+    }
+
+    .pill-label span.icon {
+      font-size: 0.9rem;
+    }
+
+    .footer-card {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding-top: 4px;
+    }
+
+    .footer-text {
       font-size: 0.75rem;
-      color: var(--text-muted);
-      text-align: center;
-      opacity: 0.85;
+      color: var(--text-faint);
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <header class="app-header">
-      <div class="app-title">ARA Field Tools</div>
-      <div class="app-subtitle">
-        Field notes
-        <span class="pill pill-accent">Scratch pad</span>
+<div class="app-shell">
+  <header class="app-header">
+    <div class="app-header-row">
+      <div class="app-title-block">
+        <div class="app-title">ARA Field Tools</div>
+        <div class="app-subtitle">Field notes (beta)</div>
       </div>
-    </header>
+      <div class="btn-row">
+        <!-- Optional: link back to main tool index if you want -->
+        <!-- <a href="index.html" class="btn-ghost">Back to tools</a> -->
+      </div>
+    </div>
+  </header>
 
-    <section class="section-header">
-      <h2>Session notes</h2>
-      <p>Quick notes for sites, microclimates, waypoints, hazards, or general field thoughts.</p>
+  <main>
+    <!-- Notes card -->
+    <section class="card">
+      <h2>Field notes</h2>
+      <p class="hint">
+        Quick scratchpad for observations, routes, hazards, ideas — anything that doesn’t need a full tree log.
+      </p>
+
+      <label for="fn-notes" class="block-label">Notes</label>
+      <textarea
+        id="fn-notes"
+        class="notes-input"
+        placeholder="e.g., Old poplar line along fenceline… access via south gate; strong SW winds, deep snow drifts, deer tracks…"></textarea>
+
+      <div class="field-footer">
+        Text is kept local in this form. Use “Copy notes” or “Open email” to export.
+      </div>
     </section>
 
-    <!-- Notes card -->
-    <div class="card">
-      <div class="card-header">
-        <h3>Notes</h3>
-      </div>
-      <div class="card-body">
-        <textarea
-          id="fn-notes"
-          rows="5"
-          placeholder="Write your field notes here (site description, access, species list, impressions)…"
-        ></textarea>
-
-        <div class="btn-row">
-          <button type="button" id="fn-copy" class="btn-ghost" disabled>Copy text</button>
-          <a id="fn-email" class="btn-ghost" href="#" aria-disabled="true">Open email</a>
-        </div>
-      </div>
-    </div>
-
     <!-- Photos card -->
-    <div class="card">
-      <div class="card-header">
-        <h3>Photos</h3>
+    <section class="card">
+      <h2>Photos</h2>
+      <p class="hint">
+        Attach quick reference photos (landmarks, stands, hazards, sky conditions, etc.). They’ll be included inline in the email body as data URLs.
+      </p>
+
+      <div class="chips-row">
+        <label class="pill-label" for="fn-photo-file">
+          <span class="icon">📁</span>
+          <span>From gallery</span>
+        </label>
+        <input
+          id="fn-photo-file"
+          class="file-input"
+          type="file"
+          accept="image/*"
+          multiple
+        />
+
+        <label class="pill-label" for="fn-photo-camera">
+          <span class="icon">📷</span>
+          <span>Take photo</span>
+        </label>
+        <input
+          id="fn-photo-camera"
+          class="file-input"
+          type="file"
+          accept="image/*"
+          capture="environment"
+        />
       </div>
-      <div class="card-body">
-        <p class="hint">
-          Attach context shots (site, trail junction, bike, marker flag, soil, canopy, etc.).
-          Photos are in-memory only right now.
-        </p>
 
-        <div class="btn-row">
-          <!-- Camera input (opens camera where supported) -->
-          <label class="btn-ghost">
-            Use camera
-            <input
-              id="fn-add-camera"
-              type="file"
-              accept="image/*"
-              capture="environment"
-            >
-          </label>
+      <div id="fn-photos" class="photos-grid" aria-live="polite"></div>
+    </section>
 
-          <!-- Gallery / files input -->
-          <label class="btn-ghost">
-            Add from device
-            <input
-              id="fn-add-gallery"
-              type="file"
-              accept="image/*"
-              multiple
-            >
-          </label>
-        </div>
-
-        <p class="hint" id="fn-photo-hint" style="margin-top:0.5rem;">No photos yet.</p>
-
-        <div id="fn-photo-list" class="fn-photo-grid"></div>
+    <!-- Actions -->
+    <section class="card footer-card">
+      <div class="btn-row" style="margin-bottom:8px;">
+        <button type="button" id="fn-copy" class="btn-ghost" disabled>
+          Copy notes
+        </button>
+        <a id="fn-email" class="btn-ghost primary" href="#" aria-disabled="true">
+          Open email with notes + photos
+        </a>
       </div>
-    </div>
+      <div class="footer-text">
+        Email uses plain text with embedded image data URLs. Most modern email apps (including Gmail on Android) will show them inline.
+      </div>
+    </section>
+  </main>
+</div>
 
-    <footer>
-      v0.1 · Field notes and photos are not yet saved between sessions — treat as temporary.
-    </footer>
-  </div>
+<script>
+  // Convert a File to a Base64 data URL
+  function fileToBase64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
 
-  <script>
-    // Simple cross-browser copy helper
-    function copyText(text, btn){
-      if (!text) return;
-      var p;
-      if (navigator.clipboard && navigator.clipboard.writeText){
-        p = navigator.clipboard.writeText(text);
-      } else {
-        p = new Promise(function(res){
-          var t = document.createElement('textarea');
-          t.value = text;
-          t.style.position = 'fixed';
-          t.style.opacity = '0';
-          document.body.appendChild(t);
-          t.select();
-          document.execCommand('copy');
-          document.body.removeChild(t);
-          res();
-        });
-      }
-      p.then(function(){
-        if (!btn) return;
-        var prev = btn.textContent;
-        btn.textContent = 'Copied ✓';
-        setTimeout(function(){ btn.textContent = prev; }, 1200);
-      }).catch(function(){});
+  document.addEventListener('DOMContentLoaded', function () {
+    var notes = document.getElementById('fn-notes');
+    var copyBtn = document.getElementById('fn-copy');
+    var emailLink = document.getElementById('fn-email');
+    var fileInput = document.getElementById('fn-photo-file');
+    var camInput = document.getElementById('fn-photo-camera');
+    var photosGrid = document.getElementById('fn-photos');
+
+    // In-memory photo list
+    // Each: { name, url, dataUri, file }
+    var photos = [];
+
+    function autoGrow(el) {
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = (el.scrollHeight + 2) + 'px';
     }
 
-    (function(){
-      var notes     = document.getElementById('fn-notes');
-      var copyBtn   = document.getElementById('fn-copy');
-      var emailLink = document.getElementById('fn-email');
-      var camInput  = document.getElementById('fn-add-camera');
-      var galInput  = document.getElementById('fn-add-gallery');
-      var listEl    = document.getElementById('fn-photo-list');
-      var hintEl    = document.getElementById('fn-photo-hint');
+    function renderPhotos() {
+      photosGrid.innerHTML = '';
+      if (!photos.length) return;
 
-      // In-memory only for now
-      var photos = []; // { url, name }
+      photos.forEach(function(p) {
+        var card = document.createElement('div');
+        card.className = 'photo-chip';
 
-      function autoGrowNotes(){
-        if (!notes) return;
-        notes.style.height = 'auto';
-        notes.style.height = (notes.scrollHeight + 2) + 'px';
+        var img = document.createElement('img');
+        img.className = 'photo-thumb';
+        img.src = p.url;
+        img.alt = p.name || 'Photo';
+
+        var name = document.createElement('div');
+        name.className = 'photo-name';
+        name.textContent = p.name || 'Photo';
+
+        card.appendChild(img);
+        card.appendChild(name);
+        photosGrid.appendChild(card);
+      });
+    }
+
+    function addFiles(fileList) {
+      if (!fileList || !fileList.length) return;
+      Array.prototype.forEach.call(fileList, function(file) {
+        if (!file.type || !file.type.startsWith('image/')) return;
+
+        var objUrl = URL.createObjectURL(file);
+        var photo = {
+          name: file.name,
+          url: objUrl,
+          dataUri: null,
+          file: file
+        };
+        photos.push(photo);
+
+        // Precompute Base64 so email body is ready later
+        fileToBase64(file).then(function(b64) {
+          photo.dataUri = b64;
+        }).catch(function(){});
+      });
+
+      renderPhotos();
+      refreshNoteButtons();
+    }
+
+    function copyText(txt) {
+      if (!txt) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(function() {
+          var old = copyBtn.textContent;
+          copyBtn.textContent = 'Copied ✓';
+          setTimeout(function(){ copyBtn.textContent = old; }, 1200);
+        }).catch(function(){});
+      } else {
+        // Fallback
+        var t = document.createElement('textarea');
+        t.value = txt;
+        document.body.appendChild(t);
+        t.select();
+        try { document.execCommand('copy'); } catch(e) {}
+        document.body.removeChild(t);
+      }
+    }
+
+    async function refreshNoteButtons() {
+      var text = notes ? notes.value.trim() : '';
+      var hasText = !!text;
+
+      if (copyBtn) {
+        copyBtn.disabled = !hasText;
       }
 
-      function refreshNoteButtons(){
-        if (!notes) return;
-        var text = notes.value.trim();
-        var hasText = !!text;
+      if (!emailLink) return;
 
-        if (copyBtn) copyBtn.disabled = !hasText;
+      if (!hasText && photos.length === 0) {
+        emailLink.href = '#';
+        emailLink.setAttribute('aria-disabled', 'true');
+        return;
+      }
 
-        if (emailLink){
-          if (hasText){
-            var subject = 'ARA Field Note';
-            emailLink.href = 'mailto:?subject=' +
-              encodeURIComponent(subject) +
-              '&body=' + encodeURIComponent(text);
-            emailLink.setAttribute('aria-disabled', 'false');
-          } else {
-            emailLink.href = '#';
-            emailLink.setAttribute('aria-disabled', 'true');
-          }
+      var body = '';
+      if (hasText) {
+        body += text + '\n\n';
+      }
+
+      if (photos.length > 0) {
+        body += 'Attached photos (data URLs):\n\n';
+        for (var i = 0; i < photos.length; i++) {
+          var p = photos[i];
+          if (!p.dataUri) continue; // still loading, skip
+          body += '[' + (p.name || ('Photo ' + (i+1))) + ']\n';
+          body += p.dataUri + '\n\n';
         }
       }
 
-      function renderPhotos(){
-        if (!listEl) return;
-        listEl.innerHTML = '';
+      var subject = 'ARA Field Note';
+      emailLink.href =
+        'mailto:?subject=' +
+        encodeURIComponent(subject) +
+        '&body=' +
+        encodeURIComponent(body);
+      emailLink.setAttribute('aria-disabled', 'false');
+    }
 
-        if (!photos.length){
-          if (hintEl) hintEl.textContent = 'No photos yet.';
-          return;
-        }
-
-        if (hintEl){
-          hintEl.textContent = photos.length + ' photo' +
-            (photos.length > 1 ? 's' : '') +
-            ' attached (not saved after closing page).';
-        }
-
-        photos.forEach(function(p, idx){
-          var wrap = document.createElement('div');
-          wrap.className = 'fn-photo-thumb';
-
-          var img = document.createElement('img');
-          img.src = p.url;
-          img.alt = p.name || ('Photo ' + (idx + 1));
-
-          var btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'fn-photo-remove';
-          btn.textContent = '×';
-          btn.addEventListener('click', function(){
-            URL.revokeObjectURL(p.url);
-            photos.splice(idx, 1);
-            renderPhotos();
-          });
-
-          wrap.appendChild(img);
-          wrap.appendChild(btn);
-          listEl.appendChild(wrap);
-        });
-      }
-
-      function handleFiles(fileList){
-        if (!fileList || !fileList.length) return;
-        Array.prototype.forEach.call(fileList, function(file){
-          if (!file || !file.type || !file.type.startsWith('image/')) return;
-          photos.push({
-            name: file.name,
-            url: URL.createObjectURL(file)
-          });
-        });
-        renderPhotos();
-      }
-
-      // Events
-      if (notes){
-        notes.addEventListener('input', function(){
-          autoGrowNotes();
-          refreshNoteButtons();
-        });
-        autoGrowNotes();
+    // Wire events
+    if (notes) {
+      notes.addEventListener('input', function() {
+        autoGrow(notes);
         refreshNoteButtons();
-      }
+      });
+      autoGrow(notes);
+    }
 
-      if (copyBtn){
-        copyBtn.addEventListener('click', function(){
-          var text = (notes && notes.value.trim()) || '';
-          if (!text) return;
-          copyText(text, copyBtn);
-        });
-      }
+    if (fileInput) {
+      fileInput.addEventListener('change', function(e) {
+        addFiles(e.target.files);
+        // reset input so selecting same file again still fires change
+        e.target.value = '';
+      });
+    }
 
-      if (camInput){
-        camInput.addEventListener('change', function(e){
-          handleFiles(e.target.files);
-          camInput.value = ''; // allow same file again
-        });
-      }
+    if (camInput) {
+      camInput.addEventListener('change', function(e) {
+        addFiles(e.target.files);
+        e.target.value = '';
+      });
+    }
 
-      if (galInput){
-        galInput.addEventListener('change', function(e){
-          handleFiles(e.target.files);
-          galInput.value = '';
-        });
-      }
-    })();
-  </script>
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function() {
+        var text = notes ? notes.value.trim() : '';
+        if (!text) return;
+        copyText(text);
+      });
+    }
+
+    // initial state
+    refreshNoteButtons();
+  });
+</script>
 </body>
 </html>
