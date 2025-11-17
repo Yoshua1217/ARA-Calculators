@@ -397,6 +397,32 @@
 
 /* Map offline callout card below the map */
 #map-offline-card{ display:none; }
+
+  /* Home button on Results page */
+#homeBtn {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-block;
+  transition: background .15s, transform .1s, border-color .15s;
+}
+
+#homeBtn:hover {
+  background: var(--accent-2);
+  color:#001528;
+  transform: scale(1.02);
+}
+
+#homeBtn:active {
+  background:#1b6cff;
+  color:#fff;
+  transform: scale(.98);
+}
+
 </style>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -735,7 +761,8 @@
 
 <div class="block">
   <div class="btn-row">
-    <a href="index.html" class="btn-ghost">Home</a>
+    <a id="homeBtn" href="index.html">Home</a>
+
     <button
       type="button"
       id="resetFormResults"
@@ -745,6 +772,7 @@
     </button>
   </div>
 </div>
+
 
   </div>
 </section>
