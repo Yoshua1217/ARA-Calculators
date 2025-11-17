@@ -1092,7 +1092,16 @@
       const photoDevice   = byId('photoDevice');
       const photoCamera   = byId('photoCamera');
       const photoGrid     = byId('photoGrid');
+   // If running inside the Capacitor native app, remove `capture`
+      // because some Android WebViews break when it's present.
+      const isNativeCap =
+        !!window.Capacitor &&
+        typeof window.Capacitor.isNativePlatform === 'function' &&
+        window.Capacitor.isNativePlatform();
 
+      if (isNativeCap && photoCamera) {
+        photoCamera.removeAttribute('capture');
+      }
       const overlay       = byId('imageOverlay');
       const overlayImg    = byId('overlayImg');
       const overlayClose  = byId('overlayClose');
