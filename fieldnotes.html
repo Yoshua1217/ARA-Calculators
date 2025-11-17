@@ -1654,6 +1654,11 @@ const photoGrid     = byId('photoGrid');
 const cap          = window.Capacitor;
 const cameraPlugin = cap?.Plugins?.Camera;
 
+      const isNativeCap =
+  !!cap &&
+  typeof cap.isNativePlatform === 'function' &&
+  cap.isNativePlatform();
+
 if (photoCameraBtn) {
   if (cameraPlugin && cap.isNativePlatform?.()) {
     // Native Capacitor app: use the Camera plugin
@@ -1671,7 +1676,7 @@ if (photoCameraBtn) {
           resultType: 'dataUrl',
           source: 'CAMERA',
           quality: 80,
-          saveToGallery: false,
+          saveToGallery: true,
         });
 
         if (photo && photo.dataUrl) {
@@ -1714,19 +1719,34 @@ if (photoCameraFallback) {
       });
 
       /* ---------- image overlay ---------- */
-      function openOverlay(photo){
-        currentOverlayPhoto = photo;
-        overlayImg.src = photo.src;
-        overlay.classList.remove('hidden');
-        overlay.setAttribute('aria-hidden','false');
+function openOverlay(photo){
+  currentOverlayPhoto = photo;
+  overlayImg.src = photo.src;
+  overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-hidden','false');
 
-        if(photo.fromCamera){
-          overlayDownload.style.display='';
-          overlayDownload.href = photo.src;
-        }else{
-          overlayDownload.style.display='none';
-        }
-      }
+  if (!overlayDownload) return;
+
+  // In the native Capacitor app:
+  // - Camera photos are already saved to the gallery (saveToGallery: true)
+  // - Gallery photos already live in Photos
+  // So the "Download" button doesn’t really do anything useful there.
+  if (isNativeCap) {
+    overlayDownload.style.display = 'none';
+    overlayDownload.removeAttribute('href');
+    return;
+  }
+
+  // On the web version (GitHub etc.), keep the Download button for camera shots.
+  if (photo.fromCamera) {
+    overlayDownload.style.display = '';
+    overlayDownload.href = photo.src;
+  } else {
+    overlayDownload.style.display = 'none';
+    overlayDownload.removeAttribute('href');
+  }
+}
+
       function closeOverlay(){
         overlay.classList.add('hidden');
         overlay.setAttribute('aria-hidden','true');
