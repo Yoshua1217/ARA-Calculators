@@ -90,11 +90,11 @@
       white-space:nowrap;
       transition:background .15s, color .15s, border-color .15s, transform .08s;
     }
-       .tab-btn span.dot{
+    .tab-btn span.dot{
       width:7px;
       height:7px;
       border-radius:999px;
-      background:#1f2937;
+      background:#4b5563; /* default grey */
     }
     /* Hide status dot on the Note tab */
     .tab-btn[data-tab="note"] .dot{
@@ -106,10 +106,23 @@
       color:#f9fbff;
       transform:translateY(-1px);
     }
-    /* Only the Location tab gets the amber dot when active */
-    .tab-btn[data-tab="location"].active span.dot{
-      background:#fbbf24;
+    /* Location tab text a bit larger/bolder */
+    .tab-btn[data-tab="location"]{
+      font-size:0.92rem;
+      font-weight:600;
     }
+        .location-select-btn.active{
+      background:var(--accent-soft);
+      border-color:var(--accent-soft);
+      color:#020617;
+    }
+
+    /* Colour buckets for the Location tab dot */
+    .dot-acc-grey  { background:#4b5563; }
+    .dot-acc-amber { background:#ffb300; }
+    .dot-acc-green { background:#22c55e; }
+    .dot-acc-red   { background:#f97373; }
+
     /* Location tab text a bit larger/bolder */
     .tab-btn[data-tab="location"]{
       font-size:0.92rem;
@@ -736,6 +749,12 @@
         <strong>Saved:</strong>
         <span id="locSummaryTime">—</span>
       </p>
+      <!-- Hidden fields that store the saved fix for this note -->
+      <input type="hidden" id="locLat">
+      <input type="hidden" id="locLng">
+      <input type="hidden" id="locAcc">
+      <input type="hidden" id="locAlt">
+      <input type="hidden" id="locTs">
 
       <div class="btn-row" style="margin-top:10px;">
         <button type="button"
@@ -843,10 +862,10 @@
         </div>
 
         <div class="btn-row">
-          <button type="button" id="locUseRecent" class="btn-ghost btn-small" disabled>
+                  <button type="button" id="locUseRecent" class="btn-ghost btn-small location-select-btn" disabled>
             Save recent
           </button>
-          <button type="button" id="locUseBest" class="btn-ghost btn-small" disabled>
+          <button type="button" id="locUseBest" class="btn-ghost btn-small location-select-btn" disabled>
             Save best
           </button>
           <button type="button" id="locReset" class="btn-danger-outline btn-small">
@@ -1111,7 +1130,7 @@
       const locSummaryTime      = document.getElementById('locSummaryTime');
       const locSummaryAccValue  = document.getElementById('locSummaryAccValue');
 
-      const locOpenTabBtn    = byId('locOpenTabBtn');
+      const openLocationTabBtn = byId('openLocationTabBtn');
 
       const locLatEl = byId('locLat');
       const locLngEl = byId('locLng');
@@ -1192,6 +1211,11 @@
       const locUseBest   = byId('locUseBest');
       const locResetBtn  = byId('locReset');
 
+            function setSaveChoice(which){
+        if(locUseRecent) locUseRecent.classList.toggle('active', which === 'recent');
+        if(locUseBest)   locUseBest.classList.toggle('active', which === 'best');
+      }
+
       const locMapDiv = byId('locMap');
       let locMap   = null;
       let locTiles = null;
@@ -1205,7 +1229,28 @@
         if(m < 20) return 'amber';   // 5–20 m
         return 'red';                // 20 m or more
       }
+      const locTabBtn = tabButtons.find(btn => btn.dataset.tab === 'location');
+      const locTabDot = locTabBtn ? locTabBtn.querySelector('.dot') : null;
 
+      function paintLocationDot(acc){
+        if(!locTabDot) return;
+
+        locTabDot.classList.remove(
+          'dot-acc-grey',
+          'dot-acc-amber',
+          'dot-acc-green',
+          'dot-acc-red'
+        );
+
+        const bucket = accBucket(acc);
+        const cls =
+          bucket === 'green' ? 'dot-acc-green' :
+          bucket === 'amber' ? 'dot-acc-amber' :
+          bucket === 'red'   ? 'dot-acc-red'   :
+                               'dot-acc-grey';
+
+        locTabDot.classList.add(cls);
+      }
       function paintAccChip(el, m){
         if(!el) return;
         el.className = 'loc-acc-chip acc-' + accBucket(m);
@@ -1376,6 +1421,7 @@
         if(locAgeTimer){ clearInterval(locAgeTimer); locAgeTimer=null; }
         updateLocRecentUI();
         updateLocBestUI(false);
+        setSaveChoice(null);
         fitLocBounds();
 
         // Clear hidden saved fix + summary + autosave
@@ -1685,6 +1731,7 @@
           }
 
           setSummaryAccColor(acc);
+          paintLocationDot(acc);
 
           if (locSummaryTime){
             locSummaryTime.textContent = Number.isFinite(ts)
@@ -1704,14 +1751,16 @@
               'loc-summary-acc-value loc-summary-acc-grey';
             locSummaryAccValue.textContent = '—';
           }
+                    paintLocationDot(NaN);
         }
       }
 
-      if(locOpenTabBtn){
-        locOpenTabBtn.addEventListener('click', function(){
+      if(openLocationTabBtn){
+        openLocationTabBtn.addEventListener('click', function(){
           activateTab('location');
         });
       }
+
 
       /* ---------- share / email ---------- */
       function buildPlainText(){
@@ -1857,14 +1906,16 @@
           }
         });
       }
-      if(locUseRecent){
+  if(locUseRecent){
         locUseRecent.addEventListener('click', function(){
           applyFixToHidden(locRecent);
+          setSaveChoice('recent');
         });
       }
       if(locUseBest){
         locUseBest.addEventListener('click', function(){
           applyFixToHidden(locBest);
+          setSaveChoice('best');
         });
       }
       if(locResetBtn){
