@@ -2,34 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>ARA Field Tools – Field note location</title>
+  <title>ARA Field Tools – Field notes</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Leaflet for the location map -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script defer
+          src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
     :root{
       --bg-main:#020b16;
-      --bg-top:#04101f;
       --bg-card:#071727;
       --bg-card-soft:#0b2235;
-      --border-soft:#123054;
-      --border-strong:#1f3c64;
-
+      --border-soft:#12263a;
       --text-main:#e5edf7;
       --text-muted:#9caac3;
       --accent:#3b82f6;
       --accent-soft:#60a5fa;
-      --accent-dark:#1d4ed8;
-
-      --danger:#ef4444;
-      --danger-dark:#991b1b;
-
+      --danger:#b91c1c;
+      --danger-soft:#f97373;
       --chip-bg:#0e2436;
-      --shadow-card:0 16px 40px rgba(0,0,0,0.65);
+      --shadow-card:0 14px 35px rgba(0,0,0,0.45);
       --radius-card:18px;
 
-      --acc-grey:#4b5563;
-      --acc-amber:#f59e0b;
-      --acc-green:#16a34a;
+      /* Tag colors */
+      --tag-microclimate: #a886ff;
+      --tag-habitat:      #2f8f4e;
+      --tag-species:      #4f7cff;
+      --tag-landscape:    #c29b5a;
+      --tag-moisture:     #2aa89a;
+      --tag-wildlife:     #f3a53b;
+      --tag-disturbance:  #ff6b4a;
+      --tag-navigation:   #6f7b8f;
+      --tag-weather:      #7b8aa4;
+      --tag-photo:        #e08fb6;
     }
 
     *{box-sizing:border-box;}
@@ -44,72 +52,63 @@
     .app-shell{
       max-width: 720px;
       margin: 0 auto;
-      padding: 12px 12px 28px;
+      padding: 12px 12px 32px;
     }
 
-    /* Top bar */
-    .topbar{
-      background:linear-gradient(180deg,var(--bg-top),#071523);
-      border-bottom:1px solid var(--border-soft);
-      padding:10px 12px 8px;
-      margin:-12px -12px 8px;
+    .app-header{
+      padding: 8px 4px 4px;
     }
-    .topbar-row{
+    .app-title{
+      font-weight: 650;
+      font-size: 1.15rem;
+    }
+    .app-subtitle{
+      font-size:0.85rem;
+      color:var(--text-muted);
+      margin-top:2px;
+    }
+
+    /* Top tabs */
+    .tab-bar{
       display:flex;
-      justify-content:space-between;
-      align-items:center;
       gap:8px;
+      margin-top:10px;
+      padding:0 2px 6px;
     }
-    .brand-block{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-    }
-    .brand{
-      font-weight:700;
-      letter-spacing:.02em;
-      font-size:1rem;
-    }
-    .brand-sub{
-      font-size:0.8rem;
-      color:var(--text-muted);
-    }
-
-    .top-tabs{
-      display:flex;
-      gap:6px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .top-tab{
+    .tab-btn{
       border-radius:999px;
-      padding:5px 12px;
-      font-size:0.8rem;
-      border:1px solid transparent;
-      background:rgba(15,23,42,0.7);
+      border:1px solid var(--border-soft);
+      background:var(--bg-card-soft);
       color:var(--text-muted);
-      text-decoration:none;
+      font-size:0.85rem;
+      padding:6px 14px;
+      cursor:pointer;
       display:inline-flex;
       align-items:center;
-      gap:6px;
+      justify-content:center;
+      gap:4px;
+      white-space:nowrap;
+      transition:background .15s, color .15s, border-color .15s, transform .08s;
     }
-    .top-tab span.dot{
-      width:8px;
-      height:8px;
-      border-radius:50%;
-      background:#4b5563;
+    .tab-btn span.dot{
+      width:7px;
+      height:7px;
+      border-radius:999px;
+      background:#1f2937;
     }
-    .top-tab.active{
-      background:var(--accent-soft);
-      color:#020617;
+    .tab-btn.active{
+      background:var(--accent);
       border-color:var(--accent-soft);
-      font-weight:600;
+      color:#f9fbff;
+      transform:translateY(-1px);
     }
-    .top-tab.active span.dot{
-      background:#22c55e;
+    .tab-btn.active span.dot{
+      background:#fbbf24;
     }
 
-    /* Cards */
+    .tabpane{ display:none; }
+    .tabpane.active{ display:block; }
+
     .card{
       background:var(--bg-card);
       border-radius:var(--radius-card);
@@ -119,9 +118,9 @@
       margin-top:14px;
     }
     .card-title{
-      font-size:0.98rem;
-      font-weight:650;
-      margin:0 0 10px;
+      font-size:0.95rem;
+      font-weight:600;
+      margin:0 0 8px;
     }
     .hint{
       font-size:0.78rem;
@@ -129,7 +128,35 @@
       margin:4px 0 0;
     }
 
-    /* Button row + pills */
+    .field-label{
+      font-size:0.85rem;
+      font-weight:500;
+      margin-bottom:4px;
+      display:block;
+    }
+
+    .text-input,
+    textarea{
+      width:100%;
+      border-radius:14px;
+      border:1px solid var(--border-soft);
+      background:#0b2235;
+      color:var(--text-main);
+      padding:9px 11px;
+      font-size:0.9rem;
+      line-height:1.4;
+    }
+    textarea{
+      min-height:120px;
+      resize:none;
+    }
+    .text-input:focus,
+    textarea:focus{
+      outline:none;
+      border-color:var(--accent-soft);
+      box-shadow:0 0 0 1px rgba(59,130,246,0.65);
+    }
+
     .btn-row{
       display:flex;
       flex-wrap:wrap;
@@ -137,513 +164,1644 @@
       margin-top:10px;
     }
 
-    button{
-      font-family:inherit;
-    }
-
-    .pill-btn{
+    .btn-primary,
+    .btn-ghost,
+    .btn-danger-outline{
       border-radius:999px;
-      border:1px solid var(--border-soft);
+      border:1px solid transparent;
       font-size:0.85rem;
-      padding:8px 14px;
+      padding:7px 14px;
       cursor:pointer;
       display:inline-flex;
       align-items:center;
       justify-content:center;
       gap:6px;
       white-space:nowrap;
-      background:rgba(15,23,42,0.9);
+      background:transparent;
       color:var(--text-main);
-      transition:
-        background 0.12s ease,
-        color 0.12s ease,
-        border-color 0.12s ease,
-        transform 0.06s ease;
     }
-    .pill-btn:active{
-      transform:scale(0.97);
-    }
-    .pill-btn.primary{
+
+    .btn-primary{
       background:var(--accent);
       border-color:var(--accent);
-      color:#020617;
-      font-weight:600;
+      color:#f9fbff;
     }
-    .pill-btn.primary.running{
-      background:var(--accent-dark);
-      border-color:var(--accent-soft);
-      box-shadow:0 0 0 2px rgba(37,99,235,0.55);
+    .btn-primary:disabled{
+      opacity:0.4;
+      cursor:default;
     }
-    .pill-btn.toggle.active{
-      background:var(--accent-soft);
-      border-color:var(--accent-soft);
-      color:#020617;
-      font-weight:600;
+
+    .btn-ghost{
+      background:var(--chip-bg);
+      border-color:var(--border-soft);
+      color:var(--text-main);
     }
-    .pill-btn.danger{
-      background:rgba(127,29,29,0.3);
+    .btn-ghost:disabled{
+      opacity:0.4;
+      cursor:default;
+    }
+    .btn-ghost-link{
+      text-decoration:none;
+    }
+
+    .btn-danger-outline{
       border-color:var(--danger);
-      color:#fecaca;
+      color:var(--danger-soft);
+      background:transparent;
     }
-    .pill-btn.danger:active{
-      background:var(--danger-dark);
+    .btn-danger-outline.flash{
+      animation:flash-red 250ms ease-out;
+    }
+    @keyframes flash-red{
+      0%{box-shadow:0 0 0 0 rgba(248,113,113,0.0);}
+      50%{box-shadow:0 0 0 3px rgba(248,113,113,0.5);}
+      100%{box-shadow:0 0 0 0 rgba(248,113,113,0.0);}
     }
 
-    .pill-btn.sm{
-      font-size:0.8rem;
-      padding:6px 12px;
+    .btn-small{
+      font-size:0.78rem;
+      padding:5px 10px;
     }
 
-    /* Fix cards */
-    .fix-card{
-      background:var(--bg-card-soft);
-      border-radius:16px;
-      padding:12px 12px 10px;
-      border:1px solid var(--border-strong);
+    .file-input-hidden{ display:none; }
+
+    .photo-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:6px;
+    }
+
+    .photo-grid{
       margin-top:10px;
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(96px,1fr));
+      gap:8px;
     }
-    .fix-title{
-      margin:0 0 6px;
-      font-weight:650;
-      font-size:0.95rem;
+    .photo-thumb{
+      position:relative;
+      border-radius:12px;
+      overflow:hidden;
+      background:#020b16;
+      border:1px solid var(--border-soft);
+      cursor:pointer;
     }
-    .fix-line{
-      margin:2px 0;
-      font-size:0.86rem;
+    .photo-thumb img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
     }
-    .fix-label-muted{
-      color:var(--text-muted);
-      font-size:0.8rem;
+    .photo-remove{
+      position:absolute;
+      top:4px;
+      right:4px;
+      background:rgba(15,23,42,0.82);
+      border-radius:999px;
+      width:20px;
+      height:20px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:13px;
+      color:#e5edf7;
+      border:1px solid rgba(148,163,184,0.7);
+      cursor:pointer;
     }
 
-    /* Accuracy chip */
-    .acc-chip{
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(8,15,26,0.9);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+    }
+    .overlay-inner{
+      max-width:92vw;
+      max-height:88vh;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .overlay-inner img{
+      max-width:92vw;
+      max-height:70vh;
+      border-radius:16px;
+      border:1px solid var(--border-soft);
+      box-shadow:0 18px 40px rgba(0,0,0,0.7);
+      background:#020b16;
+      object-fit:contain;
+    }
+    .overlay-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+    }
+
+    .divider{
+      height:1px;
+      background:rgba(15,23,42,0.9);
+      margin:10px 0;
+    }
+
+    .bottom-section{
+      margin-top:16px;
+    }
+    .bottom-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:8px;
+    }
+
+    .tiny-note{
+      font-size:0.72rem;
+      color:var(--text-muted);
+    }
+
+    /* Reset modal */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.60);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:60;
+    }
+    .modal{
+      background:var(--bg-card);
+      border-radius:18px;
+      padding:16px 16px 12px;
+      border:1px solid var(--border-soft);
+      width:90%;
+      max-width:340px;
+      box-shadow:0 18px 40px rgba(0,0,0,0.7);
+    }
+    .modal-title{
+      font-size:0.98rem;
+      font-weight:600;
+      margin:0 0 4px;
+    }
+    .modal-body{
+      font-size:0.82rem;
+      color:var(--text-muted);
+      margin-bottom:12px;
+    }
+    .modal-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+    }
+
+    .hidden{ display:none !important; }
+
+    /* Tag pill on main card */
+    .tag-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 140px;
+      padding-inline: 14px;
+      border-radius: 999px;
+    }
+
+    .tag-current {
+      font-size: 0.9rem;
+    }
+
+    .tag-none {
+      opacity: 0.7;
+    }
+
+    /* Tag overlay */
+    .tag-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1500;
+    }
+    .tag-overlay.open {
+      display: flex;
+    }
+
+    .tag-panel {
+      background: #061626;
+      border-radius: 18px;
+      padding: 16px 16px 12px;
+      width: min(520px, 92vw);
+      max-height: 80vh;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.75);
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+    }
+    .tag-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+    .tag-panel-header h2 {
+      font-size: 1.05rem;
+      margin: 0;
+    }
+    .tag-panel-intro {
+      margin: 0 0 10px;
+      font-size: 0.85rem;
+      opacity: 0.8;
+    }
+    .tag-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .tag-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(5,20,35,0.9);
+      cursor: pointer;
+      margin-bottom: 6px;
+      transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+    }
+    .tag-option:hover {
+      background: rgba(12,40,70,0.96);
+      transform: translateY(-1px);
+    }
+    .tag-color-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      margin-top: 2px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.7);
+    }
+    .tag-microclimate { background: var(--tag-microclimate); }
+    .tag-habitat      { background: var(--tag-habitat); }
+    .tag-species      { background: var(--tag-species); }
+    .tag-landscape    { background: var(--tag-landscape); }
+    .tag-moisture     { background: var(--tag-moisture); }
+    .tag-wildlife     { background: var(--tag-wildlife); }
+    .tag-disturbance  { background: var(--tag-disturbance); }
+    .tag-navigation   { background: var(--tag-navigation); }
+    .tag-weather      { background: var(--tag-weather); }
+    .tag-photo        { background: var(--tag-photo); }
+
+    .tag-option[data-tag-id="microclimate"] { border-color: rgba(168,134,255,0.6); }
+    .tag-option[data-tag-id="habitat"]      { border-color: rgba(47,143,78,0.6); }
+    .tag-option[data-tag-id="species"]      { border-color: rgba(79,124,255,0.6); }
+    .tag-option[data-tag-id="landscape"]    { border-color: rgba(194,155,90,0.6); }
+    .tag-option[data-tag-id="moisture"]     { border-color: rgba(42,168,154,0.6); }
+    .tag-option[data-tag-id="wildlife"]     { border-color: rgba(243,165,59,0.6); }
+    .tag-option[data-tag-id="disturbance"]  { border-color: rgba(255,107,74,0.6); }
+    .tag-option[data-tag-id="navigation"]   { border-color: rgba(111,123,143,0.6); }
+    .tag-option[data-tag-id="weather"]      { border-color: rgba(123,138,164,0.6); }
+    .tag-option[data-tag-id="photo"]        { border-color: rgba(224,143,182,0.6); }
+
+    .tag-text {
+      display: flex;
+      flex-direction: column;
+    }
+    .tag-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .tag-desc {
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+    .tag-panel-footer {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Location summary card on Note tab */
+    .loc-summary-grid{
+      margin-top:6px;
+      font-size:0.8rem;
+      color:var(--text-muted);
+    }
+    .loc-summary-grid p{
+      margin:2px 0;
+    }
+    .loc-summary-highlight{
+      color:#facc15;
+      font-weight:600;
+    }
+
+    /* Location tab styles */
+    .loc-header-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .loc-tag-pill{
+      font-size:0.8rem;
+      padding:4px 10px;
+      border-radius:999px;
+      background:#111827;
+      border:1px solid rgba(148,163,184,0.8);
+      color:#e5edf7;
+    }
+
+    .loc-toggle-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:10px 0 12px;
+    }
+    .loc-toggle{
+      background:#2563eb;
+      border-color:#2563eb;
+      color:#f9fbff;
+      font-weight:600;
+    }
+    .loc-toggle.running{
+      background:#f59e0b;
+      border-color:#f59e0b;
+      color:#111827;
+    }
+    .loc-toggle-chip{
+      background:#020617;
+      border-color:#1f2937;
+      color:#e5edf7;
+      font-size:0.8rem;
+      padding:5px 11px;
+    }
+    .loc-toggle-chip.active{
+      background:#1d4ed8;
+      border-color:#60a5fa;
+      color:#f9fafb;
+    }
+
+    .loc-panels{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .loc-panel{
+      background:#020b16;
+      border-radius:16px;
+      border:1px solid #1f2937;
+      padding:10px 11px 9px;
+    }
+    .loc-panel h3{
+      margin:0 0 4px;
+      font-size:0.9rem;
+    }
+    .loc-metric{
+      font-size:0.85rem;
+      margin:1px 0;
+    }
+    .loc-metric .label{
+      font-weight:500;
+    }
+    .loc-metric .value{
+      font-weight:400;
+    }
+
+    .loc-acc-chip{
+      display:inline-flex;
+      align-items:center;
+      padding:2px 10px;
+      border-radius:999px;
+      font-size:0.8rem;
+      font-weight:600;
+      background:#111827;
+      color:#e5edf7;
+    }
+    .acc-red    { background:#7f1d1d; color:#fee2e2; }
+    .acc-grey   { background:#374151; color:#e5e7eb; }
+    .acc-amber  { background:#f59e0b; color:#111827; }
+    .acc-green  { background:#15803d; color:#ecfdf3; }
+
+    .loc-best-badge{
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      padding:2px 9px;
+      padding:1px 8px;
       border-radius:999px;
-      font-size:0.78rem;
-      font-weight:650;
-      background:#111827;
-      color:#e5e7eb;
-    }
-    .acc-grey{
-      background:var(--acc-grey);
-      color:#f9fafb;
-    }
-    .acc-amber{
-      background:var(--acc-amber);
-      color:#1f2933;
-    }
-    .acc-green{
-      background:var(--acc-green);
-      color:#e5fff4;
-    }
-
-    .saved-card{
-      background:rgba(15,23,42,0.9);
-      border-radius:14px;
-      padding:10px 11px 8px;
-      border:1px dashed rgba(148,163,184,0.65);
-      margin-top:10px;
-      font-size:0.82rem;
-    }
-    .saved-card-header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:6px;
-      margin-bottom:4px;
-    }
-    .saved-pill{
-      border-radius:999px;
-      padding:3px 9px;
       font-size:0.72rem;
-      border:1px solid rgba(148,163,184,0.6);
-      color:var(--text-muted);
-    }
-    .saved-pill.good{
-      border-color:var(--acc-green);
-      color:#bbf7d0;
+      font-weight:600;
+      background:#22c55e;
+      color:#022c16;
+      margin-left:6px;
     }
 
-    .tiny{
-      font-size:0.75rem;
-      color:var(--text-muted);
-      margin-top:8px;
+    .loc-map{
+      margin-top:12px;
+      height:260px;
+      border-radius:16px;
+      overflow:hidden;
+      border:1px solid #1f2937;
     }
   </style>
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar">
-      <div class="topbar-row">
-        <div class="brand-block">
-          <div class="brand">ARA Field Tools</div>
-          <div class="brand-sub">Field note – Location</div>
-        </div>
-        <nav class="top-tabs" aria-label="Field note navigation">
-          <a href="fieldnotes.html" class="top-tab">
-            ← Note
-          </a>
-          <span class="top-tab active">
-            Location
-            <span class="dot"></span>
-          </span>
-        </nav>
-      </div>
+    <header class="app-header">
+      <div class="app-title">ARA Field Tools</div>
+      <div class="app-subtitle">Field notes (beta)</div>
+
+      <nav class="tab-bar" aria-label="Field note pages">
+        <button type="button" class="tab-btn active" data-tab="note">
+          Note
+          <span class="dot"></span>
+        </button>
+        <button type="button" class="tab-btn" data-tab="location">
+          Location
+          <span class="dot"></span>
+        </button>
+      </nav>
     </header>
 
-    <!-- Location controls -->
-    <section class="card">
-      <h2 class="card-title">Location</h2>
-      <div class="btn-row">
-        <button type="button" id="locToggle" class="pill-btn primary">
-          Start tracking
-        </button>
-        <button type="button" id="locHiAcc" class="pill-btn toggle sm">
-          High accuracy
-        </button>
-        <button type="button" id="locSaver" class="pill-btn toggle sm">
-          Battery saver
-        </button>
-      </div>
-      <p class="hint">
-        GPS runs only while this page is open. Saved coordinates sync back to your Field Note.
-      </p>
+    <!-- NOTE TAB -->
+    <section id="pane-note" class="tabpane active">
 
-      <!-- Recent fix -->
-      <div class="fix-card" id="recentCard">
-        <h3 class="fix-title">Recent fix</h3>
-        <p class="fix-line" id="recentDD">DD: —</p>
-        <p class="fix-line" id="recentAlt">Altitude: —</p>
-        <p class="fix-line">
-          Accuracy:
-          <span id="recentAcc" class="acc-chip">—</span>
-        </p>
-        <p class="fix-line" id="recentAge">Age: —</p>
-        <p class="fix-label-muted" id="recentSamples">Samples: 0</p>
-      </div>
+      <!-- NOTE -->
+      <section class="card">
+        <h2 class="card-title">Field Note Text</h2>
 
-      <!-- Best fix -->
-      <div class="fix-card" id="bestCard">
-        <h3 class="fix-title">Best so far</h3>
-        <p class="fix-line" id="bestDD">DD: —</p>
-        <p class="fix-line" id="bestAlt">Altitude: —</p>
-        <p class="fix-line">
-          Accuracy:
-          <span id="bestAcc" class="acc-chip">—</span>
-        </p>
-        <p class="fix-line" id="bestTime">Time: —</p>
-      </div>
+        <label for="noteTitle" class="field-label">Note Title</label>
+        <input id="noteTitle" class="text-input" type="text"
+               placeholder="e.g., Rossdale east bank scout, July 12">
 
-      <!-- Actions -->
-      <div class="btn-row">
-        <button type="button" id="saveRecentBtn" class="pill-btn sm" disabled>Save recent</button>
-        <button type="button" id="saveBestBtn"   class="pill-btn sm" disabled>Save best</button>
-        <button type="button" id="resetLocBtn"   class="pill-btn danger sm">Reset location</button>
-      </div>
+        <div style="height:8px;"></div>
 
-      <!-- Saved-to-note summary -->
-      <div class="saved-card" id="savedSummary">
-        <div class="saved-card-header">
-          <span>Saved to Field Note</span>
-          <span id="savedStatusPill" class="saved-pill">None yet</span>
+        <label for="noteText" class="field-label">Field note</label>
+        <textarea id="noteText" placeholder="Quick notes, observations, hazards, landmarks…"></textarea>
+        <p class="hint">This note stays on this device and can be copied or emailed out.</p>
+      </section>
+
+      <!-- Tag card -->
+      <section class="card">
+        <header class="card-header">
+          <h2 class="card-title">Tag</h2>
+          <p class="card-subtitle">
+            Optional label to categorize this note for your future Notebook view.
+          </p>
+        </header>
+        <div class="card-body">
+          <button type="button" id="tagPickerBtn" class="btn-ghost tag-pill">
+            <span id="tagCurrentLabel" class="tag-current tag-none">No tag selected</span>
+          </button>
+          <p class="hint">
+            Tap to choose a tag like “Microclimate”, “Habitat”, or “Trail marker”.
+          </p>
         </div>
-        <div id="savedDetails">
-          No location has been stored for this note.
-        </div>
-      </div>
+      </section>
 
-      <p class="tiny">
-        Saved data: source (recent/best), latitude, longitude, altitude, accuracy, timestamp, and sample count.
-      </p>
+      <!-- Location summary on main page -->
+      <section class="card" id="locSummaryCard">
+        <h2 class="card-title">Location</h2>
+        <p id="locSummaryStatus" class="hint">
+          No location saved yet for this note.
+        </p>
+
+        <div class="loc-summary-grid">
+          <p id="locSummaryDD">DD: —</p>
+          <p id="locSummaryAlt">Altitude: —</p>
+          <p id="locSummaryAcc">Accuracy: —</p>
+          <p id="locSummaryTime">Saved: —</p>
+        </div>
+
+        <div class="btn-row" style="margin-top:10px;">
+          <button type="button" id="locOpenTabBtn" class="btn-ghost btn-small">
+            Open location tab
+          </button>
+        </div>
+
+        <!-- Hidden fields so location can be saved + synced -->
+        <input type="hidden" id="locLat">
+        <input type="hidden" id="locLng">
+        <input type="hidden" id="locAcc">
+        <input type="hidden" id="locAlt">
+        <input type="hidden" id="locTs">
+      </section>
+
+      <!-- PHOTOS -->
+      <section class="card">
+        <h2 class="card-title">Photos</h2>
+        <div class="photo-actions">
+          <label class="btn-ghost btn-small" for="photoDevice">
+            <span>📁</span><span>Choose from gallery</span>
+            <input id="photoDevice" class="file-input-hidden" type="file" accept="image/*" multiple>
+          </label>
+          <label class="btn-ghost btn-small" for="photoCamera">
+            <span>📷</span><span>Take photo</span>
+            <input id="photoCamera" class="file-input-hidden" type="file" accept="image/*" capture="environment">
+          </label>
+        </div>
+
+        <div id="photoGrid" class="photo-grid"></div>
+        <p class="hint">Images don’t transfer automatically in email – you’ll need to attach them separately.</p>
+      </section>
+
+      <!-- SHARE / MANAGE -->
+      <section class="card bottom-section">
+        <h2 class="card-title">Share / manage</h2>
+        <div class="bottom-row">
+          <button type="button" id="copyNoteBtn" class="btn-ghost">Copy note text</button>
+          <a id="emailBtn" class="btn-ghost btn-ghost-link" href="#" aria-disabled="true">Open email</a>
+          <button type="button" id="saveNotebookBtn" class="btn-ghost" disabled>Save to notebook</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="bottom-row">
+          <button type="button" id="resetBtn" class="btn-danger-outline">Reset form</button>
+        </div>
+        <p class="tiny-note">Autosave is local to this device. Reset clears this page and its autosave.</p>
+      </section>
+    </section>
+
+    <!-- LOCATION TAB -->
+    <section id="pane-location" class="tabpane">
+      <section class="card">
+        <div class="loc-header-row">
+          <h2 class="card-title">Location</h2>
+          <div class="loc-tag-pill">GPS tracking for this note</div>
+        </div>
+        <p class="hint">
+          Track your position, then save the best fix into this field note.
+        </p>
+
+        <div class="loc-toggle-row">
+          <button type="button" id="locToggle" class="btn-primary loc-toggle">
+            Start tracking
+          </button>
+          <button type="button" id="locHiAcc" class="btn-ghost loc-toggle-chip">
+            High accuracy
+          </button>
+          <button type="button" id="locSaver" class="btn-ghost loc-toggle-chip">
+            Battery saver
+          </button>
+        </div>
+
+        <div class="loc-panels">
+          <div class="loc-panel">
+            <h3>Recent fix</h3>
+            <p class="loc-metric"><span class="label">DD:</span>
+              <span id="locRecentDD" class="value">—</span>
+            </p>
+            <p class="loc-metric"><span class="label">Altitude:</span>
+              <span id="locRecentAlt" class="value">—</span>
+            </p>
+            <p class="loc-metric"><span class="label">Accuracy:</span>
+              <span id="locRecentAcc" class="loc-acc-chip acc-grey">—</span>
+            </p>
+            <p class="loc-metric"><span class="label">Age:</span>
+              <span id="locRecentAge" class="value">—</span>
+            </p>
+            <p class="hint">Samples: <span id="locSamples">0</span></p>
+          </div>
+
+          <div class="loc-panel">
+            <h3>Best so far
+              <span id="locBestBadge" class="loc-best-badge hidden">new</span>
+            </h3>
+            <p class="loc-metric"><span class="label">DD:</span>
+              <span id="locBestDD" class="value">—</span>
+            </p>
+            <p class="loc-metric"><span class="label">Altitude:</span>
+              <span id="locBestAlt" class="value">—</span>
+            </p>
+            <p class="loc-metric"><span class="label">Accuracy:</span>
+              <span id="locBestAcc" class="loc-acc-chip acc-grey">—</span>
+            </p>
+            <p class="loc-metric"><span class="label">Time:</span>
+              <span id="locBestTime" class="value">—</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" id="locUseRecent" class="btn-ghost btn-small" disabled>
+            Save recent
+          </button>
+          <button type="button" id="locUseBest" class="btn-ghost btn-small" disabled>
+            Save best
+          </button>
+          <button type="button" id="locReset" class="btn-danger-outline btn-small">
+            Reset location
+          </button>
+        </div>
+
+        <div id="locMap" class="loc-map"></div>
+        <div class="btn-row" style="margin-top:8px;">
+          <button type="button" id="locToRecent" class="btn-ghost btn-small">Recenter to recent</button>
+          <button type="button" id="locToBest" class="btn-ghost btn-small">Recenter to best</button>
+        </div>
+      </section>
     </section>
   </div>
 
-  <script>
-    (function(){
-      const SAVE_KEY = 'ara_field_notes_v2';
+  <!-- Image overlay -->
+  <div id="imageOverlay" class="overlay hidden" aria-hidden="true">
+    <div class="overlay-inner">
+      <img id="overlayImg" alt="Expanded field note photo">
+      <div class="overlay-actions">
+        <button type="button" id="overlayClose" class="btn-ghost btn-small">Close</button>
+        <a id="overlayDownload" class="btn-ghost btn-small btn-ghost-link" href="#" download="field-note-photo.jpg">Download image</a>
+      </div>
+    </div>
+  </div>
 
-      function loadNoteState(){
+  <!-- Reset confirm modal -->
+  <div id="resetModal" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal">
+      <h3 class="modal-title">Reset this note?</h3>
+      <p class="modal-body">This clears the text, photos, tag, location, and the autosaved copy on this device.</p>
+      <div class="modal-actions">
+        <button type="button" id="resetCancel" class="btn-ghost btn-small">Cancel</button>
+        <button type="button" id="resetConfirm" class="btn-danger-outline btn-small">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tag selection overlay -->
+  <div id="tagOverlay" class="tag-overlay">
+    <div class="tag-backdrop"></div>
+    <div class="tag-panel">
+      <header class="tag-panel-header">
+        <h2>Choose a tag</h2>
+        <button type="button" class="tag-close btn-ghost" id="tagCloseBtn">Close</button>
+      </header>
+
+      <p class="tag-panel-intro">
+        Pick one tag for this note. You can change it anytime.
+      </p>
+
+      <ul class="tag-list" id="tagList">
+        <!-- Microclimate -->
+        <li class="tag-option"
+            data-tag-id="microclimate"
+            data-tag-name="Microclimate"
+            data-tag-color="var(--tag-microclimate)">
+          <span class="tag-color-dot tag-microclimate"></span>
+          <div class="tag-text">
+            <div class="tag-name">Microclimate</div>
+            <div class="tag-desc">For pockets of unique temperature, moisture, or shelter.</div>
+          </div>
+        </li>
+
+        <!-- Habitat -->
+        <li class="tag-option"
+            data-tag-id="habitat"
+            data-tag-name="Habitat"
+            data-tag-color="var(--tag-habitat)">
+          <span class="tag-color-dot tag-habitat"></span>
+          <div class="tag-text">
+            <div class="tag-name">Habitat</div>
+            <div class="tag-desc">For notes about understory, soil, and ecosystem type.</div>
+          </div>
+        </li>
+
+        <!-- Species Observation -->
+        <li class="tag-option"
+            data-tag-id="species"
+            data-tag-name="Species observation"
+            data-tag-color="var(--tag-species)">
+          <span class="tag-color-dot tag-species"></span>
+          <div class="tag-text">
+            <div class="tag-name">Species observation</div>
+            <div class="tag-desc">For specific plants, trees, or interesting specimens.</div>
+          </div>
+        </li>
+
+        <!-- Landscape Feature -->
+        <li class="tag-option"
+            data-tag-id="landscape"
+            data-tag-name="Landscape feature"
+            data-tag-color="var(--tag-landscape)">
+          <span class="tag-color-dot tag-landscape"></span>
+          <div class="tag-text">
+            <div class="tag-name">Landscape feature</div>
+            <div class="tag-desc">For slopes, ridges, gullies, terraces, and landforms.</div>
+          </div>
+        </li>
+
+        <!-- Moisture / Hydrology -->
+        <li class="tag-option"
+            data-tag-id="moisture"
+            data-tag-name="Moisture / hydrology"
+            data-tag-color="var(--tag-moisture)">
+          <span class="tag-color-dot tag-moisture"></span>
+          <div class="tag-text">
+            <div class="tag-name">Moisture / hydrology</div>
+            <div class="tag-desc">For springs, seep lines, wet hollows, and drainage patterns.</div>
+          </div>
+        </li>
+
+        <!-- Wildlife -->
+        <li class="tag-option"
+            data-tag-id="wildlife"
+            data-tag-name="Wildlife"
+            data-tag-color="var(--tag-wildlife)">
+          <span class="tag-color-dot tag-wildlife"></span>
+          <div class="tag-text">
+            <div class="tag-name">Wildlife</div>
+            <div class="tag-desc">For tracks, scat, nests, calls, or animal sign.</div>
+          </div>
+        </li>
+
+        <!-- Condition / Disturbance -->
+        <li class="tag-option"
+            data-tag-id="disturbance"
+            data-tag-name="Condition / disturbance"
+            data-tag-color="var(--tag-disturbance)">
+          <span class="tag-color-dot tag-disturbance"></span>
+          <div class="tag-text">
+            <div class="tag-name">Condition / disturbance</div>
+            <div class="tag-desc">For fire scars, windthrow, beetle kill, or human impact.</div>
+          </div>
+        </li>
+
+        <!-- Trail marker / Navigation -->
+        <li class="tag-option"
+            data-tag-id="navigation"
+            data-tag-name="Trail marker / navigation"
+            data-tag-color="var(--tag-navigation)">
+          <span class="tag-color-dot tag-navigation"></span>
+          <div class="tag-text">
+            <div class="tag-name">Trail marker / navigation</div>
+            <div class="tag-desc">For waypoints, landmarks, bike spots, or tricky turns.</div>
+          </div>
+        </li>
+
+        <!-- Weather -->
+        <li class="tag-option"
+            data-tag-id="weather"
+            data-tag-name="Weather"
+            data-tag-color="var(--tag-weather)">
+          <span class="tag-color-dot tag-weather"></span>
+          <div class="tag-text">
+            <div class="tag-name">Weather</div>
+            <div class="tag-desc">For fog pockets, frost, wind, and local weather quirks.</div>
+          </div>
+        </li>
+
+        <!-- Photo focus -->
+        <li class="tag-option"
+            data-tag-id="photo"
+            data-tag-name="Photo focus"
+            data-tag-color="var(--tag-photo)">
+          <span class="tag-color-dot tag-photo"></span>
+          <div class="tag-text">
+            <div class="tag-name">Photo focus</div>
+            <div class="tag-desc">For notes built mostly around photos and visuals.</div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="tag-panel-footer">
+        <button type="button" class="btn-ghost" id="tagClearBtn">Clear tag</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      function byId(id){ return document.getElementById(id); }
+      function nowLocalPretty(){
+        const d=new Date(); const pad=n=>String(n).padStart(2,'0');
+        return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+      }
+
+      function copyToClipboard(txt){
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          return navigator.clipboard.writeText(txt);
+        }
+        return new Promise(function(resolve){
+          const t=document.createElement('textarea');
+          t.value=txt;
+          t.style.position='fixed';
+          t.style.opacity='0';
+          document.body.appendChild(t);
+          t.select();
+          document.execCommand('copy');
+          t.remove();
+          resolve();
+        });
+      }
+
+      /* ---------- Tabs ---------- */
+      const tabButtons = Array.from(document.querySelectorAll('.tab-btn'));
+      const tabPanes   = {
+        note:      byId('pane-note'),
+        location:  byId('pane-location')
+      };
+      function activateTab(id){
+        tabButtons.forEach(btn=>{
+          const isActive = btn.dataset.tab === id;
+          btn.classList.toggle('active', isActive);
+        });
+        Object.keys(tabPanes).forEach(key=>{
+          tabPanes[key].classList.toggle('active', key === id);
+        });
+        window.scrollTo({top:0,behavior:'smooth'});
+        if(id === 'location' && typeof ensureLocMap === 'function'){
+          ensureLocMap();
+        }
+      }
+      tabButtons.forEach(btn=>{
+        btn.addEventListener('click', ()=>activateTab(btn.dataset.tab));
+      });
+
+      const noteTitleEl   = byId('noteTitle');
+      const noteEl        = byId('noteText');
+      const photoDevice   = byId('photoDevice');
+      const photoCamera   = byId('photoCamera');
+      const photoGrid     = byId('photoGrid');
+
+      const overlay       = byId('imageOverlay');
+      const overlayImg    = byId('overlayImg');
+      const overlayClose  = byId('overlayClose');
+      const overlayDownload = byId('overlayDownload');
+
+      const copyNoteBtn   = byId('copyNoteBtn');
+      const emailBtn      = byId('emailBtn');
+
+      const resetBtn      = byId('resetBtn');
+      const resetModal    = byId('resetModal');
+      const resetCancel   = byId('resetCancel');
+      const resetConfirm  = byId('resetConfirm');
+
+      const locSummaryStatus = byId('locSummaryStatus');
+      const locSummaryDD     = byId('locSummaryDD');
+      const locSummaryAlt    = byId('locSummaryAlt');
+      const locSummaryAcc    = byId('locSummaryAcc');
+      const locSummaryTime   = byId('locSummaryTime');
+      const locOpenTabBtn    = byId('locOpenTabBtn');
+
+      const locLatEl = byId('locLat');
+      const locLngEl = byId('locLng');
+      const locAccEl = byId('locAcc');
+      const locAltEl = byId('locAlt');
+      const locTsEl  = byId('locTs');
+
+      const SAVE_KEY = 'ara_field_notes_v2';
+      let _saveTimer = null;
+
+      /* ------------ Tag selection state ------------ */
+      let selectedTagId = null;
+
+      const tagPickerBtn    = document.getElementById('tagPickerBtn');
+      const tagCurrentLabel = document.getElementById('tagCurrentLabel');
+      const tagOverlay      = document.getElementById('tagOverlay');
+      const tagCloseBtn     = document.getElementById('tagCloseBtn');
+      const tagClearBtn     = document.getElementById('tagClearBtn');
+
+      function openTagOverlay(){
+        if (!tagOverlay) return;
+        tagOverlay.classList.add('open');
+      }
+      function closeTagOverlay(){
+        if (!tagOverlay) return;
+        tagOverlay.classList.remove('open');
+      }
+
+      function applyTagSelection(id, name, color){
+        selectedTagId = id || null;
+
+        if (!tagCurrentLabel) return;
+
+        if (!id){
+          tagCurrentLabel.textContent = 'No tag selected';
+          tagCurrentLabel.classList.add('tag-none');
+          if(tagPickerBtn){
+            tagPickerBtn.style.borderColor = '';
+            tagPickerBtn.style.boxShadow = '';
+          }
+        } else {
+          tagCurrentLabel.textContent = name || 'Tagged';
+          tagCurrentLabel.classList.remove('tag-none');
+          if (tagPickerBtn && color){
+            tagPickerBtn.style.borderColor = color;
+            tagPickerBtn.style.boxShadow = '0 0 0 1px ' + color;
+          }
+        }
+        autoSaveSoon();
+      }
+
+      /* ---------- location runtime state ---------- */
+      let locWatchId = null;
+      let locRecent  = null;
+      let locBest    = null;
+      let locSamples = 0;
+      let locAgeTimer = null;
+      let locHiAccOn = false;
+      let locSaverOn = false;
+
+      const locToggle   = byId('locToggle');
+      const locHiAccBtn = byId('locHiAcc');
+      const locSaverBtn = byId('locSaver');
+
+      const locRecentDD   = byId('locRecentDD');
+      const locRecentAlt  = byId('locRecentAlt');
+      const locRecentAcc  = byId('locRecentAcc');
+      const locRecentAge  = byId('locRecentAge');
+      const locSamplesEl  = byId('locSamples');
+
+      const locBestDD   = byId('locBestDD');
+      const locBestAlt  = byId('locBestAlt');
+      const locBestAcc  = byId('locBestAcc');
+      const locBestTime = byId('locBestTime');
+      const locBestBadge= byId('locBestBadge');
+
+      const locUseRecent = byId('locUseRecent');
+      const locUseBest   = byId('locUseBest');
+      const locResetBtn  = byId('locReset');
+
+      const locMapDiv = byId('locMap');
+      let locMap   = null;
+      let locTiles = null;
+      let locRecentMarker = null;
+      let locBestMarker   = null;
+      let locAccCircle    = null;
+
+      function accBucket(m){
+        if(!Number.isFinite(m)) return 'grey';
+        if(m <= 5) return 'green';
+        if(m < 20) return 'amber';
+        return 'grey';
+      }
+
+      function paintAccChip(el, m){
+        if(!el) return;
+        el.className = 'loc-acc-chip acc-' + accBucket(m);
+        el.textContent = Number.isFinite(m) ? ('±'+m.toFixed(1)+' m') : '—';
+      }
+
+      function ensureLocMap(){
+        if(locMap || !window.L || !locMapDiv) return;
+        locMap = L.map(locMapDiv, {
+          zoomControl:true,
+          attributionControl:false
+        }).setView([53.5444,-113.4909], 11);
+        locTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+          maxZoom:19
+        }).addTo(locMap);
+      }
+      window.ensureLocMap = ensureLocMap;
+
+      function updateLocRecentUI(){
+        if(locRecent){
+          locRecentDD.textContent  = `${locRecent.lat.toFixed(6)}, ${locRecent.lng.toFixed(6)}`;
+          locRecentAlt.textContent = Number.isFinite(locRecent.alt) ? locRecent.alt.toFixed(1)+' m' : '—';
+          paintAccChip(locRecentAcc, locRecent.acc);
+          if(locAgeTimer) clearInterval(locAgeTimer);
+          locAgeTimer = setInterval(()=>{
+            const age = Math.max(0,(Date.now() - locRecent.ts)/1000);
+            locRecentAge.textContent = age.toFixed(1)+' s';
+          },200);
+          locUseRecent.disabled = false;
+        } else {
+          locRecentDD.textContent  = '—';
+          locRecentAlt.textContent = '—';
+          paintAccChip(locRecentAcc, NaN);
+          locRecentAge.textContent = '—';
+          locUseRecent.disabled    = true;
+        }
+        locSamplesEl.textContent = String(locSamples);
+
+        ensureLocMap();
+        if(locMap && locRecent){
+          const latlng=[locRecent.lat,locRecent.lng];
+          if(!locRecentMarker){
+            locRecentMarker = L.marker(latlng,{title:'Recent fix'}).addTo(locMap);
+          }else{
+            locRecentMarker.setLatLng(latlng);
+          }
+          if(Number.isFinite(locRecent.acc)){
+            if(!locAccCircle){
+              locAccCircle = L.circle(latlng,{
+                radius:locRecent.acc,
+                color:'#60a5fa',
+                fillColor:'#60a5fa',
+                fillOpacity:0.15,
+                weight:1
+              }).addTo(locMap);
+            }else{
+              locAccCircle.setLatLng(latlng).setRadius(locRecent.acc);
+            }
+          }
+        }
+      }
+
+      function updateLocBestUI(isNew){
+        if(locBest){
+          locBestDD.textContent  = `${locBest.lat.toFixed(6)}, ${locBest.lng.toFixed(6)}`;
+          locBestAlt.textContent = Number.isFinite(locBest.alt) ? locBest.alt.toFixed(1)+' m' : '—';
+          paintAccChip(locBestAcc, locBest.acc);
+          locBestTime.textContent= new Date(locBest.ts).toLocaleString();
+          locUseBest.disabled    = false;
+        } else {
+          locBestDD.textContent  = '—';
+          locBestAlt.textContent = '—';
+          paintAccChip(locBestAcc, NaN);
+          locBestTime.textContent= '—';
+          locUseBest.disabled    = true;
+        }
+        if(locBestBadge){
+          if(isNew && locBest){
+            locBestBadge.classList.remove('hidden');
+            setTimeout(()=>locBestBadge.classList.add('hidden'), 1200);
+          }else{
+            locBestBadge.classList.add('hidden');
+          }
+        }
+
+        ensureLocMap();
+        if(locMap && locBest){
+          const latlng=[locBest.lat,locBest.lng];
+          if(!locBestMarker){
+            locBestMarker = L.marker(latlng,{title:'Best fix'}).addTo(locMap);
+          }else{
+            locBestMarker.setLatLng(latlng);
+          }
+        }
+      }
+
+      function fitLocBounds(){
+        if(!locMap) return;
+        const pts=[];
+        if(locRecent) pts.push([locRecent.lat,locRecent.lng]);
+        if(locBest)   pts.push([locBest.lat,locBest.lng]);
+        if(!pts.length) return;
+        if(pts.length===1) locMap.setView(pts[0],16);
+        else locMap.fitBounds(pts,{padding:[24,24]});
+      }
+
+      function applyFixToHidden(fix){
+        if(!fix) return;
+        locLatEl.value = fix.lat.toFixed(6);
+        locLngEl.value = fix.lng.toFixed(6);
+        locAccEl.value = Number.isFinite(fix.acc) ? fix.acc.toFixed(1) : '';
+        locAltEl.value = Number.isFinite(fix.alt) ? fix.alt.toFixed(1) : '';
+        locTsEl.value  = String(fix.ts || Date.now());
+        updateLocationSummary();
+        autoSaveSoon();
+      }
+
+      function startLocTracking(){
+        if(locWatchId != null || !navigator.geolocation) return;
+        const opts = {
+          enableHighAccuracy: locHiAccOn,
+          maximumAge: locSaverOn ? 15000 : 0,
+          timeout: locSaverOn ? 30000 : 20000
+        };
+        locWatchId = navigator.geolocation.watchPosition(pos=>{
+          const c = pos.coords;
+          const now = Date.now();
+          if(locSaverOn && locRecent && now - locRecent.ts < 1500) return;
+          const fix = {
+            lat: c.latitude,
+            lng: c.longitude,
+            acc: c.accuracy,
+            alt: Number.isFinite(c.altitude) ? c.altitude : null,
+            ts: now
+          };
+          locSamples++;
+          locRecent = fix;
+          updateLocRecentUI();
+          if(!locBest || (Number.isFinite(fix.acc) && fix.acc < locBest.acc)){
+            locBest = { ...fix };
+            updateLocBestUI(true);
+          }else{
+            updateLocBestUI(false);
+          }
+          fitLocBounds();
+        }, err=>{
+          console.warn('Geolocation error', err);
+        }, opts);
+
+        locToggle.classList.add('running');
+        locToggle.textContent = 'Stop tracking';
+      }
+
+      function stopLocTracking(){
+        if(locWatchId != null && navigator.geolocation){
+          navigator.geolocation.clearWatch(locWatchId);
+        }
+        locWatchId = null;
+        locToggle.classList.remove('running');
+        locToggle.textContent = 'Start tracking';
+      }
+
+      function resetLocationAll(){
+        stopLocTracking();
+        locRecent = null;
+        locBest   = null;
+        locSamples= 0;
+        if(locAgeTimer){ clearInterval(locAgeTimer); locAgeTimer=null; }
+        updateLocRecentUI();
+        updateLocBestUI(false);
+        fitLocBounds();
+
+        // Clear hidden saved fix + summary + autosave
+        locLatEl.value = '';
+        locLngEl.value = '';
+        locAccEl.value = '';
+        locAltEl.value = '';
+        locTsEl.value  = '';
+        updateLocationSummary();
+        autoSaveSoon();
+      }
+
+      function locExportRuntime(){
+        return { recent: locRecent, best: locBest, samples: locSamples };
+      }
+      function locImportRuntime(st){
+        if(!st) return;
+        locRecent  = st.recent || null;
+        locBest    = st.best   || null;
+        locSamples = st.samples|| 0;
+        updateLocRecentUI();
+        updateLocBestUI(false);
+        fitLocBounds();
+      }
+
+      /* ---------- autosave ---------- */
+      function getState(){
+        try{
+          return {
+            title: noteTitleEl.value || '',
+            note:  noteEl.value || '',
+            tagId: selectedTagId || '',
+            photos: photos.map(p => ({ src:p.src, fromCamera: !!p.fromCamera })),
+            location: {
+              lat: locLatEl.value || '',
+              lng: locLngEl.value || '',
+              acc: locAccEl.value || '',
+              alt: locAltEl.value || '',
+              ts:  locTsEl.value  || ''
+            },
+            locRuntime: locExportRuntime()
+          };
+        }catch(e){
+          console.warn('getState failed', e);
+          return null;
+        }
+      }
+      function saveState(){
+        try{
+          const st=getState();
+          if(st) localStorage.setItem(SAVE_KEY, JSON.stringify(st));
+        }catch(e){
+          console.warn('saveState failed', e);
+        }
+      }
+      function saveStateSoon(){
+        try{
+          if(_saveTimer) clearTimeout(_saveTimer);
+          _saveTimer = setTimeout(saveState, 250);
+        }catch(e){}
+      }
+      function autoSaveSoon(){ saveStateSoon(); }
+
+      function loadState(){
         try{
           const raw = localStorage.getItem(SAVE_KEY);
-          if(!raw) return {};
-          return JSON.parse(raw) || {};
+          if(!raw) return;
+          const st = JSON.parse(raw);
+          if(st.title){
+            noteTitleEl.value = st.title;
+          }
+          if(st.note){
+            noteEl.value = st.note;
+            autoGrowNote();
+          }
+          if (st.tagId) {
+            const opt = document.querySelector('.tag-option[data-tag-id="' + st.tagId + '"]');
+            if (opt) {
+              applyTagSelection(
+                st.tagId,
+                opt.dataset.tagName,
+                opt.dataset.tagColor
+              );
+            }
+          } else {
+            applyTagSelection(null);
+          }
+
+          if(Array.isArray(st.photos)){
+            photos = st.photos.map(p => ({
+              id: 'p'+Date.now()+Math.random().toString(16).slice(2),
+              src: p.src,
+              fromCamera: !!p.fromCamera
+            }));
+            renderPhotos();
+          }
+
+          if(st.location){
+            locLatEl.value = st.location.lat || '';
+            locLngEl.value = st.location.lng || '';
+            locAccEl.value = st.location.acc || '';
+            locAltEl.value = st.location.alt || '';
+            locTsEl.value  = st.location.ts  || '';
+            updateLocationSummary();
+          }
+
+          if(st.locRuntime){
+            locImportRuntime(st.locRuntime);
+          }
+
+          updateShareButtons();
         }catch(e){
-          console.warn('Failed to read state', e);
-          return {};
+          console.warn('loadState failed', e);
         }
       }
-      function saveNoteState(partial){
-        try{
-          const current = loadNoteState();
-          const next = Object.assign({}, current, partial);
-          localStorage.setItem(SAVE_KEY, JSON.stringify(next));
-        }catch(e){
-          console.warn('Failed to save state', e);
-        }
+      function clearState(){
+        try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
       }
 
-      // UI refs
-      const locToggle = document.getElementById('locToggle');
-      const locHiAcc  = document.getElementById('locHiAcc');
-      const locSaver  = document.getElementById('locSaver');
+      /* ---------- note auto-grow ---------- */
+      function autoGrowNote(){
+        if(!noteEl) return;
+        noteEl.style.height='auto';
+        noteEl.style.height=(noteEl.scrollHeight+2)+'px';
+      }
+      noteEl.addEventListener('input', function(){
+        autoGrowNote();
+        saveStateSoon();
+        updateShareButtons();
+      });
+      noteTitleEl.addEventListener('input', function(){
+        saveStateSoon();
+        updateShareButtons();
+      });
+      autoGrowNote();
 
-      const recentDD   = document.getElementById('recentDD');
-      const recentAlt  = document.getElementById('recentAlt');
-      const recentAcc  = document.getElementById('recentAcc');
-      const recentAge  = document.getElementById('recentAge');
-      const recentSamples = document.getElementById('recentSamples');
+      /* ---------- Tag overlay wiring ---------- */
+      if (tagPickerBtn) tagPickerBtn.addEventListener('click', openTagOverlay);
+      if (tagCloseBtn)  tagCloseBtn.addEventListener('click', closeTagOverlay);
+      if (tagOverlay){
+        tagOverlay.addEventListener('click', function(e){
+          if (e.target === tagOverlay) closeTagOverlay();
+        });
+      }
+      if (tagClearBtn){
+        tagClearBtn.addEventListener('click', function(){
+          applyTagSelection(null);
+          closeTagOverlay();
+        });
+      }
+      document.querySelectorAll('.tag-option').forEach(function(opt){
+        opt.addEventListener('click', function(){
+          const id    = opt.dataset.tagId;
+          const name  = opt.dataset.tagName;
+          const color = opt.dataset.tagColor;
+          applyTagSelection(id, name, color);
+          closeTagOverlay();
+        });
+      });
 
-      const bestDD   = document.getElementById('bestDD');
-      const bestAlt  = document.getElementById('bestAlt');
-      const bestAcc  = document.getElementById('bestAcc');
-      const bestTime = document.getElementById('bestTime');
+      /* ---------- photos ---------- */
+      let photos = [];
+      let currentOverlayPhoto = null;
 
-      const saveRecentBtn = document.getElementById('saveRecentBtn');
-      const saveBestBtn   = document.getElementById('saveBestBtn');
-      const resetLocBtn   = document.getElementById('resetLocBtn');
-
-      const savedSummary    = document.getElementById('savedSummary');
-      const savedStatusPill = document.getElementById('savedStatusPill');
-      const savedDetails    = document.getElementById('savedDetails');
-
-      // Runtime state
-      let watchId = null;
-      let useHiAcc = false;
-      let useSaver = false;
-      let samples = 0;
-      let recent = null; // {lat,lng,acc,alt,ts}
-      let best   = null;
-      let ageTimer = null;
-
-      function fmt6(v){ return Number.isFinite(v)? v.toFixed(6) : '—'; }
-      function fmt1(v){ return Number.isFinite(v)? v.toFixed(1) : '—'; }
-
-      function accClass(m){
-        if(!Number.isFinite(m)) return 'acc-grey';
-        if(m <= 5)  return 'acc-green';
-        if(m <= 20) return 'acc-amber';
-        return 'acc-grey';
+      function addPhotoFromDataUrl(dataUrl, fromCamera){
+        const id='p'+Date.now()+Math.random().toString(16).slice(2);
+        photos.push({id, src:dataUrl, fromCamera:!!fromCamera});
       }
 
-      function setAccChip(el, meters){
-        if(!el) return;
-        let cls = 'acc-chip ' + accClass(meters);
-        el.className = cls;
-        el.textContent = Number.isFinite(meters) ? '±'+fmt1(meters)+' m' : '±— m';
+      function handleFiles(fileList, fromCamera){
+        if(!fileList || !fileList.length) return;
+        const files = Array.prototype.slice.call(fileList);
+        files.forEach(function(file){
+          if(!file.type || !file.type.startsWith('image/')) return;
+          const reader = new FileReader();
+          reader.onload = function(e){
+            addPhotoFromDataUrl(e.target.result, fromCamera);
+            renderPhotos();
+            updateShareButtons();
+            saveStateSoon();
+          };
+          reader.readAsDataURL(file);
+        });
       }
 
-      function setTrackingUI(running){
-        if(!locToggle) return;
-        if(running){
-          locToggle.textContent = 'Stop tracking';
-          locToggle.classList.add('running');
+      function renderPhotos(){
+        photoGrid.innerHTML='';
+        photos.forEach(function(ph){
+          const div=document.createElement('div');
+          div.className='photo-thumb';
+          div.dataset.id=ph.id;
+
+          const img=document.createElement('img');
+          img.src=ph.src;
+          img.alt='Field note photo';
+
+          const btn=document.createElement('button');
+          btn.type='button';
+          btn.className='photo-remove';
+          btn.textContent='×';
+          btn.addEventListener('click', function(ev){
+            ev.stopPropagation();
+            removePhoto(ph.id);
+          });
+
+          div.addEventListener('click', function(){
+            openOverlay(ph);
+          });
+
+          div.appendChild(img);
+          div.appendChild(btn);
+          photoGrid.appendChild(div);
+        });
+      }
+
+      function removePhoto(id){
+        photos = photos.filter(p => p.id !== id);
+        renderPhotos();
+        updateShareButtons();
+        saveStateSoon();
+      }
+
+      photoDevice.addEventListener('change', function(e){
+        handleFiles(e.target.files, false);
+        photoDevice.value='';
+      });
+      photoCamera.addEventListener('change', function(e){
+        handleFiles(e.target.files, true);
+        photoCamera.value='';
+      });
+
+      /* ---------- image overlay ---------- */
+      function openOverlay(photo){
+        currentOverlayPhoto = photo;
+        overlayImg.src = photo.src;
+        overlay.classList.remove('hidden');
+        overlay.setAttribute('aria-hidden','false');
+
+        if(photo.fromCamera){
+          overlayDownload.style.display='';
+          overlayDownload.href = photo.src;
         }else{
-          locToggle.textContent = 'Start tracking';
-          locToggle.classList.remove('running');
+          overlayDownload.style.display='none';
+        }
+      }
+      function closeOverlay(){
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden','true');
+        overlayImg.src='';
+        currentOverlayPhoto=null;
+      }
+      overlayClose.addEventListener('click', closeOverlay);
+      overlay.addEventListener('click', function(e){
+        if(e.target === overlay) closeOverlay();
+      });
+
+      /* ---------- location summary on Note tab ---------- */
+      function updateLocationSummary(){
+        const lat = parseFloat(locLatEl.value);
+        const lng = parseFloat(locLngEl.value);
+        const acc = parseFloat(locAccEl.value);
+        const alt = parseFloat(locAltEl.value);
+        const ts  = parseInt(locTsEl.value,10);
+
+        if(Number.isFinite(lat) && Number.isFinite(lng)){
+          locSummaryStatus.textContent = 'Saved location for this note:';
+          locSummaryDD.textContent   = 'DD: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
+          locSummaryAlt.textContent  = 'Altitude: ' + (Number.isFinite(alt) ? alt.toFixed(1)+' m' : '—');
+          locSummaryAcc.textContent  = 'Accuracy: ' + (Number.isFinite(acc) ? '±'+acc.toFixed(1)+' m' : '±—');
+          locSummaryTime.textContent = 'Saved: ' + (Number.isFinite(ts) ? new Date(ts).toLocaleString() : '—');
+        } else {
+          locSummaryStatus.textContent = 'No location saved yet for this note.';
+          locSummaryDD.textContent   = 'DD: —';
+          locSummaryAlt.textContent  = 'Altitude: —';
+          locSummaryAcc.textContent  = 'Accuracy: —';
+          locSummaryTime.textContent = 'Saved: —';
         }
       }
 
-      function updateRecentUI(){
-        if(recent){
-          recentDD.textContent  = 'DD: '+fmt6(recent.lat)+', '+fmt6(recent.lng);
-          recentAlt.textContent = 'Altitude: '+(Number.isFinite(recent.alt)? fmt1(recent.alt)+' m' : '—');
-          setAccChip(recentAcc, recent.acc);
+      if(locOpenTabBtn){
+        locOpenTabBtn.addEventListener('click', function(){
+          activateTab('location');
+        });
+      }
 
-          if(ageTimer) clearInterval(ageTimer);
-          ageTimer = setInterval(function(){
-            const age = (Date.now() - recent.ts)/1000;
-            recentAge.textContent = 'Age: '+fmt1(age)+' s';
-          }, 300);
+      /* ---------- share / email ---------- */
+      function buildPlainText(){
+        const parts=[];
+        const title = noteTitleEl.value.trim();
+        const note  = noteEl.value.trim();
 
-          saveRecentBtn.disabled = false;
+        if(title){
+          parts.push('Note name: '+title,'');
+        }
+        if(note){
+          parts.push('Field note ('+nowLocalPretty()+')','',note,'');
+        }
+
+        // Location in plain text if saved
+        const lat = parseFloat(locLatEl.value);
+        const lng = parseFloat(locLngEl.value);
+        if(Number.isFinite(lat) && Number.isFinite(lng)){
+          const acc = parseFloat(locAccEl.value);
+          const alt = parseFloat(locAltEl.value);
+          const ts  = parseInt(locTsEl.value,10);
+          parts.push(
+            'Location:',
+            '  DD: '+lat.toFixed(6)+', '+lng.toFixed(6),
+            '  Altitude: '+(Number.isFinite(alt)?alt.toFixed(1)+' m':'—'),
+            '  Accuracy: '+(Number.isFinite(acc)?'±'+acc.toFixed(1)+' m':'±—'),
+            '  Recorded: '+(Number.isFinite(ts)?new Date(ts).toLocaleString():'—'),
+            ''
+          );
+        }
+
+        if(photos.length){
+          parts.push('Photos: '+photos.length+' image(s) – not attached, stored on device.');
+        }
+        if(!parts.length){
+          parts.push('Field note (empty)');
+        }
+        return parts.join('\n');
+      }
+
+      function updateShareButtons(){
+        const hasContent =
+          (noteTitleEl.value && noteTitleEl.value.trim().length>0) ||
+          (noteEl.value && noteEl.value.trim().length>0) ||
+          photos.length>0;
+
+        copyNoteBtn.disabled = !hasContent;
+        if(hasContent){
+          const body = encodeURIComponent(buildPlainText());
+          const baseSubject = 'ARA Field Note';
+          const title = noteTitleEl.value.trim();
+          const subject = encodeURIComponent(title ? baseSubject+' – '+title : baseSubject);
+          emailBtn.href = 'mailto:?subject='+subject+'&body='+body;
+          emailBtn.setAttribute('aria-disabled','false');
         }else{
-          recentDD.textContent   = 'DD: —';
-          recentAlt.textContent  = 'Altitude: —';
-          setAccChip(recentAcc, NaN);
-          recentAge.textContent  = 'Age: —';
-          saveRecentBtn.disabled = true;
-          if(ageTimer){ clearInterval(ageTimer); ageTimer=null; }
-        }
-        recentSamples.textContent = 'Samples: '+samples;
-      }
-
-      function updateBestUI(){
-        if(best){
-          bestDD.textContent  = 'DD: '+fmt6(best.lat)+', '+fmt6(best.lng);
-          bestAlt.textContent = 'Altitude: '+(Number.isFinite(best.alt)? fmt1(best.alt)+' m' : '—');
-          setAccChip(bestAcc, best.acc);
-          bestTime.textContent = 'Time: '+ new Date(best.ts).toLocaleString();
-          saveBestBtn.disabled = false;
-        }else{
-          bestDD.textContent  = 'DD: —';
-          bestAlt.textContent = 'Altitude: —';
-          setAccChip(bestAcc, NaN);
-          bestTime.textContent = 'Time: —';
-          saveBestBtn.disabled = true;
+          emailBtn.href = '#';
+          emailBtn.setAttribute('aria-disabled','true');
         }
       }
 
-      function handlePosition(pos){
-        const c = pos.coords;
-        const now = Date.now();
+      copyNoteBtn.addEventListener('click', function(){
+        const txt = buildPlainText();
+        copyToClipboard(txt).then(function(){
+          const old = copyNoteBtn.textContent;
+          copyNoteBtn.textContent='Copied ✓';
+          setTimeout(()=>copyNoteBtn.textContent=old,1000);
+        });
+      });
 
-        if(useSaver && recent && now - recent.ts < 1500){
-          return; // throttle
-        }
-
-        const fix = {
-          lat: c.latitude,
-          lng: c.longitude,
-          acc: c.accuracy,
-          alt: Number.isFinite(c.altitude)? c.altitude : NaN,
-          ts: now
-        };
-        samples++;
-        recent = fix;
-        updateRecentUI();
-
-        if(!best || (Number.isFinite(fix.acc) && fix.acc < best.acc)){
-          best = Object.assign({}, fix);
-          updateBestUI();
-        }
+      /* ---------- reset modal ---------- */
+      function showResetModal(){
+        resetModal.classList.remove('hidden');
+        resetModal.setAttribute('aria-hidden','false');
+      }
+      function hideResetModal(){
+        resetModal.classList.add('hidden');
+        resetModal.setAttribute('aria-hidden','true');
       }
 
-      function handleError(err){
-        console.warn('Geolocation error', err);
+      if(resetBtn){
+        resetBtn.addEventListener('click', function(){
+          resetBtn.classList.remove('flash');
+          void resetBtn.offsetWidth;
+          resetBtn.classList.add('flash');
+          showResetModal();
+        });
+      }
+      if(resetCancel){
+        resetCancel.addEventListener('click', hideResetModal);
+      }
+      if(resetModal){
+        resetModal.addEventListener('click', function(e){
+          if(e.target === resetModal) hideResetModal();
+        });
+      }
+      if(resetConfirm){
+        resetConfirm.addEventListener('click', function(){
+          hideResetModal();
+          // clear title + note
+          noteTitleEl.value='';
+          noteEl.value='';
+          autoGrowNote();
+          // clear photos
+          photos=[];
+          renderPhotos();
+          // clear tag
+          applyTagSelection(null);
+          // clear location
+          resetLocationAll();
+          // clear autosave
+          clearState();
+          updateShareButtons();
+        });
       }
 
-      function startTracking(){
-        if(watchId !== null) return;
-        if(!navigator.geolocation){
-          alert('Geolocation not available in this browser.');
-          return;
-        }
-        const opts = {
-          enableHighAccuracy: useHiAcc,
-          maximumAge: useSaver ? 15000 : 0,
-          timeout: useSaver ? 30000 : 20000
-        };
-        watchId = navigator.geolocation.watchPosition(handlePosition, handleError, opts);
-        setTrackingUI(true);
-      }
-
-      function stopTracking(){
-        if(watchId !== null && navigator.geolocation && navigator.geolocation.clearWatch){
-          navigator.geolocation.clearWatch(watchId);
-        }
-        watchId = null;
-        setTrackingUI(false);
-      }
-
-      function resetAll(){
-        stopTracking();
-        samples = 0;
-        recent = null;
-        best   = null;
-        updateRecentUI();
-        updateBestUI();
-      }
-
-      function storeLocationToNote(source, fix){
-        if(!fix) return;
-        const payload = {
-          source,                   // 'recent' or 'best'
-          lat: fix.lat,
-          lng: fix.lng,
-          acc: Number.isFinite(fix.acc)? fix.acc : null,
-          alt: Number.isFinite(fix.alt)? fix.alt : null,
-          ts:  fix.ts,
-          samples
-        };
-        saveNoteState({ location: payload });
-        refreshSavedSummary(payload);
-      }
-
-      function refreshSavedSummary(loc){
-        if(!loc){
-          savedStatusPill.textContent = 'None yet';
-          savedStatusPill.className = 'saved-pill';
-          savedDetails.textContent = 'No location has been stored for this note.';
-          return;
-        }
-        const srcLabel = loc.source === 'best' ? 'Best fix' : 'Recent fix';
-        savedStatusPill.textContent = srcLabel;
-        savedStatusPill.className = 'saved-pill good';
-
-        const parts = [];
-        parts.push('DD: '+fmt6(loc.lat)+', '+fmt6(loc.lng));
-        if(Number.isFinite(loc.alt)){
-          parts.push('Altitude: '+fmt1(loc.alt)+' m');
-        }
-        if(Number.isFinite(loc.acc)){
-          parts.push('Accuracy: ±'+fmt1(loc.acc)+' m');
-        }
-        if(loc.ts){
-          parts.push('Time: '+new Date(loc.ts).toLocaleString());
-        }
-        parts.push('Samples: '+(loc.samples ?? 0));
-        savedDetails.textContent = parts.join(' · ');
-      }
-
-      // Wire buttons
+      /* ---------- Location button wiring ---------- */
       if(locToggle){
         locToggle.addEventListener('click', function(){
-          if(watchId === null) startTracking();
-          else stopTracking();
-        });
-      }
-      if(locHiAcc){
-        locHiAcc.addEventListener('click', function(){
-          useHiAcc = !useHiAcc;
-          locHiAcc.classList.toggle('active', useHiAcc);
-          if(watchId !== null){
-            stopTracking();
-            startTracking();
+          if(locWatchId == null){
+            startLocTracking();
+          }else{
+            stopLocTracking();
           }
         });
       }
-      if(locSaver){
-        locSaver.addEventListener('click', function(){
-          useSaver = !useSaver;
-          locSaver.classList.toggle('active', useSaver);
-          if(watchId !== null){
-            stopTracking();
-            startTracking();
+      if(locHiAccBtn){
+        locHiAccBtn.addEventListener('click', function(){
+          locHiAccOn = !locHiAccOn;
+          locHiAccBtn.classList.toggle('active', locHiAccOn);
+          if(locWatchId != null){
+            stopLocTracking();
+            startLocTracking();
           }
         });
       }
-      if(saveRecentBtn){
-        saveRecentBtn.addEventListener('click', function(){
-          if(recent) storeLocationToNote('recent', recent);
+      if(locSaverBtn){
+        locSaverBtn.addEventListener('click', function(){
+          locSaverOn = !locSaverOn;
+          locSaverBtn.classList.toggle('active', locSaverOn);
+          if(locWatchId != null){
+            stopLocTracking();
+            startLocTracking();
+          }
         });
       }
-      if(saveBestBtn){
-        saveBestBtn.addEventListener('click', function(){
-          if(best) storeLocationToNote('best', best);
+      if(locUseRecent){
+        locUseRecent.addEventListener('click', function(){
+          applyFixToHidden(locRecent);
         });
       }
-      if(resetLocBtn){
-        resetLocBtn.addEventListener('click', function(){
-          if(confirm('Reset all location data for this session?')){
-            resetAll();
+      if(locUseBest){
+        locUseBest.addEventListener('click', function(){
+          applyFixToHidden(locBest);
+        });
+      }
+      if(locResetBtn){
+        locResetBtn.addEventListener('click', resetLocationAll);
+      }
+
+      const locToRecent = byId('locToRecent');
+      const locToBest   = byId('locToBest');
+      if(locToRecent){
+        locToRecent.addEventListener('click', function(){
+          ensureLocMap();
+          if(locMap && locRecent){
+            locMap.setView([locRecent.lat,locRecent.lng],18);
+          }
+        });
+      }
+      if(locToBest){
+        locToBest.addEventListener('click', function(){
+          ensureLocMap();
+          if(locMap && locBest){
+            locMap.setView([locBest.lat,locBest.lng],18);
           }
         });
       }
 
-      // Initial: load any saved loc for summary
-      const state = loadNoteState();
-      if(state.location){
-        refreshSavedSummary(state.location);
-      }else{
-        refreshSavedSummary(null);
+      /* ---------- initial load ---------- */
+      loadState();
+      updateLocationSummary();
+      updateShareButtons();
+    });
+  </script>
+
+  <!-- Optional Capacitor location permission helper (safe if not in app) -->
+  <script>
+    (function requestLocationOnceBridgeIsReady(){
+      const cap = window.Capacitor;
+      const geo = cap?.Plugins?.Geolocation;
+
+      if (!cap || !geo) {
+        return;
+      }
+      if (!cap.isNativePlatform || !cap.isNativePlatform()) {
+        return;
       }
 
-      // On unload, stop tracking cleanly
-      window.addEventListener('beforeunload', stopTracking);
+      (async () => {
+        try {
+          const s = await geo.checkPermissions();
+          if (s.location !== 'granted') {
+            await geo.requestPermissions();
+          }
+        } catch (e) {
+          console.warn('Location permission flow failed:', e);
+        }
+      })();
     })();
   </script>
 </body>
