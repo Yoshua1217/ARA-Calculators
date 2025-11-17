@@ -237,18 +237,10 @@
   overflow:hidden;
 }
 
-/* Invisible input that fully covers the label/button */
 .file-input-hidden{
-  position:absolute;
-  inset:0;        /* top:0; right:0; bottom:0; left:0; */
-  width:100%;
-  height:100%;
-  opacity:0;
-  border:none;
-  margin:0;
-  padding:0;
-  cursor:pointer;
+  display:none;
 }
+
 
     .photo-actions{
       display:flex;
@@ -765,32 +757,35 @@
       </div>
     </section>
 
-      <!-- PHOTOS -->
-      <section class="card">
-        <h2 class="card-title">Photos</h2>
-        <div class="photo-actions">
-          <label class="btn-ghost btn-small" for="photoDevice">
-            <span>📁</span><span>Choose from gallery</span>
-            <input id="photoDevice" class="file-input-hidden" type="file" accept="image/*" multiple>
-          </label>
-        <!-- Take photo via Capacitor Camera (native) with web fallback -->
-<button type="button" id="photoCameraBtn" class="btn-ghost btn-small">
-  <span>📷</span><span>Take photo</span>
-</button>
+     <!-- PHOTOS -->
+<section class="card">
+  <h2 class="card-title">Photos</h2>
+  <div class="photo-actions">
+    <label class="btn-ghost btn-small">
+      <span>📁</span><span>Choose from gallery</span>
+      <input id="photoDevice"
+             class="file-input-hidden"
+             type="file"
+             accept="image/*"
+             multiple>
+    </label>
 
-<!-- Fallback file input for browsers / if plugin not available -->
-<input id="photoCameraFallback"
-       class="file-input-hidden"
-       type="file"
-       accept="image/*"
-       capture="environment">
+    <!-- New: real button, separate hidden input -->
+    <button type="button"
+            id="photoCameraBtn"
+            class="btn-ghost btn-small">
+      <span>📷</span><span>Take photo</span>
+    </button>
+    <input id="photoCamera"
+           class="file-input-hidden"
+           type="file"
+           accept="image/*"
+           capture="environment">
+  </div>
 
-          </label>
-        </div>
-
-        <div id="photoGrid" class="photo-grid"></div>
-        <p class="hint">Images don’t transfer automatically in email – you’ll need to attach them separately.</p>
-      </section>
+  <div id="photoGrid" class="photo-grid"></div>
+  <p class="hint">Images don’t transfer automatically in email – you’ll need to attach them separately.</p>
+</section>
 
       <!-- SHARE / MANAGE -->
       <section class="card bottom-section">
@@ -1119,6 +1114,8 @@ const photoDevice   = byId('photoDevice');
 const photoCameraBtn     = byId('photoCameraBtn');
 const photoCameraFallback = byId('photoCameraFallback');
 const photoGrid     = byId('photoGrid');
+      const photoCamera   = byId('photoCamera');
+
 
       const overlay       = byId('imageOverlay');
       const overlayImg    = byId('overlayImg');
@@ -1598,6 +1595,35 @@ const photoGrid     = byId('photoGrid');
       /* ---------- photos ---------- */
       let photos = [];
       let currentOverlayPhoto = null;
+// Handle "Take photo" button
+if (photoCameraBtn) {
+  photoCameraBtn.addEventListener('click', async function () {
+    // If we're inside the native app *and* Camera plugin exists:
+    const camPlugin = window.Capacitor?.Plugins?.Camera;
+    if (isNativeCap && camPlugin) {
+      try {
+        const photo = await camPlugin.getPhoto({
+          quality: 70,
+          resultType: 'dataUrl',   // we store data URLs in localStorage
+          source: 'CAMERA',
+          saveToGallery: true      // ask OS to save to Photos / Gallery
+        });
+
+        if (photo && photo.dataUrl) {
+          addPhotoFromDataUrl(photo.dataUrl, true); // fromCamera = true
+          renderPhotos();
+          updateShareButtons();
+          saveStateSoon();
+        }
+      } catch (err) {
+        console.warn('Camera error', err);
+      }
+    } else if (photoCamera) {
+      // Fallback: browser or no plugin – use plain file input
+      photoCamera.click();
+    }
+  });
+}
 
       function addPhotoFromDataUrl(dataUrl, fromCamera){
         const id='p'+Date.now()+Math.random().toString(16).slice(2);
@@ -1654,10 +1680,11 @@ const photoGrid     = byId('photoGrid');
 const cap          = window.Capacitor;
 const cameraPlugin = cap?.Plugins?.Camera;
 
-      const isNativeCap =
-  !!cap &&
-  typeof cap.isNativePlatform === 'function' &&
-  cap.isNativePlatform();
+const isNativeCap =
+  !!window.Capacitor &&
+  typeof window.Capacitor.isNativePlatform === 'function' &&
+  window.Capacitor.isNativePlatform();
+
 
 if (photoCameraBtn) {
   if (cameraPlugin && cap.isNativePlatform?.()) {
@@ -1713,10 +1740,14 @@ if (photoCameraFallback) {
         saveStateSoon();
       }
 
-      photoDevice.addEventListener('change', function(e){
-        handleFiles(e.target.files, false);
-        photoDevice.value='';
-      });
+photoDevice.addEventListener('change', function(e){
+  handleFiles(e.target.files, false);
+  photoDevice.value='';
+});
+photoCamera.addEventListener('change', function(e){
+  handleFiles(e.target.files, true);
+  photoCamera.value='';
+});
 
       /* ---------- image overlay ---------- */
 function openOverlay(photo){
