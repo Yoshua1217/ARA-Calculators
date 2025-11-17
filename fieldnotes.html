@@ -1340,16 +1340,18 @@
         else locMap.fitBounds(pts,{padding:[24,24]});
       }
 
-      function applyFixToHidden(fix){
-        if(!fix) return;
-        locLatEl.value = fix.lat.toFixed(6);
-        locLngEl.value = fix.lng.toFixed(6);
-        locAccEl.value = Number.isFinite(fix.acc) ? fix.acc.toFixed(1) : '';
-        locAltEl.value = Number.isFinite(fix.alt) ? fix.alt.toFixed(1) : '';
-        locTsEl.value  = String(fix.ts || Date.now());
-        updateLocationSummary();
-        autoSaveSoon();
-      }
+     function applyFixToHidden(fix){
+  if(!fix) return;
+  locLatEl.value = fix.lat.toFixed(6);
+  locLngEl.value = fix.lng.toFixed(6);
+  locAccEl.value = Number.isFinite(fix.acc) ? fix.acc.toFixed(1) : '';
+  locAltEl.value = Number.isFinite(fix.alt) ? fix.alt.toFixed(1) : '';
+  locTsEl.value  = String(fix.ts || Date.now());
+  updateLocationSummary();
+  autoSaveSoon();
+  updateShareButtons();   // <-- refreshes the mailto link so location goes into the email
+}
+
 
       function startLocTracking(){
         if(locWatchId != null || !navigator.geolocation) return;
@@ -1415,6 +1417,7 @@
         locTsEl.value  = '';
         updateLocationSummary();
         autoSaveSoon();
+        updateShareButtons();
       }
 
       function locExportRuntime(){
@@ -1758,22 +1761,25 @@
           parts.push('Field note ('+nowLocalPretty()+')','',note,'');
         }
 
-        // Location in plain text if saved
-        const lat = parseFloat(locLatEl.value);
-        const lng = parseFloat(locLngEl.value);
-        if(Number.isFinite(lat) && Number.isFinite(lng)){
-          const acc = parseFloat(locAccEl.value);
-          const alt = parseFloat(locAltEl.value);
-          const ts  = parseInt(locTsEl.value,10);
-          parts.push(
-            'Location:',
-            '  DD: '+lat.toFixed(6)+', '+lng.toFixed(6),
-            '  Altitude: '+(Number.isFinite(alt)?alt.toFixed(1)+' m':'—'),
-            '  Accuracy: '+(Number.isFinite(acc)?'±'+acc.toFixed(1)+' m':'±—'),
-            '  Recorded: '+(Number.isFinite(ts)?new Date(ts).toLocaleString():'—'),
-            ''
-          );
-        }
+// Location in plain text if saved
+const lat = parseFloat(locLatEl.value);
+const lng = parseFloat(locLngEl.value);
+if (Number.isFinite(lat) && Number.isFinite(lng)) {
+  const acc = parseFloat(locAccEl.value);
+  const alt = parseFloat(locAltEl.value);
+  const ts  = parseInt(locTsEl.value, 10);
+
+  parts.push(
+    'Location:',
+    '  DD:  ' + lat.toFixed(6) + ', ' + lng.toFixed(6),
+    '  DMS: ' + toDMS(lat, true) + ' | ' + toDMS(lng, false),
+    '  Altitude: ' + (Number.isFinite(alt) ? alt.toFixed(1) + ' m' : '—'),
+    '  Accuracy: ' + (Number.isFinite(acc) ? '±' + acc.toFixed(1) + ' m' : '±—'),
+    '  Recorded: ' + (Number.isFinite(ts) ? new Date(ts).toLocaleString() : '—'),
+    ''
+  );
+}
+
 
         if(photos.length){
           parts.push('Photos: '+photos.length+' image(s) – not attached, stored on device.');
