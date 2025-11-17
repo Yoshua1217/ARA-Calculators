@@ -773,9 +773,18 @@
             <span>📁</span><span>Choose from gallery</span>
             <input id="photoDevice" class="file-input-hidden" type="file" accept="image/*" multiple>
           </label>
-          <label class="btn-ghost btn-small" for="photoCamera">
-            <span>📷</span><span>Take photo</span>
-            <input id="photoCamera" class="file-input-hidden" type="file" accept="image/*" capture="environment">
+        <!-- Take photo via Capacitor Camera (native) with web fallback -->
+<button type="button" id="photoCameraBtn" class="btn-ghost btn-small">
+  <span>📷</span><span>Take photo</span>
+</button>
+
+<!-- Fallback file input for browsers / if plugin not available -->
+<input id="photoCameraFallback"
+       class="file-input-hidden"
+       type="file"
+       accept="image/*"
+       capture="environment">
+
           </label>
         </div>
 
@@ -1104,21 +1113,13 @@
         btn.addEventListener('click', ()=>activateTab(btn.dataset.tab));
       });
 
-      const noteTitleEl   = byId('noteTitle');
-      const noteEl        = byId('noteText');
-      const photoDevice   = byId('photoDevice');
-      const photoCamera   = byId('photoCamera');
-      const photoGrid     = byId('photoGrid');
-   // If running inside the Capacitor native app, remove `capture`
-      // because some Android WebViews break when it's present.
-      const isNativeCap =
-        !!window.Capacitor &&
-        typeof window.Capacitor.isNativePlatform === 'function' &&
-        window.Capacitor.isNativePlatform();
+     const noteTitleEl   = byId('noteTitle');
+const noteEl        = byId('noteText');
+const photoDevice   = byId('photoDevice');
+const photoCameraBtn     = byId('photoCameraBtn');
+const photoCameraFallback = byId('photoCameraFallback');
+const photoGrid     = byId('photoGrid');
 
-      if (isNativeCap && photoCamera) {
-        photoCamera.removeAttribute('capture');
-      }
       const overlay       = byId('imageOverlay');
       const overlayImg    = byId('overlayImg');
       const overlayClose  = byId('overlayClose');
@@ -1649,6 +1650,57 @@
         });
       }
 
+      // -------- Camera handling (Capacitor native + web fallback) --------
+const cap          = window.Capacitor;
+const cameraPlugin = cap?.Plugins?.Camera;
+
+if (photoCameraBtn) {
+  if (cameraPlugin && cap.isNativePlatform?.()) {
+    // Native Capacitor app: use the Camera plugin
+    photoCameraBtn.addEventListener('click', async () => {
+      try {
+        // Optional: ask for permission first on newer Android
+        if (cameraPlugin.checkPermissions && cameraPlugin.requestPermissions) {
+          const perm = await cameraPlugin.checkPermissions();
+          if (perm && perm.camera !== 'granted') {
+            await cameraPlugin.requestPermissions();
+          }
+        }
+
+        const photo = await cameraPlugin.getPhoto({
+          resultType: 'dataUrl',
+          source: 'CAMERA',
+          quality: 80,
+          saveToGallery: false,
+        });
+
+        if (photo && photo.dataUrl) {
+          addPhotoFromDataUrl(photo.dataUrl, true);
+          renderPhotos();
+          updateShareButtons();
+          saveStateSoon();
+        }
+      } catch (e) {
+        console.warn('Camera capture failed, falling back to file input', e);
+        if (photoCameraFallback) photoCameraFallback.click();
+      }
+    });
+  } else {
+    // In browser: fall back to the capture file input
+    photoCameraBtn.addEventListener('click', () => {
+      if (photoCameraFallback) photoCameraFallback.click();
+    });
+  }
+}
+
+// File-input change handler for the fallback path
+if (photoCameraFallback) {
+  photoCameraFallback.addEventListener('change', function(e){
+    handleFiles(e.target.files, true);
+    photoCameraFallback.value = '';
+  });
+}
+
       function removePhoto(id){
         photos = photos.filter(p => p.id !== id);
         renderPhotos();
@@ -1659,10 +1711,6 @@
       photoDevice.addEventListener('change', function(e){
         handleFiles(e.target.files, false);
         photoDevice.value='';
-      });
-      photoCamera.addEventListener('change', function(e){
-        handleFiles(e.target.files, true);
-        photoCamera.value='';
       });
 
       /* ---------- image overlay ---------- */
