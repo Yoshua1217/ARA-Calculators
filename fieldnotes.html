@@ -626,6 +626,32 @@
       overflow:hidden;
       border:1px solid #1f2937;
     }
+    /* Smaller subtitle under "Tag" heading on the note tab */
+.card-subtitle{
+  font-size:0.8rem;
+  color:var(--text-muted);
+  margin:2px 0 4px;
+}
+    /* Location summary card on the note tab */
+.location-summary .loc-summary-status{
+  font-size:0.88rem;
+  margin:4px 0 6px;
+}
+
+.location-summary p{
+  font-size:0.9rem;
+  line-height:1.5;
+}
+
+/* Accuracy value color buckets (match header pill colors) */
+.loc-summary-acc-value{
+  font-weight:600;
+}
+
+.loc-summary-acc-grey{ color:#e2e8f0; }
+.loc-summary-acc-amber{ color:#ffb300; }
+.loc-summary-acc-green{ color:#22c55e; }
+.loc-summary-acc-red{ color:#f97373; }
   </style>
 </head>
 <body>
@@ -682,36 +708,43 @@
         </div>
       </section>
 
-      <!-- Location summary on main page -->
-      <section class="card" id="locSummaryCard">
-        <h2 class="card-title">Location</h2>
-        <p id="locSummaryStatus" class="hint">
-          No location saved yet for this note.
-        </p>
+        <!-- Location summary on Note tab -->
+    <section class="card location-summary">
+      <h2 class="card-title">Location</h2>
+      <p class="hint">Saved location for this note:</p>
 
-        <div class="loc-summary-grid">
-          <p id="locSummaryDD">DD: —</p>
-          <p id="locSummaryAlt">Altitude: —</p>
-          <p id="locSummaryAcc">
-            Accuracy:
-            <span id="locSummaryAccValue" class="loc-summary-acc-value loc-summary-acc-grey">—</span>
-          </p>
-          <p id="locSummaryTime">Saved: —</p>
-        </div>
+      <p id="locSummaryStatus" class="loc-summary-status">No location saved yet for this note.</p>
 
-        <div class="btn-row" style="margin-top:10px;">
-          <button type="button" id="locOpenTabBtn" class="btn-ghost btn-small">
-            Open location tab
-          </button>
-        </div>
+      <p>
+        <strong>DD:</strong>
+        <span id="locSummaryDD">—</span>
+      </p>
+      <p>
+        <strong>DMS:</strong>
+        <span id="locSummaryDMSValue">—</span>
+      </p>
+      <p>
+        <strong>Altitude:</strong>
+        <span id="locSummaryAlt">—</span>
+      </p>
+      <p>
+        <strong>Accuracy:</strong>
+        <span id="locSummaryAccValue"
+              class="loc-summary-acc-value loc-summary-acc-grey">—</span>
+      </p>
+      <p>
+        <strong>Saved:</strong>
+        <span id="locSummaryTime">—</span>
+      </p>
 
-        <!-- Hidden fields so location can be saved + synced -->
-        <input type="hidden" id="locLat">
-        <input type="hidden" id="locLng">
-        <input type="hidden" id="locAcc">
-        <input type="hidden" id="locAlt">
-        <input type="hidden" id="locTs">
-      </section>
+      <div class="btn-row" style="margin-top:10px;">
+        <button type="button"
+                id="openLocationTabBtn"
+                class="btn-ghost btn-small">
+          Open location tab
+        </button>
+      </div>
+    </section>
 
       <!-- PHOTOS -->
       <section class="card">
@@ -1001,7 +1034,17 @@
         const d=new Date(); const pad=n=>String(n).padStart(2,'0');
         return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
       }
-
+      // Convert decimal degrees to DMS string for display
+      function toDMS(dec, isLat){
+        if (!Number.isFinite(dec)) return '—';
+        const hemi = dec >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
+        let v = Math.abs(dec);
+        const d = Math.floor(v);
+        v = (v - d) * 60;
+        const m = Math.floor(v);
+        const s = (v - m) * 60;
+        return d + '° ' + m + "' " + s.toFixed(2) + '" ' + hemi;
+      }
       function copyToClipboard(txt){
         if(navigator.clipboard && navigator.clipboard.writeText){
           return navigator.clipboard.writeText(txt);
@@ -1061,13 +1104,14 @@
       const resetCancel   = byId('resetCancel');
       const resetConfirm  = byId('resetConfirm');
 
-      const locSummaryStatus = byId('locSummaryStatus');
-      const locSummaryDD     = byId('locSummaryDD');
-      const locSummaryAlt    = byId('locSummaryAlt');
-      const locSummaryAcc    = byId('locSummaryAcc');
-      const locSummaryTime   = byId('locSummaryTime');
+      const locSummaryStatus    = document.getElementById('locSummaryStatus');
+      const locSummaryDD        = document.getElementById('locSummaryDD');
+      const locSummaryDMSValue  = document.getElementById('locSummaryDMSValue');
+      const locSummaryAlt       = document.getElementById('locSummaryAlt');
+      const locSummaryTime      = document.getElementById('locSummaryTime');
+      const locSummaryAccValue  = document.getElementById('locSummaryAccValue');
+
       const locOpenTabBtn    = byId('locOpenTabBtn');
-      const locSummaryAccValue = byId('locSummaryAccValue');
 
       const locLatEl = byId('locLat');
       const locLngEl = byId('locLng');
@@ -1605,13 +1649,14 @@
           return;
         }
 
-        const bucket = accBucket(acc);
-        if(bucket === 'green')  locSummaryAccValue.classList.add('loc-summary-acc-green');
+        const bucket = accBucket(acc); // uses the same helper as the header pill
+
+        if(bucket === 'green')      locSummaryAccValue.classList.add('loc-summary-acc-green');
         else if(bucket === 'amber') locSummaryAccValue.classList.add('loc-summary-acc-amber');
         else if(bucket === 'red')   locSummaryAccValue.classList.add('loc-summary-acc-red');
         else                        locSummaryAccValue.classList.add('loc-summary-acc-grey');
 
-        locSummaryAccValue.textContent = '±'+acc.toFixed(1)+' m';
+        locSummaryAccValue.textContent = '±' + acc.toFixed(1) + ' m';
       }
 
       function updateLocationSummary(){
@@ -1623,19 +1668,42 @@
 
         if(Number.isFinite(lat) && Number.isFinite(lng)){
           locSummaryStatus.textContent = 'Saved location for this note:';
-          locSummaryDD.textContent   = 'DD: ' + lat.toFixed(6) + ', ' + lng.toFixed(6);
-          locSummaryAlt.textContent  = 'Altitude: ' + (Number.isFinite(alt) ? alt.toFixed(1)+' m' : '—');
+
+          if (locSummaryDD){
+            locSummaryDD.textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+          }
+
+          if (locSummaryDMSValue){
+            locSummaryDMSValue.textContent =
+              toDMS(lat, true) + '  |  ' + toDMS(lng, false);
+          }
+
+          if (locSummaryAlt){
+            locSummaryAlt.textContent = Number.isFinite(alt)
+              ? alt.toFixed(1) + ' m'
+              : '—';
+          }
+
           setSummaryAccColor(acc);
-          locSummaryTime.textContent = 'Saved: ' + (Number.isFinite(ts) ? new Date(ts).toLocaleString() : '—');
+
+          if (locSummaryTime){
+            locSummaryTime.textContent = Number.isFinite(ts)
+              ? new Date(ts).toLocaleString()
+              : '—';
+          }
         } else {
           locSummaryStatus.textContent = 'No location saved yet for this note.';
-          locSummaryDD.textContent   = 'DD: —';
-          locSummaryAlt.textContent  = 'Altitude: —';
-          if(locSummaryAccValue){
-            locSummaryAccValue.className = 'loc-summary-acc-value loc-summary-acc-grey';
+
+          if (locSummaryDD)       locSummaryDD.textContent = '—';
+          if (locSummaryDMSValue) locSummaryDMSValue.textContent = '—';
+          if (locSummaryAlt)      locSummaryAlt.textContent = '—';
+          if (locSummaryTime)     locSummaryTime.textContent = '—';
+
+          if (locSummaryAccValue){
+            locSummaryAccValue.className =
+              'loc-summary-acc-value loc-summary-acc-grey';
             locSummaryAccValue.textContent = '—';
           }
-          locSummaryTime.textContent = 'Saved: —';
         }
       }
 
