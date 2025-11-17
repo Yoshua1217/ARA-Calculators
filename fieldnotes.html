@@ -43,7 +43,6 @@
     *{box-sizing:border-box;}
     body{
       margin:0;
-          padding-top:35px;
       font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       background:var(--bg-main);
       color:var(--text-main);
@@ -662,6 +661,11 @@
 .loc-summary-acc-amber{ color:#ffb300; }
 .loc-summary-acc-green{ color:#22c55e; }
 .loc-summary-acc-red{ color:#f97373; }
+
+    .native-safe-top {
+  padding-top: 36px; /* adjust to whatever feels right */
+}
+
   </style>
 </head>
 <body>
@@ -1052,6 +1056,16 @@
   </div>
 
   <script>
+    // Add safe top padding only on the native app
+(function addSafePadding(){
+  const cap = window.Capacitor;
+  const isNative = cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform();
+
+  if (isNative) {
+    document.body.classList.add('native-safe-top');
+  }
+})();
+
     document.addEventListener('DOMContentLoaded', function(){
       function byId(id){ return document.getElementById(id); }
       function nowLocalPretty(){
