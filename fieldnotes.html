@@ -231,8 +231,15 @@
       padding:5px 10px;
     }
 
-    .file-input-hidden{ display:none; }
-
+.file-input-hidden{
+  position:absolute;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
+  /* optional: move it out of layout just in case */
+  left:-9999px;
+}
     .photo-actions{
       display:flex;
       flex-wrap:wrap;
