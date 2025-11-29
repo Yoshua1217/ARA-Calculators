@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>World Satellite Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    /* Simple top bar, kind of like Google Maps */
+    .top-bar {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+    .top-bar span.brand {
+      font-weight: 600;
+    }
+    /* Bottom info bar for coords + zoom */
+    .info-bar {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="top-bar">
+    <span class="brand">World Satellite Explorer</span>
+  </div>
+  <div class="info-bar" id="infoBar">
+    Lat: 0.0000, Lng: 0.0000 | Zoom: 2
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Create the map
+    var map = L.map('map', {
+      center: [20, 0],   // roughly "world view"
+      zoom: 3,
+      zoomControl: true
+    });
+
+    // ESRI World Imagery (satellite) tiles
+    var satelliteLayer = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        maxZoom: 19,
+        attribution:
+          'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+      }
+    ).addTo(map);
+
+    // Add a scale control (like Google Maps)
+    L.control.scale().addTo(map);
+
+    // Update the info bar with current mouse position and zoom
+    var infoBar = document.getElementById('infoBar');
+
+    function updateInfo(latlng) {
+      var zoom = map.getZoom();
+      var lat = latlng ? latlng.lat : map.getCenter().lat;
+      var lng = latlng ? latlng.lng : map.getCenter().lng;
+      infoBar.textContent =
+        'Lat: ' + lat.toFixed(4) +
+        ', Lng: ' + lng.toFixed(4) +
+        ' | Zoom: ' + zoom;
+    }
+
+    // On mouse move, update coordinates
+    map.on('mousemove', function (e) {
+      updateInfo(e.latlng);
+    });
+
+    // On zoom / move end, keep info in sync even if mouse is still
+    map.on('zoomend moveend', function () {
+      updateInfo();
+    });
+
+    // Initialize info bar
+    updateInfo();
+  </script>
+</body>
+</html>
